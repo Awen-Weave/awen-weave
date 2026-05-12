@@ -155,4 +155,13 @@ Updates to commit into `bra-v2-estate-agents.md`:
 - [Beudy Talywaen on Rightmove](https://www.rightmove.co.uk/properties/88003134) — fetched 2026-05-12
 - [2-3 Heol y Bont on Rightmove](https://www.rightmove.co.uk/properties/153526076) — fetched 2026-05-12
 - [Homemove LL40 agent summary](https://homemove.com/estate-agents/ll40-2/) — for market context
-- [Walter Lloyd Jones brochure platform](https://walterlloydjones.10ninety.co.uk/) — referenced from listing; not fetched this round
+- [Walter Lloyd Jones brochure platform](https://walterlloydjones.10ninety.co.uk/) — referenced from listing; not fetched this round. *(See §7 below for the host correction.)*
+
+## 7. Addendum — production Nimble pilot supersedes some findings (2026-05-12, Code side)
+
+This document is the Cowork-side richness pilot from earlier on 2026-05-12. Later the same day, the production Nimble pilot (step 4 of the BRA v2 Code-side build) probed the real Walter Lloyd Jones site and surfaced two corrections to §3.3 "Surprises worth recording" and §4 "Recommendations":
+
+- **Host correction (supersedes §3.3 #1 and §4 #6).** The URL `walterlloydjones.10ninety.co.uk` named here is the **10ninety back-office portal** (login-only); the public estate-agent site is `www.walterlloydjones.co.uk`. Brochure-PDF asset URLs on the 10ninety subdomain are reachable without auth, but the subdomain's `robots.txt` explicitly disallows general crawlers from everything except `/DiaryFeed` (and `/PortalExports/DisplayImage` for `facebookexternalhit`). Production-pilot decision: skip 10ninety assets entirely; extract only from the public site. Full details in `bra-v2-estate-agents.md` §11.
+- **Manifest target.** The site-shape manifest target is `www.walterlloydjones.co.uk`, not `walterlloydjones.10ninety.co.uk`. Detail-page URL pattern: `/property/?Id={numeric_id}&propInd=S` (case-sensitive `Id`).
+
+The Cowork-side richness findings on text, room dimensions, and special features (§2–§3 above) remain accurate — they were drawn from the Rightmove rendering of the same agent's listings, which carries equivalent content. Production-pilot URL patterns and full field-availability deltas are documented in `bra-v2-estate-agents.md` §11.

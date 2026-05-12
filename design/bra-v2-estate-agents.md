@@ -240,4 +240,39 @@ seed/
 
 ---
 
-*End of design draft. Next steps: review §8 open questions, then ship stage 1 (discovery script) against `/Users/withaw/Awen/town-dataset/` on the Code side.*
+*End of original Cowork handover. The Code-side production Nimble pilot ran later the same day and surfaced corrections — see §11 below.*
+
+## 11. Addendum — production-pilot findings (2026-05-12, Code side)
+
+After this design was sealed, the production Nimble pilot (step 4 of the BRA v2 build, Code side) probed the real site and surfaced corrections that supersede some literal claims in the body of this document. Treat this addendum as authoritative; the body above is preserved as the original Cowork handover.
+
+**Host correction.** The public estate-agent site is `www.walterlloydjones.co.uk` — a server-rendered ASP.NET front-end. The `walterlloydjones.10ninety.co.uk` host (referenced in §8 open-q (b) and §9 build order) is the **10ninety back-office portal**, which 302-redirects unauthenticated visitors to a login page. Brochure PDFs and image assets are served from the 10ninety subdomain at `/PublicProperty/DisplayBrochure/{id}` and `/PublicPropertyMedia/DisplayImage/{id}` without auth, but see the robots.txt note below.
+
+**robots.txt finding.** `www.walterlloydjones.co.uk/robots.txt` returns 404 (no stated restrictions on the public site). However, `walterlloydjones.10ninety.co.uk/robots.txt` is explicit:
+
+```
+User-agent: *
+Allow: /DiaryFeed
+Disallow: /
+
+User-agent: facebookexternalhit
+Allow: /PortalExports/DisplayImage
+```
+
+General crawlers are disallowed from the entire 10ninety subdomain. The asset endpoints the Cowork pilot anticipated using (brochures, high-res images) are within the disallowed scope.
+
+**Decision (curator, 2026-05-12).** Respect the 10ninety robots.txt absolutely. The Nimble agent extracts only from `www.walterlloydjones.co.uk` and treats brochure-PDF and 10ninety-hosted media URLs as out-of-scope. We lose richer brochure capture; we keep the verbatim narrative, room-by-room dimensions, and whatever inline images the public site itself serves. This is the cleanest posture for a place-based trust dataset whose first BRA v2 action should not be a robots.txt breach. If/when explicit consent is obtained from Walter Lloyd Jones & Co. (Bridge Street, Dolgellau — same street as Tŷ Newyddion), the 10ninety asset endpoints can come back into scope as a manifest update.
+
+**URL patterns confirmed by production pilot:**
+
+- Listing index (sales): `https://www.walterlloydjones.co.uk/properties/?page={N}&pageSize=50&propInd=S&businessCategoryId=1&searchType=list` — swap `propInd=L` for lettings.
+- Detail page: `https://www.walterlloydjones.co.uk/property/?Id={numeric_id}&propInd=S` — case-sensitive `Id`. The numeric id is the 10ninety internal property id and is the URL key; the agent reference `RS####` (the §3a Tier A `listing ID (agent)` field) lives in the page body as `Reference: RS####`.
+- No JS rendering required — the site is server-rendered ASP.NET.
+- No structured `listing_events` exposed on the detail page — `listing_events` capture (per v0.2 backlog item 4) requires the BRA v2 pipeline's own delta-on-recurring-crawl, not direct extraction.
+
+**Field-availability deltas from §3a (production pilot, RS3220 / Id=4058 used as canonical sample):**
+
+- Confirmed present on the public site: address; agent ref (`RS3220`); asking price; tenure; branch; bedrooms/bathrooms inferable from room labels; **room-by-room metric dimensions** (the primary basis for `floor_area_m2` per §6.5 — confirmed at production scale); garden details; heating fuel + verbatim heating description; council tax band; parking, accessibility, rights, broadband, water, sewerage as bullet-point fields; EPC band (letter only); full narrative description; lat/lng coordinates; full RICS measurement disclaimer.
+- Confirmed absent from the page (must come from elsewhere or remain null): headline GIA (confirms the §3a primary-extraction strategy is correct); EPC numeric score (only band letter visible — score requires a separate EPC API fetch); year built / period as a structured field; `planning_restriction` as a structured field; `epc_exempt` as a structured field; storeys as a structured field (inferable from "GROUND FLOOR" / "FIRST FLOOR" room-label sections only); listing-events history.
+
+The structured absences are honest gaps. The narrative text often contains those facts; the §3a Tier C verbatim-capture discipline is what preserves them. The Tier A/B catalogue stands; some fields will be sparsely populated when extracted from this site shape and will need to be enriched from other sources (Cadw for listed-building status, EPC API for numeric score, etc.).
