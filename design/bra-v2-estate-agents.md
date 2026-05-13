@@ -122,6 +122,22 @@ Each agent / aggregator has a manifest at `config/agents/<agent_id>.yaml` declar
 
 This separates "what the site looks like" (manifest, source-controlled, curator-readable) from "how we extract it" (Nimble agent, refined via the agent-builder skill).
 
+### 4a. Pre-manifest reconnaissance — mandatory four-step pattern
+
+Before any `config/agents/<agent_id>.yaml` is authored — and before any Nimble agent is generated for that agent — the curator runs a fixed reconnaissance pattern. The pattern exists because the v2 production-pilot (2026-05-12) found that Walter Lloyd Jones's apparent platform host (`walterlloydjones.10ninety.co.uk`) was in fact a login-gated back-office, with the real customer-facing site living on `www.walterlloydjones.co.uk` and the 10ninety subdomain explicitly disallowing crawlers via robots.txt. The pattern is the structural counter-pressure against that class of misreading.
+
+The four steps are mandatory; the recon report is committed at `config/agents/recon-notes/<agent_id>-<YYYY-MM-DD>.md` before the manifest itself is committed.
+
+1. **Start at the agent's own publicly-known brand domain.** The brand domain is the customer-facing name — `rgjones-property.co.uk`, `savills.co.uk`, etc. Not whatever CMS host or aggregator subdomain the discovery script happened to surface. The discovery CSV's `website` column is a starting point, not a target.
+
+2. **Walk robots.txt and the redirect topology to confirm the host is customer-facing.** A clean 200 on a public-shaped page is the bar. A 302 to `/Account/LogOn` or any login wall disqualifies the host as a target. **Walk robots.txt for every relevant host:** the brand domain itself, plus any subdomains the brand domain references (e.g. asset hosts, search-app subdomains, CMS back-office subdomains). Each host's robots.txt is a separate observation and goes into the recon report verbatim.
+
+3. **Characterise the underlying CMS as a manifest detail only.** If the agent is on 10ninety, Reapit, Vebra, Jupix, Alto, Street.co.uk, a bespoke platform, or anything else — record it under a `cms_platform:` field in the manifest. The URL patterns still target the agent's own brand domain. The CMS identity is metadata; the brand domain is the contract.
+
+4. **Do not assume any shared infrastructure with other agents.** The 10ninety back-office / public-site split observed for Walter Lloyd Jones may or may not apply to the next agent — the recon must confirm each time. The discipline cuts both ways: don't assume *different*, don't assume *same*. The R G Jones recon (2026-05-13) found shared CMS with WLJ (`rgjones.10ninety.co.uk` exists with identical robots.txt) but different URL contract on the public site (`?ref=RS####` vs `?Id={numeric}`); the Savills recon found wholly different infrastructure (bespoke search platform on CloudFront / Akamai, no back-office subdomain). Every agent gets its own clean look.
+
+The recon report records: brand-domain probe results, every relevant host's robots.txt verbatim, CMS characterisation, URL patterns observed, the explicit shared-infrastructure assumption check, implications for manifest authoring, and a recommendation (proceed to manifest, or hold). The two-gate model (allowlist approval + manifest authored) is unchanged; the recon report sits *before* the manifest in the workflow and acts as the evidence base for the manifest's `tos_classification`, `excluded_hosts`, and `robots_txt` blocks.
+
 ## 5. Provenance discipline (mandatory)
 
 Inherits BRA v1's discipline; adds estate-agent-specific rules:
