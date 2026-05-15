@@ -12,7 +12,7 @@ This is a living roadmap for two parallel bodies of work: building the Town Data
 
 The roadmap records *sequence and dependency*, not dates. It is revised every iteration rather than run against a fixed plan. When an item lands, the next iteration's version of this document reflects what was learned, not what was forecast.
 
-What this document is not: a schedule, a feature commitment, or a substitute for the discipline already in place. Every Track A item still passes through the six-question charter in `architecture.md` §5 before it is built, and is entered in the component register in the same change. Every Track B item is a named constitutional decision — it appears in the constitution's §12 open-decisions register before it is adopted, and the roadmap only points at it. The roadmap sequences the work; the charter and the register govern it.
+What this document is not: a schedule, a feature commitment, or a substitute for the discipline already in place. Track A items still pass through the six-question charter in `architecture.md` §5; Track B items are still named decisions in the constitution's §12 register. The roadmap sequences the work; the charter and the register govern it.
 
 ## 2. How to read this roadmap
 
@@ -34,8 +34,8 @@ Track A is the demonstrator becoming real. The foundation — the schema layer, 
 
 The v0.1 schema is settled; what is missing is the tooling that turns it into a working system. The order below is `cli-design.md` §6, which puts the proposal-and-review loop before any automation so the workflow is learned by hand before it is scaled.
 
-- `craidd-propose` — **now.** The next component to build, Cowork's to own, off the freshly-merged `main`. Manual proposals first; no review tool needed to start using it.
-- `craidd-review` — **next.** Turns the proposal queue into canonical claims. The most explicitly Awen-shaped of the CLIs — it is where curator judgement enters the system.
+- `craidd-propose` — **now.** The next component to build, off the freshly-merged `main`. Manual proposals first; no review tool needed to start using it.
+- `craidd-review` — **next.** Turns the proposal queue into canonical claims — it is where curator judgement enters the system as the source of truth.
 - `craidd-fetch` — **next.** Automates source snapshotting and provenance recording. Until it exists, sources are created by hand through `craidd-propose`.
 - Building Research Agent v1 — **next.** Per-building research packs. BRA v2 (estate-agent listings) is already in `src/bra/`; v1 is the per-building workflow that shifts the dataset's growth bottleneck from compilation to review.
 - `craidd-export` — **later.** The signed nightly snapshot. Only matters once there is enough canonical content to be worth exporting.
@@ -59,7 +59,7 @@ Everything in Track A at v0.3 and beyond depends on the federation model landing
 
 ## 4. Track B — constitutional deepening
 
-The meta-instruction governing Track B, taken directly from the external review of the constitutional framework, is **deepen precision, don't expand breadth.** No new roles. No new layers. The five-role model — Llys, Craidd, IDRIS, Prawf, Craffter — and the layered view of the constitution are treated as settled. Every item below sharpens something the constitution already gestures at but currently leaves coarse. Each is a named decision destined for the §12 open-decisions register, and each is tagged with the cross-sector instance it unlocks, because that is the whole reason Track B is funded effort and not abstraction for its own sake.
+The meta-instruction governing Track B, taken directly from the external review of the constitutional framework, is **deepen precision, don't expand breadth.** No new roles. No new layers. The five-role model — Llys, Craidd, IDRIS, Prawf, Craffter — and the layered view of the constitution are treated as settled. Every item below sharpens something the constitution already gestures at but currently leaves coarse. Each is a named decision destined for the §12 open-decisions register, and each is tagged with the cross-sector instance it unlocks, because that is the whole reason Track B is deliberate work and not abstraction for its own sake.
 
 ### 4.1 Obligation ontology — *now*
 
@@ -76,6 +76,8 @@ The constitution's current principle is flat: "contradictions co-exist." True, a
 ### 4.3 Constitutional treatment of uncertainty — *next*
 
 Distinguish, at the constitutional level, three things the current model can blur: absence of evidence, evidence of absence, and contested evidence. The `cy_coverage` view — which exposes honest Welsh-language gaps as a public metric rather than hiding them — is already the seed of this pattern. The deepening makes honest uncertainty a first-class, governed state across the framework, not a `NULL` that happens to be exposed in one view.
+
+A distinction the deepening must hold firmly: confidence is not uncertainty. The schema's `confidence` field is a probabilistic weight on a claim that exists; epistemic uncertainty is about whether there is a claim to weigh at all. Many systems collapse the two — the framework should keep them apart, and §4.3 is where that separation is made constitutional.
 
 **Unlocks:** third-sector mapping again, in concert with §4.2 — and more broadly, it is what lets any Awen instance be trusted *about its own gaps*. **Banding:** next, alongside §4.2. **Constitution ref:** §12 — decision entry to be added.
 
@@ -98,6 +100,8 @@ And the Pi at Arloesi Dolgellau is already scoped, in hardware terms, as the mul
 ## 6. Sequencing and dependencies
 
 The roadmap's spine, stated as dependencies rather than dates:
+
+> **The load-bearing dependency: the construction instance charter is blocked on Track B §4.1 (obligation ontology).** This is the clearest expression of the roadmap's governance-first sequencing — the constitutional work leads the instance, it never trails it. Every other line below is ordering; this one is principle.
 
 - Track A v0.1 completion has no Track B dependency. It proceeds now, starting with `craidd-propose`.
 - Track B §4.1 (obligation ontology) also has no dependency, and is banded **now** so it runs concurrently with Track A v0.1 — the two do not compete for the same surface.
