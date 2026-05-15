@@ -116,6 +116,37 @@ Floor plans and photographs are agent-commissioned or agent-licensed work; bytes
 - **Curator workflow:** when curating, the curator can inspect the restricted images locally and write canonical claims that *describe* what the floor plan shows ("first floor has three bedrooms with rear extension dated post-2010") with the image hash as evidence citation — the description, not the image, becomes the public claim.
 - **Hard rule:** the read API and any public dashboard must refuse to serve image bytes from `restricted` evidence records. Belt-and-braces: file naming convention `restricted_*.jpg` so accidental publication is visible at glance.
 
+### 3c. Stage 3 — archival ingest from the Internet Archive's Wayback Machine
+
+Added 2026-05-15 after the production-pilot probe of WLJ's public sold-archive returned a critically shallow ~2-month retention (most-recently-sold few items only). Live-site stage 2 captures the living market and the recent past; it cannot backfill listings that have already aged off. Stage 3 closes that gap by harvesting historic captures from `web.archive.org`.
+
+**Why this is architecturally clean rather than a workaround:**
+
+- **Wayback citations are stable.** Live-site URLs decay; Wayback snapshot URLs (`web.archive.org/web/<YYYYMMDDhhmmss>/<original-url>`) never change once captured. Every Wayback-sourced claim cites the snapshot URL + retrieval timestamp + sha256 of the bytes — strictly *better* provenance than a live-site fetch, because the source is immutable.
+- **The data is already public.** Wayback Machine captures are made under standard archive.org policy from sites whose `robots.txt` did not disallow the crawler at capture time. Citing those captures is the same provenance pattern academic and journalism uses for archival web sources.
+- **No new permission boundary.** We're not asking the agent for new access; we're harvesting from a public archive that has already preserved their public marketing material. The conversation with the agent shifts from "may we take this?" to "we've already assembled the public-archive record; we'd like to attribute it properly and discuss working together going forward."
+- **Same shape as live-site stage 2.** Snapshot bytes land at `evidence/listings/<agent_slug>/wayback/<wayback-ts>-<slug>/{snapshot.html, hash.txt, metadata.json}` — sibling to `live/` under the same agent. The per-snapshot manifest CSV at `seed/agents/wayback/<agent_slug>-<date>.csv` is the committed audit artefact (small, lossless, git-diff-friendly).
+
+**Pipeline (per agent):**
+
+1. **Enumerate** distinct historic URLs via the Wayback CDX API (`web.archive.org/cdx/search/cdx?url=<prefix>&matchType=prefix`). Dedupe by urlkey client-side because CDX's `collapse=urlkey` only dedupes consecutive rows across offset pagination. Choose a representative snapshot per urlkey — default `"earliest"` (closest to original publication).
+2. **Fetch** each chosen snapshot via the `id_` modifier (`web.archive.org/web/<ts>id_/<original-url>`), which returns the original bytes unrewritten. Critical for verbatim provenance and stable sha256.
+3. **Hash** each snapshot with sha256, store alongside the bytes and a metadata.json carrying the Wayback citation URL, the original URL, the iso8601 timestamp, the wayback digest, and the local sha256.
+4. **Write the manifest CSV** — one row per harvested snapshot — for committed audit. Bytes themselves stay under `evidence/` (gitignored).
+5. **Rate-limit politely.** Internet Archive ToS asks for ≤1 req/sec; the harvester defaults to 1.5s between requests.
+
+**Module:** `src/bra/listings/wayback.py`. Sibling of `discover.py`. CLI surface: `bra listings wayback` (per the BRA charter).
+
+**What stage 3 does not do (yet):**
+
+- Does not yet run a Nimble agent over the harvested HTML to extract structured fields. The bytes are preserved verbatim; structured extraction is a curator-time follow-up using the same Nimble agent shape as stage 2 (with adjustments where the pre-CMS-migration URL pattern reveals an older HTML layout — for WLJ, captures pre-~2019 are on a different site shape than the current 10ninety-rendered front-end).
+- Does not yet handle non-text assets (images, brochure PDFs) from Wayback. Those may be available in the same captures but were not in scope for the first run.
+- Does not yet feed proposals into Craidd — that waits for v0.2 schema, same as stage 2 claim-extraction.
+
+**What it does do, and is sufficient for the first WLJ conversation:**
+
+Produces a structured, citable historic-listings corpus for the agent. The corpus exists as evidence on disk plus a manifest CSV in the repo. From the agent's perspective the existence of this corpus is a fact about the public archival record — not an ask.
+
 ## 4. Site-shape manifests
 
 Each agent / aggregator has a manifest at `config/agents/<agent_id>.yaml` declaring the site shape — selectors for fields, listing index URL pattern, sold-archive URL pattern (if any), TOS classification, last-verified date. When a site changes shape, only the manifest changes. The Nimble agent itself is generated/refined from the manifest using nimble-agent-builder.
