@@ -292,3 +292,236 @@ def validate_claim(
         )
 
     return errors
+
+
+# --- proposal validation -----------------------------------------------------
+# A proposal (client/craidd_client.py format) is the looser pre-claim
+# shape: it carries a single untyped `value` and may identify its subject
+# by `subject_hint` rather than a resolved entity_id. validate_proposal
+# checks the subset of the claim contract decidable WITHOUT the database —
+# predicate registry membership and deprecation, value typing, qualifiers,
+# confidence, source shape, subject identification. The checks that need
+# the live store — resolving subject_hint to an entity, the predicate's
+# applies_to against that entity's type, and single-cardinality conflicts
+# — are deliberately deferred to craidd-review. A clean validate_proposal
+# result means a proposal is well formed enough to enter the queue; it is
+# never a guarantee of acceptance.
+
+def _proposal_value_errors(value: Any, pred: PredicateDef) -> list[str]:
+    """Check a proposal's untyped `value` against its predicate's
+    value_type. Partial by design: it confirms the Python type is
+    consistent, but does not deeply parse dates or geometry — that
+    resolves when craidd-review maps the value into the typed claim
+    columns."""
+    vt = pred.value_type
+    name = pred.name
+
+    if vt == "bilingual":
+        if not isinstance(value, Mapping):
+            return [
+                f"predicate '{name}' is bilingual: value must be a mapping "
+                f"with 'cy' and/or 'en' keys"
+            ]
+        if _is_empty(value.get("cy")) and _is_empty(value.get("en")):
+            return [
+                f"predicate '{name}' is bilingual: at least one of 'cy' / "
+                f"'en' must be set"
+            ]
+        return []
+
+    if _is_empty(value):
+        return [f"predicate '{name}' expects a {vt} value, but it is empty"]
+
+    if vt == "text":
+        ok = isinstance(value, str)
+    elif vt == "int":
+        ok = isinstance(value, int) and not isinstance(value, bool)
+    elif vt == "real":
+        ok = isinstance(value, (int, float)) and not isinstance(value, bool)
+    elif vt in ("date", "geom", "entity_ref"):
+        # date precision (precise vs value_date_text) and geometry parsing
+        # resolve at review; here we only require a non-empty string.
+        ok = isinstance(value, str)
+    else:
+        ok = False
+
+    if not ok:
+        return [
+            f"predicate '{name}' expects a {vt} value, got "
+            f"{type(value).__name__}"
+        ]
+    return []
+
+
+def validate_proposal(
+    proposal: Mapping[str, Any],
+    *,
+    predicate_registry: Mapping[str, PredicateDef] = PREDICATE_REGISTRY,
+    deprecated_predicates: Collection[str] = (),
+) -> list[str]:
+    """Validate a proposal (the looser pre-claim format) against the
+    subset of the schema contract decidable without the database. Returns
+    a list of error strings — an empty list means the proposal is well
+    formed enough to enter the queue.
+
+    Pure function. `proposal` is a mapping in the client/craidd_client.py
+    proposal format: submitter, subject / subject_hint, predicate, value,
+    source, confidence, and an optional qualifiers mapping.
+
+    What this does NOT check (deferred to craidd-review against the live
+    store): resolution of subject_hint to a real entity, the predicate's
+    applies_to against that entity's type, and single-cardinality
+    conflicts with existing active claims.
+    """
+    errors: list[str] = []
+
+    # --- submitter -------------------------------------------------------
+    if _is_empty(proposal.get("submitter")):
+        errors.append("proposal has no submitter")
+
+    # --- subject identification -----------------------------------------
+    subject = proposal.get("subject")
+    subject_hint = proposal.get("subject_hint")
+    has_subject = not _is_empty(subject)
+    has_hint = isinstance(subject_hint, Mapping) and len(subject_hint) > 0
+    if subject_hint is not None and not isinstance(subject_hint, Mapping):
+        errors.append("proposal 'subject_hint' must be a mapping")
+    if not has_subject and not has_hint:
+        errors.append(
+            "proposal must identify its subject — either 'subject' (an "
+            "entity_id) or a non-empty 'subject_hint' mapping"
+        )
+
+    # --- confidence ------------------------------------------------------
+    confidence = proposal.get("confidence")
+    if confidence not in VALID_CONFIDENCES:
+        errors.append(
+            f"confidence '{confidence}' is not one of "
+            f"{sorted(VALID_CONFIDENCES)}"
+        )
+
+    # --- source ----------------------------------------------------------
+    source = proposal.get("source")
+    if not isinstance(source, Mapping) or _is_empty(source.get("id")):
+        errors.append(
+            "proposal 'source' must be a mapping including a non-empty 'id'"
+        )
+
+    # --- predicate resolution -------------------------------------------
+    predicate_name = proposal.get("predicate")
+    if _is_empty(predicate_name):
+        errors.append("proposal has no predicate")
+        return errors  # nothing further is checkable without a predicate
+    pred = predicate_registry.get(predicate_name)
+    if pred is None:
+        errors.append(f"unknown predicate '{predicate_name}'")
+        return errors  # nothing further is checkable without the definition
+
+    if predicate_name in deprecated_predicates:
+        errors.append(
+            f"predicate '{predicate_name}' is deprecated; new proposals "
+            f"using it are rejected"
+        )
+
+    # --- value -----------------------------------------------------------
+    errors.extend(_proposal_value_errors(proposal.get("value"), pred))
+
+    # --- qualifiers ------------------------------------------------------
+    qualifiers = proposal.get("qualifiers") or {}
+    if not isinstance(qualifiers, Mapping):
+        errors.append("proposal 'qualifiers' must be a mapping")
+    else:
+        errors.extend(validate_qualifiers(qualifiers, pred))
+
+    return errors
+
+
+# --- claim-columns -> proposal value -----------------------------------------
+# A claim (design/v0.1-schema.md §3.2) carries its value spread across
+# type-tagged columns (value_text, value_int, value_real, value_date,
+# value_date_text, value_geom, value_cy, value_en, value_entity_ref). A
+# proposal carries a single untyped `value`. value_from_claim_columns
+# collapses the former into the latter — the inverse of how the Write API
+# will later spread a proposal's value back across the columns. It is the
+# core of the BRA -> proposal-queue adapter (design/bra-proposal-handoff.md).
+
+_ALL_VALUE_COLUMNS: tuple[str, ...] = (
+    "value_text", "value_int", "value_real", "value_date",
+    "value_date_text", "value_geom", "value_cy", "value_en",
+    "value_entity_ref",
+)
+
+
+def value_from_claim_columns(
+    claim: Mapping[str, Any], pred: PredicateDef
+) -> tuple[Any, list[str]]:
+    """Collapse a claim's type-tagged value_* columns into the single
+    `value` the proposal format carries.
+
+    Returns (value, errors). A non-empty errors list means the columns
+    were inconsistent with the predicate's value_type — nothing populated
+    where a value is required, or a column for a different type populated.
+    When errors is non-empty the returned value is best-effort and should
+    not be trusted.
+
+    Pure function. The caller supplies the predicate so the value_type is
+    known; `claim` is a mapping keyed by claim-table column names.
+    """
+    errors: list[str] = []
+    vt = pred.value_type
+
+    # which columns this value_type legitimately uses
+    if vt == "date":
+        expected = {"value_date", "value_date_text"}
+    else:
+        expected = set(_VALUE_COLUMNS.get(vt, ()))
+
+    # any value column populated outside the expected set is a mismatch
+    populated = {
+        col for col in _ALL_VALUE_COLUMNS if not _is_empty(claim.get(col))
+    }
+    stray = populated - expected
+    if stray:
+        errors.append(
+            f"predicate '{pred.name}' is {vt}, but value column(s) "
+            f"{', '.join(sorted(stray))} are populated"
+        )
+
+    # extract the value in the shape the proposal format expects
+    if vt == "bilingual":
+        value: dict[str, Any] = {}
+        if not _is_empty(claim.get("value_cy")):
+            value["cy"] = claim["value_cy"]
+        if not _is_empty(claim.get("value_en")):
+            value["en"] = claim["value_en"]
+        if not value:
+            errors.append(
+                f"predicate '{pred.name}' is bilingual, but neither "
+                f"value_cy nor value_en is set"
+            )
+        return value, errors
+
+    if vt == "date":
+        # v0.1's hybrid date: prefer the precise value_date, fall back to
+        # the free-text value_date_text (date_precision lives on a qualifier).
+        v = claim.get("value_date")
+        if _is_empty(v):
+            v = claim.get("value_date_text")
+        if _is_empty(v):
+            errors.append(
+                f"predicate '{pred.name}' is date, but neither value_date "
+                f"nor value_date_text is set"
+            )
+            return None, errors
+        return v, errors
+
+    columns = _VALUE_COLUMNS.get(vt, ())
+    column = columns[0] if columns else None
+    v = claim.get(column) if column else None
+    if _is_empty(v):
+        errors.append(
+            f"predicate '{pred.name}' expects a {vt} value in "
+            f"{column or '(unknown column)'}, but it is empty"
+        )
+        return None, errors
+    return v, errors
