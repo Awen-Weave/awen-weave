@@ -1,10 +1,18 @@
 # Town Dataset — single architecture and the discipline that protects it
 
-**Status:** the master architecture document. Everything we build must be on this page or in a charter linked from it. Anything not on this page is by definition not part of the system.
+**Status:** the master architecture document for the Dolgellau Town Dataset — the first Awen instance. Everything we build must be on this page or in a charter linked from it. Anything not on this page is by definition not part of the system.
 **Date:** 2026-05-10. Updated whenever a component is added, removed, or its role changes.
-**Companion docs:** `v0.1-schema.md` (data model), `cli-design.md` (CLI specs), `sources-backlog.md` (ingestion workflow), `pilot-ty-newyddion.md` (worked record), `ty-newyddion-review.html` (visualisation).
+**Companion docs:** `constitutional-framework.md` (the ecosystem constitution this instance conforms to), `v0.1-schema.md` (data model), `cli-design.md` (CLI specs), `sources-backlog.md` (ingestion workflow), `pilot-ty-newyddion.md` (worked record), `ty-newyddion-review.html` (visualisation).
 
 ---
+
+## 0. This document and the constitution
+
+This is an **instance architecture**. It governs the concrete components of one Awen instance — the Dolgellau Town Dataset — and is the single master architecture document for *this* instance: if a component is not on this page, it is not in this instance's architecture.
+
+Above it sits `constitutional-framework.md`, the **ecosystem-level constitution**. The constitution defines the governance and epistemic principles that hold across every Awen instance — computable trust, bounded authority, contradiction handling, supersession, longitudinal coherence. This document specifies how those principles take concrete form *here*, as components with charters and boundaries. The **Awen role map** (Llys / Craidd / IDRIS / Prawf / Craffter) is defined in the constitution (§2) and applied throughout this document.
+
+Where this document and the constitution appear to disagree, the disagreement is a defect to be resolved deliberately: the constitution holds on governance principle, this document holds on this instance's concrete component design (constitution §0).
 
 ## 1. Purpose of this document
 
