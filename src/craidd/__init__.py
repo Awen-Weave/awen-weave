@@ -1,0 +1,24 @@
+"""
+src/craidd — the Craidd core for the Dolgellau Town Dataset.
+
+The Craidd is Awen's place-based trust core: the canonical store of
+claims and the schema that shapes them. This package holds the two
+Craidd-role components from design/architecture.md:
+
+  - schema/   the schema layer (architecture.md §6.2): entity types,
+              predicates, qualifiers, and the validation contract.
+              Pure logic — no I/O, no DB access, no auth.
+  - storage/  the storage layer (architecture.md §6.1): the DuckDB
+              databases and thin connection helpers. No business logic.
+
+Everything that *talks to* the Craidd — the Read/Write APIs, the
+craidd-* CLIs, the MCP server, the client library — is Llys-role and
+lives outside this package (src/cli/, src/api/, client/).
+
+Source of truth for the data model: design/v0.1-schema.md.
+"""
+from __future__ import annotations
+
+# The schema version this package implements. Bump deliberately, in step
+# with a new design/vX.Y-schema.md document — never silently.
+SCHEMA_VERSION = "v0.1"
