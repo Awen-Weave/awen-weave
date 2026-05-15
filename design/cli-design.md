@@ -187,6 +187,8 @@ Llys. Bootstraps a fresh DB with the v0.1 schema, seed predicates, and the contr
 
 Llys. Submits a proposal claim from a JSON or YAML file, or from interactive prompts. Used by the curator manually and by client code (energy study) via the same library underneath. Cannot accept its own proposal. Written before `craidd-review` because there's no point reviewing an empty queue.
 
+**Detailed spec: `design/craidd-propose-spec.md`.** Built 2026-05-15 — this short charter is promoted to a full specification there, in the pattern of §2 and §3 above.
+
 ### 4.3 `craidd-export`
 
 Llys. Generates the signed nightly snapshot under `exports/`, computes a digest, and writes a Prawf entry recording the digest. Run by cron at 03:00 local. Read-only against claims; write-only against `exports/` and Prawf. The signed digest is what consumers verify against — the snapshot is not authoritative, the live API is.
