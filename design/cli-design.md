@@ -23,6 +23,8 @@ Six narrow tools, each a thin wrapper over `craidd_client.py`, each with a singl
 
 Two of these (`craidd-fetch` and `craidd-review`) are the focus of this document. The other four get short charters at the end so the catalog is complete from the start — that itself is part of the discipline. We agree on the boundaries before writing a single line.
 
+**One adjacent tool, designed separately.** The **Building Research Agent** (chartered in `architecture.md` §6.14, fully designed in `design/building-research-agent.md`) sits alongside the six CLIs but is not part of the same family. It uses `craidd_client.py` and `craidd-fetch`, produces output that feeds `craidd-review`, but is a longer-running automation rather than a thin command wrapper. It belongs to the same overall workflow but has its own scope, naming, and design document.
+
 ## 2. `craidd-fetch` — snapshot a source
 
 ### 2.1 Charter
@@ -210,10 +212,11 @@ If a future CLI needs to reach around any of these — a curator-side logic that
 2. `craidd-propose` — gives us a way to make proposals, even before review exists. Manual-only at first.
 3. `craidd-review` — turns the queue into canonical claims.
 4. `craidd-fetch` — automates source ingestion. Until this exists, sources are created via `craidd-propose` with manually-attached snapshots.
-5. `craidd-export` — only matters once there's enough Craidd content to export; can be the last thing.
-6. `craidd-status` — small and useful at any point; build whenever the curator's working day demands it.
+5. **Building Research Agent** — once `craidd-fetch` and `craidd-review` exist, the Agent ties them together for per-building research. See `design/building-research-agent.md`. This is the point at which the dataset's growth rate changes from one-evening-per-building to one-batch-per-evening.
+6. `craidd-export` — only matters once there's enough Craidd content to export; can be the last thing.
+7. `craidd-status` — small and useful at any point; build whenever the curator's working day demands it.
 
-The order is deliberate: the queue and the review loop come before automation. We learn the workflow by hand on a small set of claims before building the tools that scale it.
+The order is deliberate: the queue and the review loop come before automation. We learn the workflow by hand on a small set of claims before building the tools that scale it. The Building Research Agent slots in where automation begins to pay off — once the foundations are tested manually, the Agent makes the manual pattern repeatable.
 
 ## 7. Open questions for review
 
