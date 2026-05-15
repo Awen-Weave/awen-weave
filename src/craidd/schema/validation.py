@@ -434,3 +434,94 @@ def validate_proposal(
         errors.extend(validate_qualifiers(qualifiers, pred))
 
     return errors
+
+
+# --- claim-columns -> proposal value -----------------------------------------
+# A claim (design/v0.1-schema.md §3.2) carries its value spread across
+# type-tagged columns (value_text, value_int, value_real, value_date,
+# value_date_text, value_geom, value_cy, value_en, value_entity_ref). A
+# proposal carries a single untyped `value`. value_from_claim_columns
+# collapses the former into the latter — the inverse of how the Write API
+# will later spread a proposal's value back across the columns. It is the
+# core of the BRA -> proposal-queue adapter (design/bra-proposal-handoff.md).
+
+_ALL_VALUE_COLUMNS: tuple[str, ...] = (
+    "value_text", "value_int", "value_real", "value_date",
+    "value_date_text", "value_geom", "value_cy", "value_en",
+    "value_entity_ref",
+)
+
+
+def value_from_claim_columns(
+    claim: Mapping[str, Any], pred: PredicateDef
+) -> tuple[Any, list[str]]:
+    """Collapse a claim's type-tagged value_* columns into the single
+    `value` the proposal format carries.
+
+    Returns (value, errors). A non-empty errors list means the columns
+    were inconsistent with the predicate's value_type — nothing populated
+    where a value is required, or a column for a different type populated.
+    When errors is non-empty the returned value is best-effort and should
+    not be trusted.
+
+    Pure function. The caller supplies the predicate so the value_type is
+    known; `claim` is a mapping keyed by claim-table column names.
+    """
+    errors: list[str] = []
+    vt = pred.value_type
+
+    # which columns this value_type legitimately uses
+    if vt == "date":
+        expected = {"value_date", "value_date_text"}
+    else:
+        expected = set(_VALUE_COLUMNS.get(vt, ()))
+
+    # any value column populated outside the expected set is a mismatch
+    populated = {
+        col for col in _ALL_VALUE_COLUMNS if not _is_empty(claim.get(col))
+    }
+    stray = populated - expected
+    if stray:
+        errors.append(
+            f"predicate '{pred.name}' is {vt}, but value column(s) "
+            f"{', '.join(sorted(stray))} are populated"
+        )
+
+    # extract the value in the shape the proposal format expects
+    if vt == "bilingual":
+        value: dict[str, Any] = {}
+        if not _is_empty(claim.get("value_cy")):
+            value["cy"] = claim["value_cy"]
+        if not _is_empty(claim.get("value_en")):
+            value["en"] = claim["value_en"]
+        if not value:
+            errors.append(
+                f"predicate '{pred.name}' is bilingual, but neither "
+                f"value_cy nor value_en is set"
+            )
+        return value, errors
+
+    if vt == "date":
+        # v0.1's hybrid date: prefer the precise value_date, fall back to
+        # the free-text value_date_text (date_precision lives on a qualifier).
+        v = claim.get("value_date")
+        if _is_empty(v):
+            v = claim.get("value_date_text")
+        if _is_empty(v):
+            errors.append(
+                f"predicate '{pred.name}' is date, but neither value_date "
+                f"nor value_date_text is set"
+            )
+            return None, errors
+        return v, errors
+
+    columns = _VALUE_COLUMNS.get(vt, ())
+    column = columns[0] if columns else None
+    v = claim.get(column) if column else None
+    if _is_empty(v):
+        errors.append(
+            f"predicate '{pred.name}' expects a {vt} value in "
+            f"{column or '(unknown column)'}, but it is empty"
+        )
+        return None, errors
+    return v, errors
