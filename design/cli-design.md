@@ -197,7 +197,7 @@ Llys. Generates the signed nightly snapshot under `exports/`, computes a digest,
 
 Llys. Read-only. Prints to terminal: queue depth (pending proposals by source/submitter), recent Prawf events (last N), source coverage (claims per source, queued sources awaiting fetch), Welsh coverage (`cy_coverage` view), and any deprecated predicates still in active use. Used by the curator to decide what to do next. Never long-running, never blocking, never makes decisions — it surfaces them.
 
-## Lleolydd
+## 5. Lleolydd
 
 Charter: `architecture.md` §6.21. Design: `design/lleolydd.md`.
 
@@ -260,7 +260,7 @@ Build-order placement: ships in two stages.
 
 Per the existing v0 deferral on Welsh CLI text, the Lleolydd CLIs are English-only at v1. The PWA is bilingual (cy default). Welsh CLI strings deferred alongside the broader CLI bilingual pass.
 
-## 5. Shared infrastructure
+## 6. Shared infrastructure
 
 All six CLIs are thin command wrappers. They share four pieces of underlying machinery:
 
@@ -271,7 +271,7 @@ All six CLIs are thin command wrappers. They share four pieces of underlying mac
 
 If a future CLI needs to reach around any of these — a curator-side logic that the client library can't express, a side-channel write that bypasses the Write API — that is a sign the architecture has drifted. Charter the new component first; if the charter holds, extend the client library, not the CLI.
 
-## 6. Build order
+## 7. Build order
 
 1. `craidd_client.py` (library) and `craidd-init` together — without these, nothing else can be built or tested.
 2. `craidd-propose` — gives us a way to make proposals, even before review exists. Manual-only at first.
@@ -287,7 +287,7 @@ If a future CLI needs to reach around any of these — a curator-side logic that
 
 The order is deliberate: the queue and the review loop come before automation. We learn the workflow by hand on a small set of claims before building the tools that scale it. The Building Research Agent slots in where automation begins to pay off — once the foundations are tested manually, the Agent makes the manual pattern repeatable. Lleolydd then sits alongside it: items 8 and 9 can ship in parallel with `craidd-review` because they have no write-path dependency; items 10 and 11 sequence after `craidd-review`'s identity layer lands.
 
-## 7. Open questions for review
+## 8. Open questions for review
 
 1. **Batchable predicates** — which predicates can be accepted in batch via `craidd-review --batch-mode`? My starting list: `geometry` (when superseding from a higher-confidence source), `accessed_at`, `file_hash`, `archive_url`. Listed-status, naming, and event predicates are *not* batchable. Worth challenging.
 2. **Re-snapshot cadence** — should `craidd-fetch` refuse to re-snapshot a source if the last snapshot is fewer than N days old, unless `--force`? Argument for: discourages accidental hammering of source sites. Argument against: curator should decide. I lean towards a soft warning rather than refusal.

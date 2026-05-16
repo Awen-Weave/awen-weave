@@ -1,9 +1,9 @@
 # Lleolydd — UPRN location-refinement tool
 
-**Status:** design draft, 2026-05-16. Not yet committed.
+**Status:** committed 2026-05-16 (PR #7, commit `3dfef83`); cleanup pass applied in PR #8.
 **Intended target path in repo:** `design/lleolydd.md`
 **Charter target:** `architecture.md` §6.21 (new component, register count 19 → 20).
-**Companion CLI/service:** to be added to `cli-design.md` as a new top-level tool alongside `bra`, `craidd-*`.
+**Companion CLI/service:** added to `cli-design.md` §5 as a top-level tool alongside `bra`, `craidd-*`.
 
 ---
 
@@ -156,7 +156,7 @@ These additions are **purely additive** in the v0.1-schema spirit — no breakin
 
 ## 6. Build phasing
 
-Slotting into the `cli-design.md` §6 build order, after Track A's `craidd-review` lands. Lleolydd is parallelisable with `craidd-fetch` / `craidd-export` / `craidd-status` — it depends on the Read API (already in use), `craidd_client.propose_claim` (built 2026-05-15), and the proposal queue (live with 4 real items as of 2026-05-15).
+Slotting into the `cli-design.md` §7 build order, after Track A's `craidd-review` lands. Lleolydd is parallelisable with `craidd-fetch` / `craidd-export` / `craidd-status` — it depends on the Read API (already in use), `craidd_client.propose_claim` (built 2026-05-15), and the proposal queue (live with 4 real items as of 2026-05-15).
 
 **Phase 0 — charter + design commit (1 session).**
 Commit this document. Expand `architecture.md` §6.21 with the BRA-style versioned charter. Add to `cli-design.md` as a top-level tool. Add the three v0.2 backlog items to `v0.1-schema.md §10`. No code.
@@ -299,7 +299,7 @@ Four design issues raised in the same review pass that resolved §8. None invali
 - An extension to `craidd-review` so it accepts entity proposals: creating the entity, then opening any same-session claim proposals attached to that entity for review against the freshly-created subject.
 - Atomicity: an entity proposal is typically submitted *together with* an initial geometry claim proposal (and often a name claim, address claim, etc.). Lleolydd should bundle these as a single curator action ("Create new building") with one Prawf-level "submission event" linking the proposal ids — even though each proposal is reviewed/accepted separately.
 
-**This is the bigger architectural item of the second pass.** It extends the proposal queue model in a way that BRA, the energy study, and `craidd-propose` will all benefit from. Worth designing the `entity_proposal` shape carefully now, even though Lleolydd will be the first user. Charter implication: `architecture.md` §6 needs an updated description of the proposal queue to cover both proposal types.
+**This is the bigger architectural item of the second pass.** It extends the proposal queue model in a way that BRA, the energy study, and `craidd-propose` will all benefit from. Worth designing the `entity_proposal` shape carefully now, even though Lleolydd will be the first user. Charter implication: covered by the dedicated Proposal queue charter at `architecture.md` §6.22, added in the 2026-05-16 cleanup PR.
 
 **Co-ordination point.** This change crosses the Cowork/Code seam. The `entity_proposal` validator lives in the schema layer (Cowork-side, where the existing `validate_proposal` and `validate_entity` live); the new `propose_entity` method lives in `craidd_client.py` (Cowork-side); the `craidd-review` extension is Code's. Worth raising in the next Code session brief.
 
