@@ -189,6 +189,19 @@ Llys. Submits a proposal claim from a JSON or YAML file, or from interactive pro
 
 **Detailed spec: `design/craidd-propose-spec.md`.** Built 2026-05-15 — this short charter is promoted to a full specification there, in the pattern of §2 and §3 above.
 
+**`--entity` flag (added 2026-05-16).** Routes the same three input modes (`--from-file` / flag-driven / interactive) to entity-proposal creation rather than claim-proposal creation. Per `design/entity-proposal-shape.md`. Thin wrapper over `client.craidd_client.Craidd.propose_entity()`. Flag-driven mode adds:
+
+- `--entity-type <type>` — e.g. `building`. v0.1 entity types in `src/craidd/schema/entity_types.py`.
+- `--name-cy <value>` / `--name-cy-type <type>` — repeatable, paired by index. `name_type` is one of `current_local` / `listed_register` / `historic` / `vernacular`.
+- `--name-en <value>` / `--name-en-type <type>` — same shape for English names.
+- `--address-text <text>` — free-text address (optional).
+- `--external-ref <scheme:value>` — repeatable, e.g. `uprn:200003184697` or `cadw:4938`. Schemes from `KNOWN_EXTERNAL_REF_SCHEMES`.
+- `--field-session-id <id>` — optional `FS-` session identifier for synchronous field-session work (Lleolydd §12.A).
+
+File-mode auto-detects **bundle shape**: a JSON/YAML with both `entity_proposal` and `claim_proposals` keys routes to `propose_bundle()` instead of `propose_entity()`. All bundled proposals share a `bundle_id` so `craidd-review` can act on them atomically. One curator action submits an entity plus its initial claims together — typical use is `propose_bundle({entity_proposal: {…building…}, claim_proposals: [{…geometry…}, {…name…}]})`.
+
+Exit codes match claim mode: `0` success or clean dry-run; `1` schema validation failed (nothing written); `2` input could not be assembled or proposals directory not writable.
+
 ### 4.3 `craidd-export`
 
 Llys. Generates the signed nightly snapshot under `exports/`, computes a digest, and writes a Prawf entry recording the digest. Run by cron at 03:00 local. Read-only against claims; write-only against `exports/` and Prawf. The signed digest is what consumers verify against — the snapshot is not authoritative, the live API is.
