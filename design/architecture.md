@@ -64,8 +64,9 @@ The whole system as it currently stands. Each row is a charter in miniature; the
 | Town Dataset Review Dashboard | Llys (review) | claim + entity data (presently embedded; future: read API) | Per-claim cards + review-state JSON export | Not authoritative — it's a curator's review tool, not a data source |
 | Building Research Agent (BRA) | Llys (contributor-side automation) | source-specific access (web, APIs, Nimble for v2); curator-approved allowlists; `seed/output/uprn-lookup.csv`; `craidd_client.py` | snapshots + hashes under `seed/`; draft claims; unresolved-subject queues; proposals submitted via the client library | Never writes to Craidd directly; does not paraphrase source material; does not auto-bind low-confidence subjects; does not republish copyrighted bytes |
 | Lleolydd | Llys (curator-facing tool) | Craidd Read API; locally-staged OGL bulk corpus (OS Open UPRN / TOID / Linked Identifiers / INSPIRE / Zoomstack); curator identity from `craidd-review`'s identity layer | Proposals via `craidd_client.propose_claim()` and `craidd_client.propose_entity()` for `geometry`, `verified_building_toid`, `location_verification_status` (plus session/co-sign qualifiers); per-session audit CSVs under `seed/agents/lleolydd-runs/`; cache snapshots under `seed/lleolydd/snapshots/<release>/` | Never writes to Craidd directly (proposals only, including co-signed ones); does not auto-correct without curator confirmation; OGL-only at v1 (no Loqate/Ideal Postcodes); does not OCR or extract building footprints from aerial imagery; does not export PII; not a generic GIS; v1 UI scoped to `building` entities only |
+| Proposal queue | Llys (infrastructure) | Validated proposal payloads from `craidd_client.propose_claim()` / `propose_entity()` / `propose_bundle()`; queue-state read requests from `craidd-review`, `craidd-status`, Lleolydd UI; `bundle_id` membership relationships | Persistent proposal files at `/srv/town-dataset/proposals/` (`P-<ts>-<uuid>.json` claim proposals, `EP-<ts>-<uuid>.json` entity proposals, all carrying optional `bundle_id`); queue-state views grouped by `bundle_id` | Does not validate proposal contents (schema layer's job); does not accept or reject proposals (`craidd-review`'s authority); does not enforce no-self-acceptance directly; does not write to Craidd or Prawf; does not decide proposal lifecycle policy |
 
-That's twenty components, including the ones not yet built. A change to the schema reverberates here: every component touched by the change must have its row updated in the same commit.
+That's twenty-one components, including the ones not yet built. A change to the schema reverberates here: every component touched by the change must have its row updated in the same commit.
 
 ## 4. Inviolable boundaries
 
@@ -213,6 +214,48 @@ In addition to the seven system-level boundaries already in `architecture.md`, L
 - Never decides location verification status as a side-effect of a map view. Status is derived from claims + pending placements; the UI shows it but does not write it.
 - Never co-signs as the originating curator. The no-self-acceptance principle is enforced at the API layer, not the UI layer.
 - Never persists curator session state outside the broadcast layer. Sessions are ephemeral coordination; durable state is in claims, proposals, and Prawf.
+
+### 6.22 Proposal queue
+
+#### Awen role
+
+**Llys** infrastructure — the durable substrate for curator-mediated mutations. Sits between any component that proposes a change (BRA, the energy study, Lleolydd, `craidd-propose`) and the curator-review acceptance path (`craidd-review`). Carries proposal artefacts in a known shape until they are accepted, rejected, or expire.
+
+#### Why it exists
+
+Gives the no-self-acceptance principle a physical home. Every mutation to canonical Craidd state — claim addition, entity creation, and in time entity update — flows through this queue. Without it, every component would need its own ad-hoc submit-to-curator mechanism, the no-self-acceptance check would scatter across the codebase, and audit reconstruction would require touching every producing component. The queue is also where the bundle pattern (entity proposal + companion claim proposals as one curator action, per `design/entity-proposal-shape.md`) becomes mechanically expressible.
+
+#### Consumes
+
+- Validated proposal payloads from upstream producers, written via `craidd_client.propose_claim()`, `craidd_client.propose_entity()`, and `craidd_client.propose_bundle()`.
+- Queue-state read requests from `craidd-review` (per `design/cli-design.md` §3), `craidd-status`, and Lleolydd's UI.
+- Bundle membership relationships — the optional `bundle_id` field linking related proposals so a "create new building" action lands as one reviewable unit.
+
+#### Produces
+
+- Persistent proposal files at `/srv/town-dataset/proposals/`, with the file-shape conventions: `P-<ts>-<uuid>.json` for claim proposals, `EP-<ts>-<uuid>.json` for entity proposals, all carrying optional `bundle_id` for grouping.
+- Queue-state views grouped by `bundle_id` for `craidd-review`.
+- No mutation to Craidd or Prawf directly.
+
+#### Explicit non-goals
+
+- Does **not** validate proposal contents. Validation is the schema layer's responsibility — `validate_proposal`, `validate_entity_proposal`. The queue only persists proposals that arrived already-validated.
+- Does **not** accept or reject proposals. That is `craidd-review`'s authority.
+- Does **not** enforce the no-self-acceptance rule directly. Enforced by `craidd-review` at acceptance time, against the submitter recorded in the proposal file.
+- Does **not** write to Craidd or Prawf. The Write API does that, on `craidd-review`'s instruction.
+- Does **not** decide proposal lifecycle policy (expiry, archival, retention). Operational concern; lives in the deployment surface, not the queue itself.
+
+#### What would change if removed
+
+Every proposal-producing component would re-implement queue mechanics independently. Audit becomes painful — reconstructing "what proposals were in flight on date X" requires reading every component's logs rather than one directory. The no-self-acceptance check loses its single chokepoint and starts to scatter across producers. The bundle pattern (entity proposal + claim proposals as one curator action) becomes impossible without component-by-component coordination.
+
+#### Lifecycle states
+
+Proposals in the queue have one of: `pending` (default on arrival), `under-review` (curator has it open), `accepted` (terminal — moved to archive), `rejected` (terminal — moved to archive with rejection note), `expired` (terminal — no acceptance within retention window). Bundle members move together on whole-bundle accept/reject; on partial accept, individual members move independently. See `design/entity-proposal-shape.md` §7 for the bundle handling rules.
+
+#### Implementation notes
+
+v0 is file-backed at `/srv/town-dataset/proposals/`. v1+ may move to a backing store (DuckDB table?) if file-system listing performance becomes a problem at scale — the abstraction is the queue contract, not the file shape. Bundle queries (`list proposals where bundle_id = X`) should be O(bundle-size), not O(queue-size); at v0 this is fine because the queue is small, but at v1+ may need an index file.
 
 ## 7. Fitness checks
 

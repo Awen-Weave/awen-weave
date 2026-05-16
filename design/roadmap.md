@@ -2,7 +2,7 @@
 
 **Status:** first full draft, for second-opinion review.
 **Date:** 2026-05-15
-**Companion docs:** `constitutional-framework.md` (the ecosystem constitution — Track B deepens this), `architecture.md` (the Town Dataset instance — Track A implements this), `cli-design.md` §6 (the build order Track A follows), `v0.1-schema.md` §10 (the v0.2 schema backlog).
+**Companion docs:** `constitutional-framework.md` (the ecosystem constitution — Track B deepens this), `architecture.md` (the Town Dataset instance — Track A implements this), `cli-design.md` §7 (the build order Track A follows), `v0.1-schema.md` §10 (the v0.2 schema backlog).
 
 ---
 
@@ -24,7 +24,7 @@ Four reading rules.
 
 **Now / next / later.** On top of the iteration versioning, each item carries a coarse banding — **now**, **next**, or **later** — to signal intent and ordering without implying a date. "Now" means it is the active or immediately-next piece of work. "Next" means it is queued behind a clear dependency. "Later" means it is real, scoped, and deliberately deferred. The banding is a statement of focus, not a commitment to a calendar.
 
-**Charter-gated.** Every Track A item references its `architecture.md` charter or its `cli-design.md` §6 build-order slot. Every Track B item references its entry in the constitution's §12 open-decisions register. An item that cannot point at one of those is not ready to be on the roadmap — it is still a thought, and belongs in discussion, not here.
+**Charter-gated.** Every Track A item references its `architecture.md` charter or its `cli-design.md` §7 build-order slot. Every Track B item references its entry in the constitution's §12 open-decisions register. An item that cannot point at one of those is not ready to be on the roadmap — it is still a thought, and belongs in discussion, not here.
 
 ## 3. Track A — Town Dataset instance implementation
 
@@ -32,7 +32,7 @@ Track A is the demonstrator becoming real. The foundation — the schema layer, 
 
 ### 3.1 v0.1 completion — finish the curator's working surface — *now / next*
 
-The v0.1 schema is settled; what is missing is the tooling that turns it into a working system. The order below is `cli-design.md` §6, which puts the proposal-and-review loop before any automation so the workflow is learned by hand before it is scaled.
+The v0.1 schema is settled; what is missing is the tooling that turns it into a working system. The order below is `cli-design.md` §7, which puts the proposal-and-review loop before any automation so the workflow is learned by hand before it is scaled.
 
 - `craidd-propose` — **now.** The next component to build, off the freshly-merged `main`. Manual proposals first; no review tool needed to start using it.
 - `craidd-review` — **next.** Turns the proposal queue into canonical claims — it is where curator judgement enters the system as the source of truth.

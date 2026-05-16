@@ -1,6 +1,6 @@
 # Building Research Agent — design
 
-**Status:** chartered in `architecture.md` §6.14 on 2026-05-12. This document is the full design. The Agent is **not yet built**; it slots into the build order as item 5 (see `cli-design.md` §6) after the proposal queue and review loop are working manually against a small set of claims.
+**Status:** chartered in `architecture.md` §6.14 on 2026-05-12. This document is the full design. The Agent is **not yet built**; it slots into the build order as item 5 (see `cli-design.md` §7) after the proposal queue and review loop are working manually against a small set of claims.
 
 **Companion documents:** `architecture.md` (the discipline), `v0.1-schema.md` (data model), `cli-design.md` (the six core CLIs), `sources-backlog.md` (per-source ingestion workflow), `client-contract.md` (Craidd client interface).
 
@@ -314,4 +314,4 @@ The Agent's *shape* — what it consumes, what it produces, how it relates to th
 
 ---
 
-**Next step:** when the Pi is operational and `craidd_client.py`, `craidd-init`, `craidd-propose`, `craidd-review`, and `craidd-fetch` are working against real hardware, the Agent becomes the next thing to build. See `cli-design.md` §6 build order.
+**Next step:** when the Pi is operational and `craidd_client.py`, `craidd-init`, `craidd-propose`, `craidd-review`, and `craidd-fetch` are working against real hardware, the Agent becomes the next thing to build. See `cli-design.md` §7 build order.

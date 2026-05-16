@@ -186,7 +186,7 @@ the foundation's scope. Decide when that component is built.
 ## 8. What is NOT built yet
 
 The foundation is storage + schema + `craidd-init` only. Still to build,
-per `cli-design.md` §6 build order: `craidd-propose`, `craidd-review`,
+per `cli-design.md` §7 build order: `craidd-propose`, `craidd-review`,
 `craidd-fetch`, `craidd-export`, `craidd-status`, then the Read API, the
 Write API, the MCP server, the Prawf logger, and the curator-identity
 layer. The `tests/` directory exists but is empty — the foundation was

@@ -1,9 +1,9 @@
 # Entity Proposal Shape — design note
 
-**Status:** design draft, 2026-05-16. Not yet committed.
+**Status:** committed 2026-05-16 (PR #7, commit `3dfef83`); cleanup pass applied in PR #8.
 **Intended target path in repo:** `design/entity-proposal-shape.md`
 **Triggered by:** Lleolydd design (`design/lleolydd.md` §12.B), but cross-cuts BRA, the energy study, and `craidd-propose`.
-**Charter touch-points:** `architecture.md` §6.6 (Write API), §6.10 (proposal queue), §6.11 (Prawf logger), §6.14 (BRA), §6.21 (Lleolydd, pending).
+**Charter touch-points:** `architecture.md` §6.6 (Write API), §6.10 (Curator-identity layer), §6.11 (Prawf logger), §6.14 (BRA), §6.21 (Lleolydd), §6.22 (Proposal queue).
 
 ---
 
