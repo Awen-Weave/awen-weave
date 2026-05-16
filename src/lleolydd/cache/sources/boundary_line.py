@@ -5,12 +5,14 @@ Used ONCE per project to derive the Gwynedd boundary polygon, saved to
 seed/lleolydd/area-bounds.geojson. Subsequent cache builds read the
 geojson directly (no BoundaryLine re-download needed).
 
-The 168 MB GML download contains every UK admin boundary from country
-down to ward. We extract the unitary-authority polygon for "Gwynedd"
-(NAME = "Gwynedd" in district_borough_unitary_region.gml — OS's
-standard layer name for unitary authorities).
-
 CLI: `lleolydd-cache derive-bounds --lad Gwynedd --output seed/...`.
+
+Schema reference: OS BoundaryLine, INSPIRE GML format as of 2026-05-16.
+Pre-2026 releases shipped per-tier files (district_borough_unitary_region.gml
+etc.) with NAME column; that schema is no longer supported here.
+If future releases drift again, both INSPIRE_GML_FILENAME and
+LAD_NAME_COLUMN may need updating — the fail-loud RuntimeErrors below
+will surface the change clearly with the diagnostic SQL to use.
 """
 from __future__ import annotations
 
@@ -29,6 +31,9 @@ from ._common import (
 PRODUCT_NAME = "os-boundary-line"
 PRODUCT_ID = "BoundaryLine"
 DOWNLOAD_FORMAT = "GML"   # 168 MB; the smallest format for this product
+
+INSPIRE_GML_FILENAME = "INSPIRE_AdministrativeUnit.gml"
+LAD_NAME_COLUMN = "text"  # current as of 2026-05-16; was 'NAME' in legacy schema
 
 
 def list_remote_files() -> list[dict]:
@@ -65,85 +70,94 @@ def extract_lad_polygon(
     lad_name: str,
     output_geojson: Path,
 ) -> dict:
-    """Extract a named LAD polygon from the BoundaryLine GML, save it
-    as a single-feature GeoJSON. Used to derive Gwynedd's bounds once.
+    """Extract a named LAD polygon from the BoundaryLine INSPIRE GML,
+    save it as a single-feature GeoJSON. Used to derive Gwynedd's
+    bounds once.
+
+    Targets INSPIRE_AdministrativeUnit.gml (the current OS BoundaryLine
+    layout — one file, not the legacy per-tier set) and queries the
+    `text` column (replaces the legacy `NAME`). Fails loud with a
+    diagnostic message if either is missing — so the next OGL format
+    drift surfaces fast rather than being silently swallowed.
 
     Returns metadata dict with the polygon's bounding box + area.
     """
-    # The GML layer for unitary authorities is named
-    # 'district_borough_unitary_region' in BoundaryLine GML.
-    gml_paths = [
-        p for p in files
-        if p.name.endswith(".gml")
-        and "district_borough_unitary_region" in p.name.lower()
-    ]
-    if not gml_paths:
-        # Some BoundaryLine releases use slightly different layer names.
-        # Fall back: any GML containing the LAD name as a feature.
-        gml_paths = [p for p in files if p.suffix.lower() == ".gml"]
-    if not gml_paths:
+    inspire_gml = next(
+        (p for p in files if p.name == INSPIRE_GML_FILENAME),
+        None,
+    )
+    if inspire_gml is None:
         raise RuntimeError(
-            f"BoundaryLine: no GML files in extracted set: {files}"
+            f"OS BoundaryLine schema appears to have changed: expected "
+            f"{INSPIRE_GML_FILENAME} in the extracted file set but it "
+            f"is not present. Found: "
+            f"{[p.name for p in files if p.suffix.lower() == '.gml']}. "
+            f"Review the live release structure at "
+            f"https://osdatahub.os.uk/downloads/open/BoundaryLine and "
+            f"update INSPIRE_GML_FILENAME / LAD_NAME_COLUMN in "
+            f"src/lleolydd/cache/sources/boundary_line.py."
         )
 
-    # Use DuckDB spatial via ST_Read to filter for the named LAD.
     conn = duckdb.connect(":memory:")
     conn.execute("INSTALL spatial; LOAD spatial;")
 
-    # Try each candidate GML until we find one that has the LAD.
-    for gml in gml_paths:
-        try:
-            # The NAME column carries the LAD name. Some BoundaryLine
-            # releases use "Name", others "NAME"; ST_Read normalises
-            # but case may vary — match case-insensitively.
-            rows = conn.execute(
-                f"""
-                SELECT ST_AsGeoJSON(geom) AS geom_json,
-                       ST_AsText(geom) AS geom_wkt,
-                       ST_XMin(geom) AS x_min,
-                       ST_YMin(geom) AS y_min,
-                       ST_XMax(geom) AS x_max,
-                       ST_YMax(geom) AS y_max,
-                       ST_Area(geom) AS area_m2
-                FROM ST_Read(?)
-                WHERE NAME ILIKE ?
-                LIMIT 1
-                """,
-                [str(gml), lad_name],
-            ).fetchone()
-        except duckdb.Error:
-            # This GML may not have a NAME column or may not be the
-            # unitary-authority file. Try next.
-            continue
-        if rows is not None:
-            geom_json, geom_wkt, xmin, ymin, xmax, ymax, area_m2 = rows
-            feature = {
-                "type": "Feature",
-                "properties": {
-                    "name": lad_name,
-                    "source": "OS BoundaryLine (GML)",
-                    "extracted_from": str(gml),
-                },
-                "geometry": json.loads(geom_json),
-            }
-            feature_collection = {
-                "type": "FeatureCollection",
-                "features": [feature],
-            }
-            output_geojson.parent.mkdir(parents=True, exist_ok=True)
-            output_geojson.write_text(
-                json.dumps(feature_collection, indent=2)
-            )
-            return {
-                "lad": lad_name,
-                "source_file": str(gml),
-                "source_file_sha256": sha256_file(gml),
-                "geojson_path": str(output_geojson),
-                "bbox_bng": [xmin, ymin, xmax, ymax],
-                "area_m2": area_m2,
-            }
+    try:
+        row = conn.execute(
+            f'''
+            SELECT ST_AsGeoJSON(geometry) AS geom_json,
+                   ST_AsText(geometry) AS geom_wkt,
+                   ST_XMin(geometry) AS x_min,
+                   ST_YMin(geometry) AS y_min,
+                   ST_XMax(geometry) AS x_max,
+                   ST_YMax(geometry) AS y_max,
+                   ST_Area(geometry) AS area_m2
+            FROM ST_Read(?)
+            WHERE "{LAD_NAME_COLUMN}" ILIKE ?
+            LIMIT 1
+            ''',
+            [str(inspire_gml), lad_name],
+        ).fetchone()
+    except duckdb.BinderException as e:
+        raise RuntimeError(
+            f"OS BoundaryLine INSPIRE GML missing expected column "
+            f"{LAD_NAME_COLUMN!r}: {e}. Live release schema may have "
+            f"changed; verify with `SELECT * FROM ST_Read("
+            f"'{inspire_gml}') LIMIT 1` and update LAD_NAME_COLUMN in "
+            f"src/lleolydd/cache/sources/boundary_line.py."
+        ) from e
 
-    raise RuntimeError(
-        f"BoundaryLine: could not find LAD {lad_name!r} in any GML in "
-        f"{[str(p) for p in gml_paths]}"
+    if row is None:
+        raise RuntimeError(
+            f"No row in {INSPIRE_GML_FILENAME} matches LAD name "
+            f"{lad_name!r}. Check spelling against the live data: "
+            f"`SELECT DISTINCT \"{LAD_NAME_COLUMN}\" FROM ST_Read("
+            f"'{inspire_gml}') WHERE \"{LAD_NAME_COLUMN}\" ILIKE "
+            f"'%{lad_name[:3]}%'`."
+        )
+
+    geom_json, _geom_wkt, xmin, ymin, xmax, ymax, area_m2 = row
+    feature = {
+        "type": "Feature",
+        "properties": {
+            "name": lad_name,
+            "source": "OS BoundaryLine (INSPIRE GML)",
+            "extracted_from": str(inspire_gml),
+        },
+        "geometry": json.loads(geom_json),
+    }
+    feature_collection = {
+        "type": "FeatureCollection",
+        "features": [feature],
+    }
+    output_geojson.parent.mkdir(parents=True, exist_ok=True)
+    output_geojson.write_text(
+        json.dumps(feature_collection, indent=2)
     )
+    return {
+        "lad": lad_name,
+        "source_file": str(inspire_gml),
+        "source_file_sha256": sha256_file(inspire_gml),
+        "geojson_path": str(output_geojson),
+        "bbox_bng": [xmin, ymin, xmax, ymax],
+        "area_m2": area_m2,
+    }
