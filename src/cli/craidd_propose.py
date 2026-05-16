@@ -84,8 +84,12 @@ from pathlib import Path
 from typing import Any
 
 # Put the src/ root on the import path so `craidd.*` resolves when this
-# script is run directly: python3 src/cli/craidd_propose.py
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# script is run directly: python3 src/cli/craidd_propose.py. Also put
+# the client/ directory on the path so the entity-mode handler can
+# import the Craidd client (needed for propose_entity / propose_bundle).
+_REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO / "src"))
+sys.path.insert(0, str(_REPO / "client"))
 
 from craidd import SCHEMA_VERSION
 from craidd.schema import PREDICATE_REGISTRY, validate_proposal
@@ -328,6 +332,420 @@ def _build_interactive() -> dict[str, Any]:
     }
 
 
+# --- entity-proposal mode ----------------------------------------------------
+# Three input modes mirroring the claim path: --from-file (JSON/YAML),
+# flag-driven (--entity-type present), and interactive prompts. Routes to
+# client.craidd_client.Craidd.propose_entity for single entities, or
+# propose_bundle when --from-file carries a bundle-shaped file (with both
+# 'entity_proposal' and 'claim_proposals' top-level keys). The CLI is a
+# thin wrapper — validation, atomic write, and ID generation all happen in
+# the client library.
+
+# Closed-domain name_type vocabulary, used for the flag-mode pairing check
+# below. The schema layer's NAME_TYPES is the source of truth; this local
+# copy avoids a separate import and matches the v0.1-schema.md §3.2 list.
+_NAME_TYPES: frozenset[str] = frozenset(
+    {"current_local", "listed_register", "historic", "vernacular"}
+)
+
+
+def _parse_external_ref(item: str) -> dict[str, str]:
+    """Parse a --external-ref argument of shape 'scheme:value' into the
+    {scheme, value} dict propose_entity expects. Split on the first colon
+    only — TOID values are 'osgb<digits>' and don't carry colons, but
+    other future schemes might."""
+    if ":" not in item:
+        raise ValueError(
+            f"--external-ref {item!r} must be 'scheme:value' (e.g. "
+            f"'uprn:200003184697')"
+        )
+    scheme, _, value = item.partition(":")
+    scheme = scheme.strip()
+    value = value.strip()
+    if not scheme or not value:
+        raise ValueError(
+            f"--external-ref {item!r}: scheme and value must both be non-empty"
+        )
+    return {"scheme": scheme, "value": value}
+
+
+def _zip_paired(values: list[str], types: list[str], lang: str) -> list[dict]:
+    """Pair --name-<lang> with --name-<lang>-type at matching indices.
+    Raises ValueError if the counts differ — the brief's "error if counts
+    mismatch" rule applies here."""
+    if not values:
+        return []
+    if len(values) != len(types):
+        raise ValueError(
+            f"--name-{lang} given {len(values)} times but --name-{lang}-type "
+            f"given {len(types)} times; counts must match"
+        )
+    out: list[dict] = []
+    for v, t in zip(values, types):
+        if t not in _NAME_TYPES:
+            raise ValueError(
+                f"--name-{lang}-type {t!r} is not one of {sorted(_NAME_TYPES)}"
+            )
+        out.append({"value": v, "language": lang, "name_type": t})
+    return out
+
+
+def _entity_kwargs_from_flags(args: argparse.Namespace) -> dict[str, Any]:
+    """Assemble propose_entity() kwargs from command-line flags."""
+    if not args.entity_type:
+        raise ValueError(
+            "--entity mode without --from-file requires --entity-type"
+        )
+    names = (
+        _zip_paired(args.name_cy, args.name_cy_type, "cy")
+        + _zip_paired(args.name_en, args.name_en_type, "en")
+    )
+    if not names:
+        raise ValueError(
+            "--entity mode requires at least one --name-cy or --name-en"
+        )
+    if not args.source_id:
+        raise ValueError("--entity mode requires --source-id")
+    external_refs = [_parse_external_ref(r) for r in args.external_ref]
+    qualifiers = (
+        _parse_kv_pairs(args.qualifier, coerce=False) if args.qualifier else {}
+    )
+    return {
+        "entity_type": args.entity_type,
+        "names": names,
+        "source": {"id": args.source_id},
+        "note": args.note,
+        "confidence": args.confidence or "high",
+        "address_text": args.address_text,
+        "external_refs": external_refs or None,
+        "qualifiers": qualifiers or None,
+        "field_session_id": args.field_session_id,
+    }
+
+
+def _entity_kwargs_from_file(raw: dict[str, Any]) -> dict[str, Any]:
+    """Assemble propose_entity() kwargs from a loaded JSON/YAML file. The
+    file shape is the same as propose_entity's keyword arguments — both
+    flat ({entity_type, names, source, ...}) and nested ({entity:
+    {entity_type, names, ...}, source, ...}) shapes are accepted.
+
+    The nested shape matches what an entity-proposal file written by
+    propose_entity itself looks like, so a curator can edit and re-submit
+    a queued proposal by passing it through --from-file."""
+    if "entity" in raw and isinstance(raw["entity"], dict):
+        # Nested (write-shape) form.
+        entity = raw["entity"]
+        kwargs = {
+            "entity_type": entity.get("entity_type"),
+            "names": entity.get("names", []),
+            "source": raw.get("source"),
+            "note": raw.get("note"),
+            "confidence": raw.get("confidence", "high"),
+            "address_text": entity.get("address_text"),
+            "external_refs": entity.get("external_refs"),
+            "qualifiers": raw.get("qualifiers"),
+            "field_session_id": raw.get("field_session_id"),
+        }
+    else:
+        # Flat (kwargs) form.
+        kwargs = {
+            "entity_type": raw.get("entity_type"),
+            "names": raw.get("names", []),
+            "source": raw.get("source"),
+            "note": raw.get("note"),
+            "confidence": raw.get("confidence", "high"),
+            "address_text": raw.get("address_text"),
+            "external_refs": raw.get("external_refs"),
+            "qualifiers": raw.get("qualifiers"),
+            "field_session_id": raw.get("field_session_id"),
+        }
+    if not kwargs["entity_type"]:
+        raise ValueError("entity proposal file must include entity_type")
+    if not kwargs["names"]:
+        raise ValueError("entity proposal file must include non-empty names")
+    if not kwargs["source"]:
+        raise ValueError("entity proposal file must include a source")
+    return kwargs
+
+
+def _entity_kwargs_interactive() -> dict[str, Any]:
+    """Assemble propose_entity() kwargs by prompting the curator. Mirrors
+    the claim-mode _build_interactive structure: entity_type → names →
+    address (optional) → external refs (optional, repeated) → source →
+    note → confidence."""
+    print("craidd-propose --entity — interactive. Ctrl-C to abort.\n")
+    entity_type = _prompt("entity_type (e.g. 'building')")
+
+    names: list[dict[str, str]] = []
+    print("  give one or more names. Pairs of value + language + name_type.")
+    while True:
+        value = _prompt(
+            "  name value (blank to finish)", allow_blank=True
+        )
+        if not value:
+            if names:
+                break
+            print("  (at least one name is required)")
+            continue
+        language = _prompt(
+            "  language (cy or en)", default="en"
+        )
+        name_type = _prompt(
+            f"  name_type (one of {sorted(_NAME_TYPES)})", default="current_local"
+        )
+        names.append(
+            {"value": value, "language": language, "name_type": name_type}
+        )
+
+    address_text = (
+        _prompt("address (optional)", allow_blank=True) or None
+    )
+
+    external_refs: list[dict[str, str]] = []
+    print("  external refs (scheme:value, e.g. 'uprn:200003184697')")
+    while True:
+        ref = _prompt("  ref (blank to finish)", allow_blank=True)
+        if not ref:
+            break
+        external_refs.append(_parse_external_ref(ref))
+
+    source_id = _prompt("source entity id")
+    confidence = _prompt("confidence (high/medium/low)", default="high")
+    note = _prompt("note (optional)", allow_blank=True) or None
+    field_session_id = (
+        _prompt("field_session_id (optional)", allow_blank=True) or None
+    )
+
+    return {
+        "entity_type": entity_type,
+        "names": names,
+        "source": {"id": source_id},
+        "note": note,
+        "confidence": confidence,
+        "address_text": address_text,
+        "external_refs": external_refs or None,
+        "qualifiers": None,
+        "field_session_id": field_session_id,
+    }
+
+
+def _proposals_dir(args: argparse.Namespace) -> Path:
+    """Same target directory the claim flow uses — keeps EP-*.json and
+    P-*.json side by side under <data-dir>/proposals/."""
+    data_dir = Path(args.data_dir) if args.data_dir else DEFAULT_DATA_DIR
+    return data_dir / "proposals"
+
+
+def _report_entity_success(
+    as_json: bool, proposal_id: str, path: Path, *, kind: str = "entity",
+) -> None:
+    if as_json:
+        print(json.dumps(
+            {"ok": True, "dry_run": False, "proposal_id": proposal_id,
+             "path": str(path)},
+            indent=2,
+        ))
+    else:
+        print(f"craidd-propose: OK — {kind} proposal written to the queue")
+        print(f"  proposal_id : {proposal_id}")
+        print(f"  file        : {path}")
+
+
+def _report_bundle_success(
+    as_json: bool, bundle_id: str, proposals_dir: Path, file_count: int,
+) -> None:
+    if as_json:
+        print(json.dumps(
+            {"ok": True, "dry_run": False, "bundle_id": bundle_id,
+             "proposals_dir": str(proposals_dir), "files": file_count},
+            indent=2,
+        ))
+    else:
+        print("craidd-propose: OK — bundle written to the queue")
+        print(f"  bundle_id        : {bundle_id}")
+        print(f"  proposals/files  : {file_count}")
+        print(f"  directory        : {proposals_dir}")
+
+
+def _run_entity_mode(args: argparse.Namespace) -> int:
+    """Dispatcher for --entity. Returns the CLI exit code.
+
+    Three input modes:
+      --from-file <path>    JSON/YAML. Bundle shape ({entity_proposal,
+                            claim_proposals}) routes to propose_bundle;
+                            anything else is treated as a single entity.
+      --entity-type <type>  flag-driven; assemble kwargs from --name-cy,
+                            --name-en, --address-text, --external-ref,
+                            --source-id, --note, --confidence.
+      (no other args)       interactive — _entity_kwargs_interactive
+                            prompts field by field.
+    """
+    # The Craidd client carries propose_entity and propose_bundle. Lazy-
+    # imported so the claim-mode path still works in any future
+    # environment without the client present.
+    try:
+        from craidd_client import Craidd
+    except ImportError as exc:
+        _report_failure(
+            args.as_json, code=2,
+            reason="entity mode requires the craidd_client library",
+            detail=[str(exc)],
+        )
+        return 2
+
+    # --- 1. assemble kwargs from whichever input mode -------------------
+    bundle_payload: dict[str, Any] | None = None
+    try:
+        if args.from_file:
+            raw = _load_proposal_file(Path(args.from_file))
+            if "entity_proposal" in raw and "claim_proposals" in raw:
+                # Bundle-shape file → route to propose_bundle.
+                bundle_payload = raw
+                entity_kwargs = None
+            else:
+                entity_kwargs = _entity_kwargs_from_file(raw)
+        elif args.entity_type is not None:
+            entity_kwargs = _entity_kwargs_from_flags(args)
+        else:
+            entity_kwargs = _entity_kwargs_interactive()
+    except KeyboardInterrupt:
+        print("\ncraidd-propose: aborted.", file=sys.stderr)
+        return 2
+    except (FileNotFoundError, ValueError) as exc:
+        _report_failure(
+            args.as_json, code=2,
+            reason="could not assemble the entity proposal",
+            detail=[str(exc)],
+        )
+        return 2
+
+    proposals_dir = _proposals_dir(args)
+    submitter = args.submitter or args.actor
+
+    # --- 2. bundle path -------------------------------------------------
+    if bundle_payload is not None:
+        # Dry-run uses a tmp dir so we can read back what would be
+        # written without committing the bundle to the real queue.
+        if args.dry_run:
+            import tempfile  # noqa: PLC0415 — lazy, used only for dry-run
+            with tempfile.TemporaryDirectory() as tmp:
+                craidd = Craidd(repo_root=Path(tmp), proposals_out=Path(tmp))
+                try:
+                    bundle_id = craidd.propose_bundle(
+                        submitter=submitter,
+                        entity_proposal=bundle_payload["entity_proposal"],
+                        claim_proposals=bundle_payload["claim_proposals"],
+                        field_session_id=bundle_payload.get("field_session_id"),
+                    )
+                except ValueError as exc:
+                    _report_failure(
+                        args.as_json, code=1,
+                        reason="bundle failed schema validation",
+                        detail=[str(exc)],
+                    )
+                    return 1
+                files = sorted(Path(tmp).glob("*.json"))
+                payload = {
+                    "bundle_id": bundle_id,
+                    "members": [json.loads(f.read_text()) for f in files],
+                }
+            if args.as_json:
+                print(json.dumps(
+                    {"ok": True, "dry_run": True, "bundle": payload},
+                    indent=2, default=str,
+                ))
+            else:
+                print(
+                    f"craidd-propose: DRY RUN — bundle validated, nothing "
+                    f"written"
+                )
+                print(json.dumps(payload, indent=2, default=str))
+            return 0
+
+        craidd = Craidd(proposals_out=proposals_dir)
+        try:
+            bundle_id = craidd.propose_bundle(
+                submitter=submitter,
+                entity_proposal=bundle_payload["entity_proposal"],
+                claim_proposals=bundle_payload["claim_proposals"],
+                field_session_id=bundle_payload.get("field_session_id"),
+            )
+        except ValueError as exc:
+            _report_failure(
+                args.as_json, code=1,
+                reason="bundle failed schema validation",
+                detail=[str(exc)],
+            )
+            return 1
+        except OSError as exc:
+            _report_failure(
+                args.as_json, code=2,
+                reason="could not write to the proposals directory",
+                detail=[f"{proposals_dir}: {exc}"],
+            )
+            return 2
+        file_count = 1 + len(bundle_payload["claim_proposals"])
+        _report_bundle_success(args.as_json, bundle_id, proposals_dir, file_count)
+        return 0
+
+    # --- 3. single entity proposal path --------------------------------
+    if entity_kwargs is None:
+        # Defensive — _entity_kwargs_* should always return a dict on
+        # success, and a ValueError otherwise (caught above).
+        _report_failure(
+            args.as_json, code=2,
+            reason="entity proposal kwargs missing",
+            detail=["internal error — please report"],
+        )
+        return 2
+
+    if args.dry_run:
+        # Tmpdir trick again — writes the file, reads it back, then the
+        # tmpdir auto-cleans. propose_entity does the same validation a
+        # live write does, so the dry-run output matches reality.
+        import tempfile  # noqa: PLC0415 — lazy, used only for dry-run
+        with tempfile.TemporaryDirectory() as tmp:
+            craidd = Craidd(repo_root=Path(tmp), proposals_out=Path(tmp))
+            try:
+                proposal_id = craidd.propose_entity(
+                    submitter=submitter, **entity_kwargs
+                )
+            except ValueError as exc:
+                _report_failure(
+                    args.as_json, code=1,
+                    reason="entity proposal failed schema validation",
+                    detail=[str(exc)],
+                )
+                return 1
+            proposal = json.loads(
+                (Path(tmp) / f"{proposal_id}.json").read_text()
+            )
+        _report_dry_run(args.as_json, proposal)
+        return 0
+
+    craidd = Craidd(proposals_out=proposals_dir)
+    try:
+        proposal_id = craidd.propose_entity(submitter=submitter, **entity_kwargs)
+    except ValueError as exc:
+        _report_failure(
+            args.as_json, code=1,
+            reason="entity proposal failed schema validation",
+            detail=[str(exc)],
+        )
+        return 1
+    except OSError as exc:
+        _report_failure(
+            args.as_json, code=2,
+            reason="could not write to the proposals directory",
+            detail=[f"{proposals_dir}: {exc}"],
+        )
+        return 2
+
+    final_path = proposals_dir / f"{proposal_id}.json"
+    _report_entity_success(args.as_json, proposal_id, final_path)
+    return 0
+
+
 def _finalise(proposal: dict[str, Any], *, submitter: str,
               now: datetime) -> dict[str, Any]:
     """Stamp the assembled proposal with id, schema version, submitter,
@@ -440,7 +858,47 @@ def main(argv: list[str] | None = None) -> int:
                         help="assemble and validate; write nothing")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="machine-readable output")
+    # --- entity-mode flags (cli-design.md §4.2 — added 2026-05-16) -----
+    parser.add_argument(
+        "--entity", action="store_true",
+        help="Submit an entity proposal (creating a new entity) rather "
+             "than a claim proposal (adding facts to an existing entity).",
+    )
+    parser.add_argument("--entity-type", default=None,
+                        help="(--entity) entity type, e.g. 'building'")
+    parser.add_argument("--name-cy", action="append", default=[],
+                        metavar="VALUE",
+                        help="(--entity) Welsh name; repeatable. Pair "
+                             "with --name-cy-type in matching order.")
+    parser.add_argument("--name-cy-type", action="append", default=[],
+                        metavar="TYPE",
+                        help="(--entity) name_type for the nth --name-cy "
+                             "(current_local / listed_register / historic / "
+                             "vernacular)")
+    parser.add_argument("--name-en", action="append", default=[],
+                        metavar="VALUE",
+                        help="(--entity) English name; repeatable. Pair "
+                             "with --name-en-type.")
+    parser.add_argument("--name-en-type", action="append", default=[],
+                        metavar="TYPE",
+                        help="(--entity) name_type for the nth --name-en")
+    parser.add_argument("--address-text", default=None,
+                        help="(--entity) free-text address")
+    parser.add_argument("--external-ref", action="append", default=[],
+                        metavar="SCHEME:VALUE",
+                        help="(--entity) external reference, e.g. "
+                             "'uprn:200003184697' or 'cadw:4938'. Repeatable.")
+    parser.add_argument("--field-session-id", default=None,
+                        help="(--entity) FS- session id for synchronous "
+                             "field-session work")
     args = parser.parse_args(argv)
+
+    # Entity mode delegates to the Craidd client's propose_entity /
+    # propose_bundle. Same three-input-mode pattern as the claim path,
+    # but the proposal shape and validation are different — kept as a
+    # separate dispatcher rather than shoehorned into the claim flow.
+    if args.entity:
+        return _run_entity_mode(args)
 
     # --- 1. assemble the proposal from whichever input mode -------------
     try:
