@@ -46,6 +46,14 @@ VALID_VISIBILITIES: frozenset[str] = frozenset(
     {"public", "restricted", "private"}
 )
 
+# Known schemes for entity_proposal.entity.external_refs[].scheme. Per
+# design/entity-proposal-shape.md §12.c (resolved 2026-05-16). Lives here
+# alongside the other validation-layer constants — it's an entity-reference
+# scheme registry, not a qualifier domain. Extensible for v0.3.
+KNOWN_EXTERNAL_REF_SCHEMES: frozenset[str] = frozenset(
+    {"uprn", "toid", "cadw", "blb", "nhle", "osm-id"}
+)
+
 # value_type -> the claim column(s) that must carry the value. For
 # 'bilingual', at least one of the pair must be populated; for 'date',
 # value_date is required and value_date_text is an optional companion.
@@ -153,20 +161,61 @@ def validate_entity(
     return errors
 
 
+def _validate_iso_date(value: Any) -> str | None:
+    """Return an error message if `value` is not a parseable ISO date /
+    datetime string, otherwise None. Accepts both date (`YYYY-MM-DD`) and
+    datetime (`YYYY-MM-DDTHH:MM:SS[+TZ]`) forms — Python's fromisoformat
+    handles both on 3.11+, and on earlier versions we strip a trailing 'Z'
+    for compatibility with curator-supplied timestamps."""
+    if not isinstance(value, str) or not value:
+        return "must be a non-empty ISO-8601 date or datetime string"
+    candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        # date.fromisoformat would reject a datetime; try datetime first,
+        # fall back to date.
+        from datetime import datetime, date  # noqa: PLC0415 — lazy import
+        try:
+            datetime.fromisoformat(candidate)
+        except ValueError:
+            date.fromisoformat(candidate)
+    except ValueError as exc:
+        return f"is not a valid ISO-8601 date/datetime ({exc})"
+    return None
+
+
 def validate_qualifiers(
     qualifiers: Mapping[str, Any],
-    pred: PredicateDef,
+    pred: PredicateDef | None = None,
 ) -> list[str]:
-    """Validate a claim's qualifiers against a predicate's requirements
-    and the §3.2 qualifier vocabulary. `qualifiers` is the parsed mapping
-    (the write path parses claim.qualifiers_json before calling)."""
+    """Validate a claim's qualifiers against the §3.2 vocabulary plus the
+    §10 item 7 additions, optionally checking predicate-required keys.
+
+    `qualifiers` is the parsed mapping (the write path parses
+    claim.qualifiers_json before calling). `pred` is optional — entity
+    proposals carry qualifiers without a single owning predicate, and pass
+    `pred=None` so the required-qualifier check is skipped.
+
+    Checks applied:
+      - required qualifiers from `pred.required_qualifiers` are present
+        (only when `pred` is supplied);
+      - every supplied qualifier key is in QUALIFIER_KEYS;
+      - closed-domain values are in their domain (open-domain values are
+        not rejected);
+      - open-form item-7 keys with type/format expectations are checked:
+        `verified_at` parses as ISO-8601; `cache_snapshot_id`,
+        `field_session_id`, `co_signed_by` are non-empty strings;
+      - cross-qualifier rule (design/lleolydd.md §12.A): `co_signed_by`
+        requires `field_session_id` in the same qualifier set — co-sign
+        is a synchronous acceptance path that needs a named session.
+    """
     errors: list[str] = []
     # required qualifiers must all be present and non-empty
-    for required in pred.required_qualifiers:
-        if required not in qualifiers or _is_empty(qualifiers.get(required)):
-            errors.append(
-                f"predicate '{pred.name}' requires the '{required}' qualifier"
-            )
+    if pred is not None:
+        for required in pred.required_qualifiers:
+            if required not in qualifiers or _is_empty(qualifiers.get(required)):
+                errors.append(
+                    f"predicate '{pred.name}' requires the '{required}' qualifier"
+                )
     # every supplied qualifier key must be known; closed-domain values
     # must be in their domain (open-domain values are not rejected)
     for key, value in qualifiers.items():
@@ -179,6 +228,28 @@ def validate_qualifiers(
                 f"qualifier '{key}' value '{value}' is not one of "
                 f"{sorted(domain)}"
             )
+            continue
+        # Open-form item-7 keys with type/format expectations.
+        if key == "verified_at":
+            err = _validate_iso_date(value)
+            if err is not None:
+                errors.append(f"qualifier 'verified_at' {err}")
+        elif key in ("cache_snapshot_id", "field_session_id", "co_signed_by"):
+            if not isinstance(value, str) or _is_empty(value):
+                errors.append(
+                    f"qualifier '{key}' must be a non-empty string"
+                )
+
+    # Cross-qualifier rule: co_signed_by requires field_session_id.
+    # Applies to claims AND to proposals (validate_entity_proposal and
+    # validate_proposal both delegate here). Fires once per qualifier set
+    # regardless of the iteration above.
+    if "co_signed_by" in qualifiers and "field_session_id" not in qualifiers:
+        errors.append(
+            "qualifier 'co_signed_by' requires 'field_session_id' in the "
+            "same qualifier set — co-sign requires a named session "
+            "(design/lleolydd.md §12.A)"
+        )
     return errors
 
 
@@ -525,3 +596,261 @@ def value_from_claim_columns(
         )
         return None, errors
     return v, errors
+
+
+# --- entity_proposal validation ------------------------------------------------
+# The entity_proposal shape (design/entity-proposal-shape.md) is a second
+# proposal type alongside claim proposals. It carries an entity-creation
+# request rather than a single new claim; craidd-review composes it with
+# bundled claim proposals (same bundle_id) on acceptance.
+#
+# validate_entity_proposal is the schema-layer pure-function counterpart
+# of validate_proposal — it checks everything decidable without the live
+# store. Collision detection (external_refs against existing entities),
+# bundle-member consistency, and curator-identity checks are deferred to
+# craidd-review.
+
+import re  # noqa: E402 — late import, kept near the only user
+
+# EP-<timestamp>-<short-uuid>. Timestamps in the worked examples in
+# entity-proposal-shape.md are YYYYMMDD-HHMM (12 digits with a dash);
+# the short uuid is 8 hex chars. Loose but specific enough to catch typos.
+_EP_ID_RE = re.compile(r"^EP-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
+_BUNDLE_ID_RE = re.compile(r"^B-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
+
+# Per-scheme value-shape sanity checks for external_refs. Strictly cheap
+# pattern matches — not real-world validity. UPRN is 12 digits per OS;
+# TOID is 'osgb' + digits; Cadw / BLB / NHLE / osm-id are numeric strings.
+_EXTERNAL_REF_PATTERNS: dict[str, "re.Pattern[str]"] = {
+    "uprn": re.compile(r"^\d{12}$"),
+    "toid": re.compile(r"^osgb\d+$"),
+    "cadw": re.compile(r"^\d+$"),
+    "blb": re.compile(r"^\d+$"),
+    "nhle": re.compile(r"^\d+$"),
+    "osm-id": re.compile(r"^\d+$"),
+}
+
+
+def _check_name_entry(idx: int, entry: Any) -> list[str]:
+    """Validate one entry in entity.names. Returns a list of error strings
+    prefixed with the entry's index."""
+    errors: list[str] = []
+    prefix = f"entity.names[{idx}]"
+    if not isinstance(entry, Mapping):
+        return [f"{prefix} must be a mapping"]
+    language = entry.get("language")
+    if language not in ("cy", "en"):
+        errors.append(
+            f"{prefix}: language must be 'cy' or 'en', got {language!r}"
+        )
+    from .qualifiers import NAME_TYPES  # local import to avoid cycle hazard
+    name_type = entry.get("name_type")
+    if name_type not in NAME_TYPES:
+        errors.append(
+            f"{prefix}: name_type {name_type!r} is not one of "
+            f"{sorted(NAME_TYPES)}"
+        )
+    value = entry.get("value")
+    if not isinstance(value, str) or _is_empty(value):
+        errors.append(f"{prefix}: value must be a non-empty string")
+    return errors
+
+
+def _check_external_ref(
+    idx: int,
+    ref: Any,
+    schemes: Collection[str],
+) -> list[str]:
+    """Validate one entry in entity.external_refs."""
+    errors: list[str] = []
+    prefix = f"entity.external_refs[{idx}]"
+    if not isinstance(ref, Mapping):
+        return [f"{prefix} must be a mapping"]
+    scheme = ref.get("scheme")
+    value = ref.get("value")
+    if scheme not in schemes:
+        errors.append(
+            f"{prefix}: scheme {scheme!r} is not one of {sorted(schemes)}"
+        )
+        return errors
+    if not isinstance(value, str) or _is_empty(value):
+        errors.append(f"{prefix}: value must be a non-empty string")
+        return errors
+    pattern = _EXTERNAL_REF_PATTERNS.get(scheme)
+    if pattern is not None and not pattern.match(value):
+        errors.append(
+            f"{prefix}: value {value!r} is not well-formed for scheme "
+            f"{scheme!r}"
+        )
+    return errors
+
+
+def validate_entity_proposal(
+    proposal: Mapping[str, Any],
+    *,
+    entity_types: Collection[str] = VALID_ENTITY_TYPES,
+    known_external_ref_schemes: Collection[str] = KNOWN_EXTERNAL_REF_SCHEMES,
+) -> list[str]:
+    """Validate an entity_proposal (the new proposal shape introduced by
+    design/entity-proposal-shape.md). Returns a list of error strings —
+    an empty list means the proposal is well formed enough to enter the
+    queue.
+
+    Pure function. The caller (the Write API, or
+    client.craidd_client.propose_entity) supplies everything decidable
+    without the DB:
+
+      entity_types                permitted entity_type values. Defaults
+                                  to the v0.1 nine.
+      known_external_ref_schemes  the allow-list of identifier schemes
+                                  for entity.external_refs (uprn, toid,
+                                  cadw, blb, nhle, osm-id at v0.1).
+
+    `proposal` is a mapping matching the file shape in
+    entity-proposal-shape.md §3 — proposal_type, proposal_id,
+    submitted_at, submitter, optional bundle_id / field_session_id,
+    entity{entity_type, names[], optional address_text / external_refs[]},
+    source, confidence, optional qualifiers, optional bilingual note.
+
+    What this does NOT check (deferred to craidd-review):
+      - whether the entity already exists (external_ref collision);
+      - whether bundled claim proposals are consistent with the EP;
+      - whether the submitter is a known curator;
+      - whether `field_session_id` references a real open session.
+
+    The cross-qualifier rule (co_signed_by ⇒ field_session_id) is
+    delegated to validate_qualifiers and so applies here too.
+    """
+    errors: list[str] = []
+
+    # --- proposal_type literal ------------------------------------------
+    proposal_type = proposal.get("proposal_type")
+    if proposal_type != "entity":
+        errors.append(
+            f"proposal_type must be 'entity', got {proposal_type!r}"
+        )
+
+    # --- proposal_id -----------------------------------------------------
+    proposal_id = proposal.get("proposal_id")
+    if not isinstance(proposal_id, str) or not _EP_ID_RE.match(proposal_id):
+        errors.append(
+            f"proposal_id {proposal_id!r} must match EP-<YYYYMMDD>-<HHMM>-"
+            f"<8-hex>"
+        )
+
+    # --- submitted_at ----------------------------------------------------
+    err = _validate_iso_date(proposal.get("submitted_at"))
+    if err is not None:
+        errors.append(f"submitted_at {err}")
+
+    # --- submitter -------------------------------------------------------
+    if _is_empty(proposal.get("submitter")):
+        errors.append("submitter must be a non-empty string")
+
+    # --- bundle_id / field_session_id (both optional) -------------------
+    bundle_id = proposal.get("bundle_id")
+    if bundle_id is not None:
+        if not isinstance(bundle_id, str) or not _BUNDLE_ID_RE.match(bundle_id):
+            errors.append(
+                f"bundle_id {bundle_id!r} must match B-<YYYYMMDD>-<HHMM>-"
+                f"<8-hex>"
+            )
+    field_session_id = proposal.get("field_session_id")
+    if field_session_id is not None:
+        if not isinstance(field_session_id, str) or _is_empty(field_session_id):
+            errors.append("field_session_id must be a non-empty string")
+
+    # --- entity block ----------------------------------------------------
+    entity = proposal.get("entity")
+    if not isinstance(entity, Mapping):
+        errors.append("entity must be a mapping")
+        # Without an entity block there's nothing more to check.
+        return _finalise_entity_proposal_errors(errors, proposal)
+
+    entity_type = entity.get("entity_type")
+    if entity_type not in entity_types:
+        errors.append(
+            f"entity.entity_type {entity_type!r} is not one of "
+            f"{sorted(entity_types)}"
+        )
+
+    # names: non-empty list, each entry well formed.
+    names = entity.get("names")
+    if not isinstance(names, list) or len(names) == 0:
+        errors.append("entity.names must be a non-empty list")
+    else:
+        for i, entry in enumerate(names):
+            errors.extend(_check_name_entry(i, entry))
+
+    # address_text optional, must be a string if present.
+    address_text = entity.get("address_text")
+    if address_text is not None and not isinstance(address_text, str):
+        errors.append("entity.address_text must be a string when present")
+
+    # external_refs optional; if present, must be a list with valid entries.
+    external_refs = entity.get("external_refs")
+    if external_refs is not None:
+        if not isinstance(external_refs, list):
+            errors.append("entity.external_refs must be a list when present")
+        else:
+            for i, ref in enumerate(external_refs):
+                errors.extend(
+                    _check_external_ref(i, ref, known_external_ref_schemes)
+                )
+
+    # --- source: same minimal shape as claim proposals ------------------
+    source = proposal.get("source")
+    if not isinstance(source, Mapping) or _is_empty(source.get("source_id")):
+        # Accept both 'source_id' (entity-proposal-shape.md §3 example) and
+        # 'id' (claim proposals' convention) for forward-compatibility.
+        if not isinstance(source, Mapping) or _is_empty(source.get("id")):
+            errors.append(
+                "source must be a mapping with a non-empty 'source_id' "
+                "(or 'id')"
+            )
+
+    # --- confidence ------------------------------------------------------
+    confidence = proposal.get("confidence")
+    if confidence not in VALID_CONFIDENCES:
+        errors.append(
+            f"confidence {confidence!r} is not one of "
+            f"{sorted(VALID_CONFIDENCES)}"
+        )
+
+    # --- note (optional, bilingual mapping) ------------------------------
+    note = proposal.get("note")
+    if note is not None:
+        if not isinstance(note, Mapping):
+            errors.append("note must be a mapping with cy and/or en keys")
+        else:
+            for lang in ("cy", "en"):
+                if lang in note and not isinstance(note[lang], str):
+                    errors.append(f"note.{lang} must be a string")
+
+    # --- qualifiers (optional) ------------------------------------------
+    qualifiers = proposal.get("qualifiers")
+    if qualifiers is not None:
+        if not isinstance(qualifiers, Mapping):
+            errors.append("qualifiers must be a mapping when present")
+        else:
+            errors.extend(validate_qualifiers(qualifiers, pred=None))
+
+    return errors
+
+
+def _finalise_entity_proposal_errors(
+    errors: list[str], proposal: Mapping[str, Any]
+) -> list[str]:
+    """Helper for the early-return path when entity block is missing.
+    Still applies the qualifier and confidence checks that don't depend
+    on the entity block."""
+    confidence = proposal.get("confidence")
+    if confidence not in VALID_CONFIDENCES:
+        errors.append(
+            f"confidence {confidence!r} is not one of "
+            f"{sorted(VALID_CONFIDENCES)}"
+        )
+    qualifiers = proposal.get("qualifiers")
+    if isinstance(qualifiers, Mapping):
+        errors.extend(validate_qualifiers(qualifiers, pred=None))
+    return errors

@@ -28,8 +28,10 @@ def test_seed_predicates_validate_clean():
 
 def test_seed_predicate_count_matches_v01_schema():
     """v0.1-schema.md §3.5 enumerates 58 predicates across building +
-    tenancy + event + research_question + source + town."""
-    assert len(SEED_PREDICATES) == 58
+    tenancy + event + research_question + source + town. §10 item 7
+    adds two more (verified_building_toid, location_verification_status),
+    bringing the total to 60."""
+    assert len(SEED_PREDICATES) == 60
 
 
 def test_predicate_registry_matches_seed_set():
@@ -90,4 +92,49 @@ def test_name_predicates_require_name_type_qualifier():
         pred = PREDICATE_REGISTRY[name]
         assert "name_type" in pred.required_qualifiers, (
             f"{name} should require name_type qualifier"
+        )
+
+
+# --- §10 item 7 predicate assertions ------------------------------------------
+
+def test_verified_building_toid_predicate_shape():
+    """v0.1-schema.md §10 item 7.1 — TOID-string, single, building only,
+    requires the three verification-provenance qualifiers."""
+    pred = PREDICATE_REGISTRY["verified_building_toid"]
+    assert pred.value_type == "text"
+    assert pred.cardinality == "single"
+    assert pred.applies_to_types == ("building",)
+    assert "verification_method" in pred.required_qualifiers
+    assert "verified_at" in pred.required_qualifiers
+    assert "cache_snapshot_id" in pred.required_qualifiers
+
+
+def test_location_verification_status_predicate_shape():
+    """v0.1-schema.md §10 item 7.1 — enum-as-text status band, building
+    only at v0.1 (UPRN-as-subject deferred to v0.3 per Huw 2026-05-16),
+    requires cache_snapshot_id for reproducibility, enum constraint."""
+    pred = PREDICATE_REGISTRY["location_verification_status"]
+    assert pred.value_type == "text"
+    assert pred.cardinality == "single"
+    assert pred.applies_to_types == ("building",), (
+        "v0.1 scope is building only — UPRN entity-type deferred to v0.3"
+    )
+    assert "cache_snapshot_id" in pred.required_qualifiers
+    # Enum carried via constraint_json — the closed set of status bands.
+    assert pred.constraint_json is not None
+    import json
+    constraint = json.loads(pred.constraint_json)
+    assert set(constraint["enum"]) == {
+        "verified", "auto-snapped", "unsnapped", "contested", "non-postal",
+    }
+
+
+def test_item_7_predicates_pass_validate_predicate_def():
+    """Both new predicates must pass the same self-consistency check
+    every seed predicate gets at craidd-init bootstrap."""
+    from craidd.schema.validation import validate_predicate_def
+    for name in ("verified_building_toid", "location_verification_status"):
+        pred = PREDICATE_REGISTRY[name]
+        assert validate_predicate_def(pred) == [], (
+            f"{name} should pass validate_predicate_def cleanly"
         )

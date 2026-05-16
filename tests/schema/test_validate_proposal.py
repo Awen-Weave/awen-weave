@@ -183,3 +183,82 @@ def test_bilingual_predicate_rejects_string_value():
     }
     errors = validate_proposal(p)
     assert any("bilingual" in e for e in errors)
+
+
+# --- §10 item 7 — new qualifier coverage on proposals -----------------------
+
+def test_proposal_with_verification_qualifiers_accepts_clean():
+    """A geometry proposal carrying the new verification qualifiers
+    should pass — they're all known qualifier keys post-§10 item 7."""
+    p = {
+        "submitter": "huw@arloesidolgellau.com",
+        "subject": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value": "POINT(-3.886 52.741)",
+        "source": {"id": "TDS-DOL-SRC-LLEOLYDD"},
+        "confidence": "high",
+        "qualifiers": {
+            "geometry_basis": "curator-placed",
+            "verification_method": "on-site",
+            "verified_at": "2026-05-16",
+            "cache_snapshot_id": "lleolydd-cache-2026-05",
+        },
+    }
+    assert validate_proposal(p) == []
+
+
+def test_proposal_geometry_basis_outside_enum_rejected():
+    p = {
+        "submitter": "huw@arloesidolgellau.com",
+        "subject": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value": "POINT(-3.886 52.741)",
+        "source": {"id": "TDS-DOL-SRC-LLEOLYDD"},
+        "confidence": "high",
+        "qualifiers": {"geometry_basis": "guessed"},
+    }
+    errors = validate_proposal(p)
+    assert any("geometry_basis" in e for e in errors)
+
+
+def test_proposal_cosign_without_field_session_id_rejected():
+    """Cross-qualifier rule applies to claim proposals too."""
+    p = {
+        "submitter": "huw@arloesidolgellau.com",
+        "subject": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value": "POINT(-3.886 52.741)",
+        "source": {"id": "TDS-DOL-SRC-LLEOLYDD"},
+        "confidence": "high",
+        "qualifiers": {"co_signed_by": "richard@arloesidolgellau.com"},
+    }
+    errors = validate_proposal(p)
+    assert any("co_signed_by" in e and "field_session_id" in e
+               for e in errors)
+
+
+def test_proposal_temporal_status_closed_domain():
+    p = {
+        "submitter": "huw@arloesidolgellau.com",
+        "subject": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value": "POINT(-3.886 52.741)",
+        "source": {"id": "TDS-DOL-SRC-LLEOLYDD"},
+        "confidence": "high",
+        "qualifiers": {"temporal_status": "made-up"},
+    }
+    errors = validate_proposal(p)
+    assert any("temporal_status" in e for e in errors)
+
+
+def test_proposal_temporal_status_existing_accepted():
+    p = {
+        "submitter": "huw@arloesidolgellau.com",
+        "subject": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value": "POINT(-3.886 52.741)",
+        "source": {"id": "TDS-DOL-SRC-LLEOLYDD"},
+        "confidence": "high",
+        "qualifiers": {"temporal_status": "existing"},
+    }
+    assert validate_proposal(p) == []
