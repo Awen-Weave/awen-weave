@@ -19,6 +19,7 @@ Source of truth for the rules: design/v0.1-schema.md.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Collection, Mapping
 from typing import Any
 
@@ -53,6 +54,17 @@ VALID_VISIBILITIES: frozenset[str] = frozenset(
 KNOWN_EXTERNAL_REF_SCHEMES: frozenset[str] = frozenset(
     {"uprn", "toid", "cadw", "blb", "nhle", "osm-id"}
 )
+
+# Proposal ID regexes for the entity-proposal-shape.md formats:
+#   EP-<YYYYMMDD>-<HHMM>-<8 hex chars>  for entity proposals
+#   B-<YYYYMMDD>-<HHMM>-<8 hex chars>   for bundles
+# Both shared by validate_proposal (for bundle_id checks on claim proposals)
+# and validate_entity_proposal. The corresponding claim-proposal id format
+# (P-<YYYYMMDD-HHMMSS>-<8 hex>, deliberately a different shape because claim
+# proposals can be created at sub-minute cadence) lives in
+# client/craidd_client.py::_new_proposal_id.
+_EP_ID_RE = re.compile(r"^EP-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
+_BUNDLE_ID_RE = re.compile(r"^B-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
 
 # value_type -> the claim column(s) that must carry the value. For
 # 'bilingual', at least one of the pair must be populated; for 'date',
@@ -450,17 +462,48 @@ def validate_proposal(
     if _is_empty(proposal.get("submitter")):
         errors.append("proposal has no submitter")
 
+    # --- bundle membership (optional) -----------------------------------
+    # When a claim proposal is part of a bundle (entity-proposal-shape.md
+    # §4), it carries bundle_id and may use subject_hint == "<bundle>"
+    # as a deferred-subject sentinel — the bundled entity proposal hasn't
+    # been accepted yet, so its entity_id doesn't exist. craidd-review
+    # resolves the sentinel to the just-created entity_id at accept-time.
+    bundle_id = proposal.get("bundle_id")
+    if bundle_id is not None:
+        if not isinstance(bundle_id, str) or not _BUNDLE_ID_RE.match(bundle_id):
+            errors.append(
+                f"proposal bundle_id {bundle_id!r} must match B-<YYYYMMDD>-"
+                f"<HHMM>-<8-hex>"
+            )
+
     # --- subject identification -----------------------------------------
     subject = proposal.get("subject")
     subject_hint = proposal.get("subject_hint")
     has_subject = not _is_empty(subject)
-    has_hint = isinstance(subject_hint, Mapping) and len(subject_hint) > 0
-    if subject_hint is not None and not isinstance(subject_hint, Mapping):
-        errors.append("proposal 'subject_hint' must be a mapping")
+    # Bundle-member sentinel: subject_hint == "<bundle>" is valid iff
+    # bundle_id is also present and validates above.
+    is_bundle_sentinel = (
+        isinstance(subject_hint, str) and subject_hint == "<bundle>"
+        and bundle_id is not None
+    )
+    has_hint = (
+        is_bundle_sentinel
+        or (isinstance(subject_hint, Mapping) and len(subject_hint) > 0)
+    )
+    if (
+        subject_hint is not None
+        and not isinstance(subject_hint, Mapping)
+        and not is_bundle_sentinel
+    ):
+        errors.append(
+            "proposal 'subject_hint' must be a mapping (or the bundle "
+            "sentinel '<bundle>' when bundle_id is present)"
+        )
     if not has_subject and not has_hint:
         errors.append(
             "proposal must identify its subject — either 'subject' (an "
-            "entity_id) or a non-empty 'subject_hint' mapping"
+            "entity_id), a non-empty 'subject_hint' mapping, or "
+            "subject_hint='<bundle>' alongside a valid bundle_id"
         )
 
     # --- confidence ------------------------------------------------------
@@ -609,14 +652,10 @@ def value_from_claim_columns(
 # store. Collision detection (external_refs against existing entities),
 # bundle-member consistency, and curator-identity checks are deferred to
 # craidd-review.
-
-import re  # noqa: E402 — late import, kept near the only user
-
-# EP-<timestamp>-<short-uuid>. Timestamps in the worked examples in
-# entity-proposal-shape.md are YYYYMMDD-HHMM (12 digits with a dash);
-# the short uuid is 8 hex chars. Loose but specific enough to catch typos.
-_EP_ID_RE = re.compile(r"^EP-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
-_BUNDLE_ID_RE = re.compile(r"^B-\d{8}-\d{4}-[0-9a-fA-F]{8}$")
+#
+# _EP_ID_RE and _BUNDLE_ID_RE are defined at module scope above (next to
+# the other validation-layer constants) so validate_proposal can also use
+# _BUNDLE_ID_RE for bundle-member claim proposals.
 
 # Per-scheme value-shape sanity checks for external_refs. Strictly cheap
 # pattern matches — not real-world validity. UPRN is 12 digits per OS;
