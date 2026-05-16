@@ -41,9 +41,11 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
         count = conn.execute("SELECT COUNT(*) FROM predicate").fetchone()[0]
     finally:
         conn.close()
-    # v0.1-schema.md §3.5 enumerates 58 predicates — same count the
-    # schema-layer test pins. The CLI must agree with the registry.
-    assert count == 58
+    # v0.1-schema.md §3.5 enumerates 58 predicates plus §10 item 7's two
+    # additions (verified_building_toid, location_verification_status) =
+    # 60 total. Same count the schema-layer test pins. The CLI must agree
+    # with the registry.
+    assert count == 60
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

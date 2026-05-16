@@ -8,8 +8,10 @@ is a deliberate, Prawf-logged act.
 
 NOTE — count: design/v0.1-schema.md §3.5 closes with the prose summary
 "52 predicates", but the §3.5 tables themselves enumerate 58. The tables
-are the authoritative spec; SEED_PREDICATES below transcribes all 58.
-The "52" figure should be corrected in the doc.
+are the authoritative spec; SEED_PREDICATES below transcribes all 58
+plus the two §10 item 7 additions (verified_building_toid,
+location_verification_status), bringing the total to 60. The "52" figure
+should be corrected in the doc.
 
 NOTE — Welsh descriptions: the predicate table requires description_cy
 NOT NULL, but §3.5 supplies English meanings only. Rather than machine-
@@ -118,6 +120,46 @@ _BUILDING: tuple[PredicateDef, ...] = (
     PredicateDef("group_value_with", "entity_ref", "multi", ("building",),
                  "A building whose listing reason is shared or related "
                  "(listed 'group value')."),
+    # --- §10 item 7 — Lleolydd UPRN-verification predicates (2026-05-16) ---
+    PredicateDef(
+        name="verified_building_toid",
+        value_type="text",  # OS MasterMap TopographicArea string, e.g. "osgb1000005195614324"
+        cardinality="single",  # latest wins; superseded entries retained in history
+        applies_to_types=("building",),
+        description_en=(
+            "The OS MasterMap TopographicArea TOID a curator has explicitly "
+            "confirmed represents this building's footprint. Distinct from "
+            "any auto-snapped TOID, which lives only as a derivation."
+        ),
+        description_cy=CY_PENDING,
+        required_qualifiers=(
+            "verification_method", "verified_at", "cache_snapshot_id",
+        ),
+        constraint_json=None,
+    ),
+    PredicateDef(
+        name="location_verification_status",
+        value_type="text",  # enum-as-text; constraint_json carries the closed set
+        cardinality="single",  # derived; materialised
+        # v0.1 scope: building only. The schema doc's "Subject: building, UPRN"
+        # was loose — UPRN isn't a v0.1 entity_type. UPRN-as-subject deferred to
+        # v0.3 (Huw decision 2026-05-16). Status indirectly covers the
+        # building's primary UPRN.
+        applies_to_types=("building",),
+        description_en=(
+            "The verification status band for this building's primary UPRN. "
+            "Derived from the live claims plus Lleolydd's broadcast layer's "
+            "pending placements; refreshed on proposal acceptance, cache "
+            "rebuild, and broadcast tick. One of: verified, auto-snapped, "
+            "unsnapped, contested, non-postal."
+        ),
+        description_cy=CY_PENDING,
+        required_qualifiers=("cache_snapshot_id",),
+        constraint_json=(
+            '{"enum": ["verified", "auto-snapped", "unsnapped", '
+            '"contested", "non-postal"]}'
+        ),
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -252,7 +294,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 58 distinct names expected (see the count note
-# in this module's docstring).
+# in PREDICATE_REGISTRY. 60 distinct names expected as of §10 item 7
+# (was 58 pre-item-7; +2 for verified_building_toid and
+# location_verification_status).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

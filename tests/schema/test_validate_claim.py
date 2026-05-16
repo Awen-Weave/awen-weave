@@ -159,3 +159,101 @@ def test_int_predicate_rejects_text_value():
     }
     errors = validate_claim(claim, subject_entity_type="building")
     assert any("value_int" in e or "int value" in e for e in errors)
+
+
+# --- §10 item 7 — new qualifier coverage on claims --------------------------
+
+def _verified_toid_claim() -> dict:
+    """A minimal verified_building_toid claim with all three required
+    qualifiers (verification_method, verified_at, cache_snapshot_id)."""
+    return {
+        "subject_id": "TDS-DOL-B-00001",
+        "predicate": "verified_building_toid",
+        "value_text": "osgb1000005195614324",
+        "source_id": "TDS-DOL-SRC-LLEOLYDD-2026-05",
+        "recorded_by": "huw@arloesidolgellau.com",
+        "confidence": "high",
+        "qualifiers": {
+            "verification_method": "on-site",
+            "verified_at": "2026-05-16",
+            "cache_snapshot_id": "lleolydd-cache-2026-05",
+        },
+    }
+
+
+def test_verified_toid_claim_validates_clean():
+    errors = validate_claim(_verified_toid_claim(),
+                            subject_entity_type="building")
+    assert errors == []
+
+
+def test_verified_toid_claim_missing_required_qualifier_rejected():
+    """verified_building_toid requires verification_method + verified_at
+    + cache_snapshot_id. Drop one and the predicate's required_qualifiers
+    check should fire."""
+    claim = _verified_toid_claim()
+    del claim["qualifiers"]["verification_method"]
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("verification_method" in e for e in errors)
+
+
+def test_verification_method_closed_domain_check():
+    claim = _verified_toid_claim()
+    claim["qualifiers"]["verification_method"] = "ouija-board"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("verification_method" in e for e in errors)
+
+
+def test_cosign_qualifiers_on_a_claim_require_field_session_id():
+    """The cross-qualifier rule applies to claims, not just to proposals."""
+    claim = _verified_toid_claim()
+    claim["qualifiers"]["co_signed_by"] = "richard@arloesidolgellau.com"
+    # field_session_id deliberately not added
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("co_signed_by" in e and "field_session_id" in e
+               for e in errors)
+
+
+def test_cosign_with_field_session_id_on_a_claim_accepted():
+    claim = _verified_toid_claim()
+    claim["qualifiers"]["co_signed_by"] = "richard@arloesidolgellau.com"
+    claim["qualifiers"]["field_session_id"] = "FS-20260516-bridge-street-walk"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert errors == []
+
+
+def test_geometry_basis_closed_domain():
+    """geometry_basis is closed-enum per §10 item 7.2. A value outside
+    the four-element set is a validation error."""
+    claim = {
+        "subject_id": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value_geom": "POINT(-3.886 52.741)",
+        "source_id": "TDS-DOL-SRC-LLEOLYDD",
+        "recorded_by": "huw@arloesidolgellau.com",
+        "confidence": "high",
+        "qualifiers": {"geometry_basis": "made-up-basis"},
+    }
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("geometry_basis" in e for e in errors)
+
+
+def test_geometry_basis_curator_placed_accepted():
+    claim = {
+        "subject_id": "TDS-DOL-B-00001",
+        "predicate": "geometry",
+        "value_geom": "POINT(-3.886 52.741)",
+        "source_id": "TDS-DOL-SRC-LLEOLYDD",
+        "recorded_by": "huw@arloesidolgellau.com",
+        "confidence": "high",
+        "qualifiers": {"geometry_basis": "curator-placed"},
+    }
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert errors == []
+
+
+def test_verified_at_must_be_iso():
+    claim = _verified_toid_claim()
+    claim["qualifiers"]["verified_at"] = "yesterday morning"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("verified_at" in e for e in errors)
