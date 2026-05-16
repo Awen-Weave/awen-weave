@@ -63,8 +63,9 @@ The whole system as it currently stands. Each row is a charter in miniature; the
 | Prawf read endpoint | Llys → Prawf | HTTP requests | Public log content + signature verification | No filtering that would hide actions; not for analytics |
 | Town Dataset Review Dashboard | Llys (review) | claim + entity data (presently embedded; future: read API) | Per-claim cards + review-state JSON export | Not authoritative — it's a curator's review tool, not a data source |
 | Building Research Agent (BRA) | Llys (contributor-side automation) | source-specific access (web, APIs, Nimble for v2); curator-approved allowlists; `seed/output/uprn-lookup.csv`; `craidd_client.py` | snapshots + hashes under `seed/`; draft claims; unresolved-subject queues; proposals submitted via the client library | Never writes to Craidd directly; does not paraphrase source material; does not auto-bind low-confidence subjects; does not republish copyrighted bytes |
+| Lleolydd | Llys (curator-facing tool) | Craidd Read API; locally-staged OGL bulk corpus (OS Open UPRN / TOID / Linked Identifiers / INSPIRE / Zoomstack); curator identity from `craidd-review`'s identity layer | Proposals via `craidd_client.propose_claim()` and `craidd_client.propose_entity()` for `geometry`, `verified_building_toid`, `location_verification_status` (plus session/co-sign qualifiers); per-session audit CSVs under `seed/agents/lleolydd-runs/`; cache snapshots under `seed/lleolydd/snapshots/<release>/` | Never writes to Craidd directly (proposals only, including co-signed ones); does not auto-correct without curator confirmation; OGL-only at v1 (no Loqate/Ideal Postcodes); does not OCR or extract building footprints from aerial imagery; does not export PII; not a generic GIS; v1 UI scoped to `building` entities only |
 
-That's nineteen components, including the ones not yet built. A change to the schema reverberates here: every component touched by the change must have its row updated in the same commit.
+That's twenty components, including the ones not yet built. A change to the schema reverberates here: every component touched by the change must have its row updated in the same commit.
 
 ## 4. Inviolable boundaries
 
@@ -159,6 +160,59 @@ Role: Llys (review). Why: lets a curator visually walk every claim before any of
 ### 6.14 Building Research Agent (BRA)
 
 Role: Llys (contributor-side automation). Why: produces source-cited per-building research material and feeds it into the proposal queue for curator review, replacing curator handcraft for high-volume sources. One component with versioned scope: **v1** — historic-source research packs (Cadw, BLB, RCAHMW, council records, HMLR Price Paid); not yet built. **v2** — estate-agent listings (sale, rental, sold-archive narratives); active scope, design in `design/bra-v2-estate-agents.md` with pilot findings in `design/bra-v2-estate-agents-pilot.md`. v2 itself has three stages: **stage 1** agent discovery (`src/bra/listings/discover.py`), **stage 2** live-site ingest from a curator-approved allowlist via per-agent site-shape manifests, and **stage 3** archival ingest from the Internet Archive's Wayback Machine (`src/bra/listings/wayback.py`) for historic listings that have aged off live sites — a strictly-better citation surface because Wayback URLs are stable and the captured bytes never decay. Consumes: source-specific access (web, APIs, Nimble for v2 stages 1–2, Wayback CDX for stage 3); curator-approved allowlists (e.g. `seed/agents/dolgellau-agents.csv` for v2); `seed/output/uprn-lookup.csv` for subject resolution; `craidd_client.py` for proposal writes. Produces: per-source snapshot bundles under `evidence/listings/<agent_slug>/{live,wayback}/<id>/` each with raw HTML, metadata, sha256 hash, and Prawf-style run log; per-agent / per-source manifest CSVs under `seed/agents/wayback/<agent_slug>-<date>.csv` as the committed audit artefact; draft claims marked `pending_schema: v0.2` where v0.1 cannot model them; unresolved-subject queues for curator triage; proposals submitted via `craidd_client.propose_claim(...)` once schema supports them. Explicit non-goals: never writes to Craidd directly (proposals only); does not paraphrase source material (quote-with-citation only — verbatim text is the evidence record); does not auto-bind low-confidence subjects to buildings (the unresolved queue is the right default, not a failure mode); does not republish copyrighted bytes (image and floor-plan bytes captured under `restricted` visibility for curator review, never re-served by the Read API); does not auto-translate Welsh (honest `cy: null` where source is English-only); does not bypass robots.txt — both live-site and Wayback paths respect each host's stated policy absolutely. Runtime surface: a `bra` CLI with sub-commands per stage and source type (`bra listings discover` for v2 stage 1, `bra listings wayback` for v2 stage 3, `bra history` if v1 ships). The CLI's own detailed charter sits in `cli-design.md` once it is specified — this is a deliberate seventh top-level CLI alongside the six `craidd-*` CLIs, justified because BRA is a coherent research-and-propose workflow rather than a Craidd primitive. If removed: the dataset has no automated contributor pipeline; every claim arrives by curator handcraft; high-volume sources (estate-agent listings, historic-records inventories) cannot be tracked at the cadence they change, and historic listings pruned from agent sites are lost permanently.
+
+### 6.21 Lleolydd — UPRN location-refinement tool
+
+#### Awen role
+
+**Llys** — curator-facing tool that produces proposals. Reads from Craidd, writes to the proposal queue, never to canonical claims or Prawf directly. Same constitutional posture as BRA (§6.14) and the energy study client.
+
+#### Why it exists
+
+Open-data UPRN-to-building matching (OS Open UPRN + OS Open TOID + OS Open Linked Identifiers + INSPIRE) gets ~70–90 % of the way in urban / regular housing and breaks predictably on rural and subdivided stock. The first-flow finding on 2026-05-15 surfaced the cost in the live system: energy-study `uprn-lookup.csv` carried "high confidence" UPRNs that turned out to be building-block references shared across 67–78 distinct addresses, blocking BRA subject resolution and forcing two of four candidate buildings to be bootstrapped with `uprn: null`. Without a curator-facing, provenance-tracked correction layer, downstream work — HMLR linkage, energy modelling, BRA, listed-building register cross-references — inherits silent errors. The CLIs are the wrong shape for this work: location correction is fundamentally visual and on-site.
+
+#### Consumes
+
+- Craidd Read API: building entities, address/name claims, current `geometry` claims, listing/sale_record cross-references, source visibility flags.
+- Locally-staged OGL bulk corpus: OS Open UPRN, OS Open TOID, OS Open Linked Identifiers, INSPIRE Index Polygons, OS Open Zoomstack.
+- Curator identity from the (forthcoming) `craidd-review`-shared identity layer.
+- Optionally, in v1.x: aerial imagery layer (licence work pending).
+
+#### Produces
+
+- Proposals via `craidd_client.propose_claim()` for: `geometry` (point), `verified_building_toid`, `location_verification_status`, with qualifiers `verification_method`, `verified_at`, `cache_snapshot_id`, and (for co-signed field-session corrections) `field_session_id` + `co_signed_by`. See v0.1-schema §10 item 7.
+- Proposals via `craidd_client.propose_entity()` (new, see `design/entity-proposal-shape.md`) when the curator creates a new building entity.
+- Audit CSVs at `seed/agents/lleolydd-runs/<session-id>.csv` recording every session's placements, decisions, and signatures.
+- Snapshot bundles at `seed/lleolydd/snapshots/<release>/` capturing the OGL bulk corpus state each correction was made against.
+
+#### Explicit non-goals
+
+- Does **not** write to Craidd directly. Every correction is a proposal subject to `craidd-review`, including co-signed ones (co-sign is an acceptance path, not a write path — see `design/lleolydd.md` §12.A).
+- Does **not** auto-correct without curator confirmation. Auto-snap-to-TOID is a Craffter-shaped observation, not a Craidd fact, even at high confidence.
+- Does **not** ingest commercial enrichment data (Loqate, Ideal Postcodes). OGL-only at v1, by decision (2026-05-16).
+- Does **not** attempt OCR or building-footprint extraction from raw aerial imagery. That's a BRA-shaped agent if it ever exists.
+- Does **not** export PII. Scope is buildings and locations, not occupants.
+- Does **not** serve as a generic GIS. Scope is UPRN/TOID/INSPIRE alignment to Town Dataset entities.
+- The v1 UI does **not** support entity types other than `building` (engine is type-agnostic; UI is scoped — see `design/lleolydd.md` §12.D).
+
+#### What would change if removed
+
+The Town Dataset would continue to grow, but with silently-wrong UPRNs propagating into HMLR linkage, sale-record attribution, energy floor-area cross-references, and BRA subject resolution. The known-wrong rural cases — farmsteads with point-on-yard, subdivisions with one-TOID-many-UPRNs, driveway-only addresses — would have no provenance-tracked correction route. Curator review would be the only available fix, and async review without a visual tool is impractical at the scale the dataset is heading toward (~190 Cadw listed buildings + ~1,400 surveyed buildings + the rural residue).
+
+#### Versioned scope
+
+- **v1 (current).** UPRN/TOID/INSPIRE alignment for Town Dataset `building` entities in Gwynedd. Online-first iPad PWA. MapLibre GL JS frontend. WebSocket/SSE pending-placement broadcast layer. Per-entity soft lock. Co-sign acceptance for synchronous field sessions. New-building creation via bundled entity_proposal + claim proposals.
+- **v1.x (deferred).** Offline-capable PWA (tile pre-cache + IndexedDB queue + sync). Aerial imagery overlay. LIDAR overlay for ambiguous farmsteads. Bulk-triage list view. Welsh tutor pass on UI strings.
+- **v2 (deferred to v0.3 schema decision).** Entity-type generalisation: monument / feature / open_space / infrastructure_asset modes enabled, on the back of v0.3 schema additions. `temporal_status` (existing/proposed/historic/removed) styling, enabling the energy modeller as a second user persona placing future-asset locations.
+
+#### Inviolable boundaries (component-level)
+
+In addition to the seven system-level boundaries already in `architecture.md`, Lleolydd specifically:
+
+- Never mutates the OGL bulk cache from the curator UI. Cache rebuild is a separate `lleolydd-cache build` operation, run on a schedule, not on demand from the iPad.
+- Never decides location verification status as a side-effect of a map view. Status is derived from claims + pending placements; the UI shows it but does not write it.
+- Never co-signs as the originating curator. The no-self-acceptance principle is enforced at the API layer, not the UI layer.
+- Never persists curator session state outside the broadcast layer. Sessions are ephemeral coordination; durable state is in claims, proposals, and Prawf.
 
 ## 7. Fitness checks
 

@@ -197,6 +197,69 @@ Llys. Generates the signed nightly snapshot under `exports/`, computes a digest,
 
 Llys. Read-only. Prints to terminal: queue depth (pending proposals by source/submitter), recent Prawf events (last N), source coverage (claims per source, queued sources awaiting fetch), Welsh coverage (`cy_coverage` view), and any deprecated predicates still in active use. Used by the curator to decide what to do next. Never long-running, never blocking, never makes decisions — it surfaces them.
 
+## Lleolydd
+
+Charter: `architecture.md` §6.21. Design: `design/lleolydd.md`.
+
+Unlike the `craidd-*` family (which are CLIs end-to-end), Lleolydd is split: a small CLI surface for data-prep and service operation, plus a web frontend (the iPad PWA) served by `lleolydd-serve`. The CLIs are the operator surface; the PWA is the curator surface. The proposal-write path runs through the existing `craidd_client` library — no new CLI for that.
+
+### `lleolydd-cache build`
+
+Builds the local OGL cache from upstream OS / HM Land Registry releases.
+
+```
+lleolydd-cache build
+  --area <bbox|geojson>           Area bound; default reads config/lleolydd/area-bounds.geojson
+  --release <YYYY-MM>             Release tag for this build; default = current month
+  --sources <comma-list>          Subset of {open-uprn,open-toid,open-li,inspire,zoomstack}; default all
+  --data-dir <path>               Defaults to /srv/town-dataset
+  --json                          Machine-readable summary
+  --dry-run                       Plan + validate inputs, no writes
+```
+
+Outputs: `seed/lleolydd/cache.duckdb` (spatial-extension-loaded), `seed/lleolydd/snapshots/<release>/` (download manifests + sha256s + per-source metadata), `seed/lleolydd/build-summary.csv` (band distribution + counts per source). Idempotent against an existing release directory; refuses to overwrite without `--force`. Emits a starter set of `location_verification_status` materialisations (all unsnapped/auto-snapped — no `verified` until curators run).
+
+Build-order placement: **first Lleolydd CLI to ship.** Independent of `craidd-review` and the Write API. The cache-build step is what unlocks Phase 2 (the read-only viewer) and is the diagnostic-value-delivery point — once this runs against Gwynedd, the band-distribution CSV alone tells us how much of the rural-correction problem is real before any UI is built.
+
+### `lleolydd-cache snapshot`
+
+Captures or restores a snapshot manifest. Used by audit trails, by reproducibility checks ("what was the OGL data state when this verification was made?"), and by Prawf reconstruction.
+
+```
+lleolydd-cache snapshot list
+lleolydd-cache snapshot show <release>
+lleolydd-cache snapshot diff <release-a> <release-b>
+```
+
+Read-only; no writes. Read-only operation against `seed/lleolydd/snapshots/`. Reuses the `craidd-status`-style table output discipline.
+
+### `lleolydd-serve`
+
+Runs the Lleolydd backend service: the read endpoints (§4 of `design/lleolydd.md`), the proposal-write surface (delegating to `craidd_client.propose_claim` and `craidd_client.propose_entity`), and the WebSocket/SSE broadcast layer. Also serves the static PWA assets.
+
+```
+lleolydd-serve
+  --port <int>                    Default 8002 (alongside Craidd Read API on 8000, write API on 8001 when it exists)
+  --data-dir <path>               Defaults to /srv/town-dataset
+  --auth <mode>                   curator-identity (default, requires craidd-review's identity layer to be live) | dev-bearer (single-token, dev only)
+  --read-only                     Serve only the GET endpoints; no proposal submission, no broadcast layer
+  --max-session-curators <int>    Cap on simultaneous curators per field session; default 4
+```
+
+Build-order placement: ships in two stages.
+- **Stage 1 (read-only).** `--read-only` flag enabled, no auth requirement (or `dev-bearer` for testing). Delivers Phase 2 of the design. Independent of `craidd-review`. Ship as soon as the cache is built.
+- **Stage 2 (write + broadcast).** Full mode requires `craidd-review`'s curator-identity layer. Delivers Phases 3 and 4 of the design. Sequenced after `craidd-review` lands.
+
+### What's deliberately not a CLI
+
+- The **iPad PWA** itself — served as static assets by `lleolydd-serve`. No separate CLI; build is a single `npm run build` step at deploy time.
+- The **proposal-write step** — runs through `craidd_client.propose_claim()` and `craidd_client.propose_entity()` from inside `lleolydd-serve`. Same library path as BRA and the energy study. No new `lleolydd-propose` CLI; that would split the proposal queue's authority across two tools.
+- The **co-sign acceptance** — uses `craidd_client` against a session-shaped curator-identity. Not a CLI surface, by design.
+
+### Bilingual CLI text
+
+Per the existing v0 deferral on Welsh CLI text, the Lleolydd CLIs are English-only at v1. The PWA is bilingual (cy default). Welsh CLI strings deferred alongside the broader CLI bilingual pass.
+
 ## 5. Shared infrastructure
 
 All six CLIs are thin command wrappers. They share four pieces of underlying machinery:
@@ -217,8 +280,12 @@ If a future CLI needs to reach around any of these — a curator-side logic that
 5. **Building Research Agent** — once `craidd-fetch` and `craidd-review` exist, the Agent ties them together for per-building research. See `design/building-research-agent.md`. This is the point at which the dataset's growth rate changes from one-evening-per-building to one-batch-per-evening.
 6. `craidd-export` — only matters once there's enough Craidd content to export; can be the last thing.
 7. `craidd-status` — small and useful at any point; build whenever the curator's working day demands it.
+8. `lleolydd-cache build` — Lleolydd Phase 1; independent of the Write API. Can ship in parallel with `craidd-review`'s build.
+9. `lleolydd-serve --read-only` — Lleolydd Phase 2; independent of the Write API. Delivers the diagnostic-value viewer without write or broadcast paths.
+10. `lleolydd-serve` full mode — Lleolydd Phase 3; requires `craidd-review`'s curator-identity layer to be live. Adds drag-to-place, the WebSocket/SSE broadcast layer, co-sign acceptance, and the entity-creation flow.
+11. `lleolydd-cache snapshot` — Lleolydd Phase 4; pure ops CLI. Slots in last, once Phase 3 has produced live snapshots worth listing and diffing.
 
-The order is deliberate: the queue and the review loop come before automation. We learn the workflow by hand on a small set of claims before building the tools that scale it. The Building Research Agent slots in where automation begins to pay off — once the foundations are tested manually, the Agent makes the manual pattern repeatable.
+The order is deliberate: the queue and the review loop come before automation. We learn the workflow by hand on a small set of claims before building the tools that scale it. The Building Research Agent slots in where automation begins to pay off — once the foundations are tested manually, the Agent makes the manual pattern repeatable. Lleolydd then sits alongside it: items 8 and 9 can ship in parallel with `craidd-review` because they have no write-path dependency; items 10 and 11 sequence after `craidd-review`'s identity layer lands.
 
 ## 7. Open questions for review
 
