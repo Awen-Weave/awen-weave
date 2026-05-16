@@ -1,0 +1,16 @@
+# Development dependencies for the Dolgellau Town Dataset.
+# Layered on top of requirements.txt:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+# Kept minimal on purpose — every dependency added here is one more thing
+# that can fail in CI or drift across local machines.
+#
+#   pytest      — the test runner (tests/ tree).
+#   pytest-cov  — optional coverage; cheap and useful when looking at a
+#                 PR's test surface.
+#
+# Lint/format are not added here yet. Adding ruff or black is a separate,
+# explicit decision — see the test-infrastructure brief §2.
+
+pytest>=8.0
+pytest-cov>=4.0
