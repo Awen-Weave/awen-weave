@@ -34,6 +34,14 @@ DOWNLOAD_FORMAT = "CSV"   # tighter than GeoPackage for this product
 # Match by prefix; this is distinct from LIDS files (which have
 # "lids-" prefix) and TOID files ("osopentoid_" prefix).
 FILENAME_PATTERN = "osopenuprn"
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff
+# subcommand and _common.sniff_columns. Per-source CSV/GML kind tells
+# the sniffer how to read the header; EXPECTED_COLUMNS is the tuple
+# the loader assumes is present. Drift = any diff vs the live file.
+SOURCE_KIND = "csv"
+EXPECTED_COLUMNS: tuple[str, ...] = (
+    "UPRN", "X_COORDINATE", "Y_COORDINATE", "LATITUDE", "LONGITUDE",
+)
 
 
 def list_remote_files() -> list[dict]:

@@ -32,6 +32,13 @@ PRODUCT_NAME = "inspire-gwynedd"
 # zip. The zip itself uses the LAD name (Gwynedd.zip). Match either.
 FILENAME_PATTERN = "Cadastral_Parcels"
 
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff
+# subcommand and _common.sniff_columns. The loader uses INSPIREID
+# (the parcel identifier) and geom (the polygon, exposed by OGR as
+# `geom` when reading INSPIRE GML); pin those two.
+SOURCE_KIND = "gml"
+EXPECTED_COLUMNS: tuple[str, ...] = ("INSPIREID", "geom")
+
 # Per HMLR's per-LAD download convention. The exact filename casing
 # matches the LAD's official spelling. If a future build wants a
 # different LAD (e.g. Anglesey overlap), this is the only line to edit.

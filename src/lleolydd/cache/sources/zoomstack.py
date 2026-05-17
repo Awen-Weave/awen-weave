@@ -33,6 +33,13 @@ PRODUCT_ID = "OpenZoomstack"
 DOWNLOAD_FORMAT = "Vector Tiles"  # MBTiles
 FILENAME_PATTERN = "Zoomstack"
 
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff.
+# MBTiles is a SQLite-shaped binary; the columns-of-a-table contract
+# doesn't apply. The sniff CLI dispatches on SOURCE_KIND == "mbtiles"
+# and emits a "skip" line. EXPECTED_COLUMNS is empty by convention.
+SOURCE_KIND = "mbtiles"
+EXPECTED_COLUMNS: tuple[str, ...] = ()
+
 
 def list_remote_files() -> list[dict]:
     entries = list_product_downloads(PRODUCT_ID)

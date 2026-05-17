@@ -35,6 +35,18 @@ DOWNLOAD_FORMAT = "GML"   # 168 MB; the smallest format for this product
 INSPIRE_GML_FILENAME = "INSPIRE_AdministrativeUnit.gml"
 LAD_NAME_COLUMN = "text"  # current as of 2026-05-16; was 'NAME' in legacy schema
 
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff
+# subcommand and _common.sniff_columns. INSPIRE_AdministrativeUnit.gml
+# exposes many GML attributes via OGR; the loader only depends on
+# `text` (the LAD name) and `geometry` (the polygon). EXPECTED_COLUMNS
+# pins those two — drift on either is what the loader cares about.
+SOURCE_KIND = "gml"
+EXPECTED_COLUMNS: tuple[str, ...] = (LAD_NAME_COLUMN, "geometry")
+# Sniff probes a specific filename within the extracted set rather
+# than the first GML it finds — keeps the contract aligned with the
+# loader's own filename check.
+SNIFF_FILENAME = INSPIRE_GML_FILENAME
+
 
 def list_remote_files() -> list[dict]:
     entries = list_product_downloads(PRODUCT_ID)

@@ -133,6 +133,65 @@ def download_file(
     return target
 
 
+def sniff_csv_columns(csv_path: Path) -> tuple[str, ...]:
+    """Read the header row of a CSV-shaped source file and return its
+    column names as a tuple of strings.
+
+    Handles UTF-8 BOM transparently (`encoding="utf-8-sig"`) — both
+    OS Open TOID's 2026-04 and OS Open Linked Identifiers' 2026-03
+    releases ship CSVs with a BOM, which would otherwise show up as
+    a `\\ufeff` prefix on the first column name.
+
+    Used by the schema-sniff CLI to detect column drift cheaply
+    (reads ~1 KB regardless of file size).
+    """
+    import csv as _csv  # noqa: PLC0415 — lazy
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+        reader = _csv.reader(f)
+        try:
+            header = next(reader)
+        except StopIteration as e:
+            raise RuntimeError(
+                f"sniff_csv_columns: empty file {csv_path}"
+            ) from e
+    return tuple(c.strip() for c in header)
+
+
+def sniff_gml_columns(gml_path: Path) -> tuple[str, ...]:
+    """Return the columns OGR/ST_Read exposes for a GML file, as
+    detected by DuckDB spatial's first-row scan. Heavier than
+    sniff_csv_columns (parses the GML header / generates a `.gfs`
+    sidecar if absent) but still cheap relative to a full load."""
+    import duckdb as _duckdb  # noqa: PLC0415 — lazy
+    conn = _duckdb.connect(":memory:")
+    conn.execute("INSTALL spatial; LOAD spatial;")
+    try:
+        rows = conn.execute(
+            "DESCRIBE SELECT * FROM ST_Read(?) LIMIT 0",
+            [str(gml_path)],
+        ).fetchall()
+    except _duckdb.Error as e:
+        raise RuntimeError(
+            f"sniff_gml_columns: ST_Read failed on {gml_path}: {e}"
+        ) from e
+    return tuple(r[0] for r in rows)
+
+
+def diff_columns(
+    expected: tuple[str, ...],
+    actual: tuple[str, ...],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Compare expected vs actual column tuples. Returns (added, removed)
+    where added = in actual but not expected, removed = in expected but
+    not actual. Order of returned tuples matches the source order
+    (preserves the human-readable diff)."""
+    expected_set = set(expected)
+    actual_set = set(actual)
+    added = tuple(c for c in actual if c not in expected_set)
+    removed = tuple(c for c in expected if c not in actual_set)
+    return added, removed
+
+
 def unzip(zip_path: Path, target_dir: Path, force: bool = False) -> list[Path]:
     """Extract a zip into target_dir. Returns the list of extracted
     file paths. Idempotent: if the expected outputs already exist (by

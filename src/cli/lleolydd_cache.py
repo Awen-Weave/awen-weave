@@ -10,6 +10,10 @@ Per design/cli-design.md §5 ("Lleolydd"), this CLI is two things:
   snapshot diff       Compare two manifests for changes between releases.
   derive-bounds       One-off — pull a LAD polygon from OS BoundaryLine
                       into area-bounds.geojson. Run once per project.
+  schema-sniff        Compare each source's EXPECTED_COLUMNS against
+                      the live file on disk. Catch upstream OGL
+                      data-format drift cheaply before a full build
+                      hits it.
 
 USAGE
 -----
@@ -24,12 +28,17 @@ USAGE
     python3 src/cli/lleolydd_cache.py derive-bounds --lad <name>
                                                     [--output PATH]
                                                     [--workdir PATH]
+    python3 src/cli/lleolydd_cache.py schema-sniff [--source NAME]
+                                                   [--download-if-missing]
+                                                   [--data-dir PATH] [--json]
 
 EXIT CODES
 ----------
-    0  success / clean dry-run
-    1  validation or operational failure (download error, etc.)
-    2  bad arguments / paths
+    0  success / clean dry-run / no drift detected
+    1  validation or operational failure (download error, etc.) — also
+       used by `schema-sniff` when drift is detected
+    2  bad arguments / paths — also used by `schema-sniff` when a live
+       source file is missing or unreadable
 """
 from __future__ import annotations
 
@@ -45,7 +54,28 @@ sys.path.insert(0, str(_REPO / "src"))
 
 from lleolydd.cache import build as _build
 from lleolydd.cache import snapshot as _snapshot
-from lleolydd.cache.sources import boundary_line as _bl
+from lleolydd.cache.sources import (
+    _common as _src_common,
+    boundary_line as _bl,
+    inspire as _inspire,
+    open_linked_ids as _olid,
+    open_toid as _otoid,
+    open_uprn as _ouprn,
+    zoomstack as _zoomstack,
+)
+
+
+# Ordered registry of source modules — used by `schema-sniff` and any
+# future per-source iteration. Keeping the order stable matters for
+# the `schema-sniff` output (the operator reads it top-to-bottom).
+SOURCE_MODULES = (
+    ("open-uprn", _ouprn),
+    ("open-toid", _otoid),
+    ("open-linked-ids", _olid),
+    ("inspire", _inspire),
+    ("boundary-line", _bl),
+    ("zoomstack", _zoomstack),
+)
 
 
 DEFAULT_DATA_DIR = Path("/srv/town-dataset")
@@ -241,6 +271,288 @@ def cmd_derive_bounds(args: argparse.Namespace) -> int:
     return 0
 
 
+def _find_source_file(
+    module,
+    name: str,
+    data_dir: Path,
+) -> Path | None:
+    """Locate the live file for a source under the data-dir's latest
+    snapshot's downloads/ directory.
+
+    Returns None if no matching file is on disk. Matching:
+      - For sources with a SNIFF_FILENAME (currently only boundary_line,
+        which targets INSPIRE_AdministrativeUnit.gml exactly), match
+        that filename within any subdirectory of downloads/.
+      - Otherwise, match the source's FILENAME_PATTERN substring
+        case-insensitively against on-disk filenames; prefer .csv > .gml
+        > .mbtiles > any other extension (mirrors what the loaders read).
+    """
+    snapshots_root = data_dir / "seed" / "lleolydd" / "snapshots"
+    if not snapshots_root.is_dir():
+        return None
+    candidate_dirs = sorted(
+        (d for d in snapshots_root.iterdir() if d.is_dir()),
+        reverse=True,
+    )
+    sniff_filename = getattr(module, "SNIFF_FILENAME", None)
+    pattern = getattr(module, "FILENAME_PATTERN", None)
+    preferred_ext = {"csv": ".csv", "gml": ".gml", "mbtiles": ".mbtiles"}.get(
+        getattr(module, "SOURCE_KIND", ""),
+    )
+
+    for snap_dir in candidate_dirs:
+        downloads = snap_dir / "downloads"
+        if not downloads.is_dir():
+            continue
+        files = [p for p in downloads.rglob("*") if p.is_file()]
+        if sniff_filename:
+            for p in files:
+                if p.name == sniff_filename:
+                    return p
+            continue
+        if not pattern:
+            continue
+        pat_lower = pattern.lower()
+        matches = [p for p in files if pat_lower in p.name.lower()]
+        if preferred_ext:
+            ranked = sorted(
+                matches,
+                key=lambda p: (
+                    0 if p.suffix.lower() == preferred_ext else 1,
+                    p.name,
+                ),
+            )
+            if ranked and ranked[0].suffix.lower() == preferred_ext:
+                return ranked[0]
+        if matches:
+            return matches[0]
+    return None
+
+
+def _sniff_one_source(name: str, module, data_dir: Path) -> dict:
+    """Run schema-sniff for one source module. Returns a dict the CLI
+    renders either as text or JSON.
+
+    Statuses:
+      ok      — actual columns match expected.
+      drift   — file present, expected columns present in actual,
+                BUT actual has at least one extra (added) or is
+                missing at least one (removed).
+      skip    — SOURCE_KIND in {"mbtiles"} (not column-shaped) or
+                the source declines a sniff for other documented reasons.
+      missing — file not on disk; --download-if-missing wasn't passed
+                or download attempt failed.
+      error   — read failed (corrupt file, GDAL error, etc.).
+    """
+    kind = getattr(module, "SOURCE_KIND", None)
+    expected = tuple(getattr(module, "EXPECTED_COLUMNS", ()))
+
+    if kind == "mbtiles":
+        return {
+            "name": name, "status": "skip",
+            "reason": "MBTiles binary — column-shape contract doesn't apply",
+            "expected": list(expected),
+            "actual": [],
+        }
+
+    file_path = _find_source_file(module, name, data_dir)
+    if file_path is None:
+        return {
+            "name": name, "status": "missing",
+            "reason": (
+                "no live file under any "
+                "seed/lleolydd/snapshots/*/downloads/ — run a build first "
+                "or pass --download-if-missing"
+            ),
+            "expected": list(expected),
+            "actual": [],
+        }
+
+    try:
+        if kind == "csv":
+            actual = _src_common.sniff_csv_columns(file_path)
+        elif kind == "gml":
+            actual = _src_common.sniff_gml_columns(file_path)
+        else:
+            return {
+                "name": name, "status": "error",
+                "reason": f"unknown SOURCE_KIND {kind!r}",
+                "expected": list(expected),
+                "actual": [],
+                "file": str(file_path),
+            }
+    except (RuntimeError, OSError) as exc:
+        return {
+            "name": name, "status": "error",
+            "reason": str(exc),
+            "expected": list(expected),
+            "actual": [],
+            "file": str(file_path),
+        }
+
+    added, removed = _src_common.diff_columns(expected, actual)
+    # Per-kind drift semantics:
+    #   csv: strict — any addition or removal is drift. OS publishes a
+    #        fixed CSV schema; an extra column is the kind of change a
+    #        future loader update might want to consume (or a real
+    #        rename in disguise) so we don't auto-tolerate it.
+    #   gml: must-include — OGR's auto-generated attributes (OGC_FID,
+    #        gml_id, etc.) appear in actual but aren't part of the
+    #        loader's contract. We only fail when an EXPECTED column
+    #        is missing; extras are reported informationally but don't
+    #        trigger drift.
+    if kind == "gml":
+        drift = bool(removed)
+    else:
+        drift = bool(added) or bool(removed)
+    result = {
+        "name": name,
+        "expected": list(expected),
+        "actual": list(actual),
+        "added": list(added),
+        "removed": list(removed),
+        "file": str(file_path),
+        "drift_mode": "must_include" if kind == "gml" else "strict",
+    }
+    if not drift:
+        # Clean if no removed cols (or no diff at all for CSV). Note
+        # GML "ok" can still have informational `added` entries —
+        # they're rendered but don't fail.
+        result["status"] = "ok"
+    else:
+        result["status"] = "drift"
+    return result
+
+
+def _try_download_for_sniff(module, data_dir: Path) -> Path | None:
+    """Best-effort full download (calls the source's download()) and
+    returns the first on-disk file after the call. Used by schema-sniff
+    --download-if-missing. Catches any exception so a single source's
+    network failure doesn't abort the whole sniff."""
+    snapshots_root = data_dir / "seed" / "lleolydd" / "snapshots"
+    snapshots_root.mkdir(parents=True, exist_ok=True)
+    # Place ad-hoc-downloaded files under a sentinel snapshot dir so
+    # we don't accidentally populate a real release.
+    target = snapshots_root / "schema-sniff" / "downloads"
+    target.mkdir(parents=True, exist_ok=True)
+    try:
+        module.download(target)
+    except Exception:  # noqa: BLE001 — best-effort; reported via status
+        return None
+    files = [p for p in target.rglob("*") if p.is_file()]
+    if not files:
+        return None
+    return files[0]
+
+
+def cmd_schema_sniff(args: argparse.Namespace) -> int:
+    """Compare each source's expected columns against the live file
+    on disk. Exit 0 clean / 1 drift / 2 file-missing (or read failure).
+
+    See `seed/lleolydd/README.md` for operational guidance — recommended
+    pre-flight check before kicking off a full cache build.
+    """
+    data_dir = _data_dir(args)
+
+    scope: tuple[tuple[str, object], ...]
+    if args.source:
+        wanted = args.source
+        match = [(n, m) for (n, m) in SOURCE_MODULES if n == wanted]
+        if not match:
+            print(
+                f"lleolydd-cache: unknown source {wanted!r}. Known: "
+                f"{', '.join(n for n, _ in SOURCE_MODULES)}.",
+                file=sys.stderr,
+            )
+            return 2
+        scope = tuple(match)
+    else:
+        scope = SOURCE_MODULES
+
+    results: list[dict] = []
+    for name, module in scope:
+        result = _sniff_one_source(name, module, data_dir)
+        if (
+            result["status"] == "missing"
+            and getattr(args, "download_if_missing", False)
+            and getattr(module, "SOURCE_KIND", None) != "mbtiles"
+        ):
+            downloaded = _try_download_for_sniff(module, data_dir)
+            if downloaded is not None:
+                result = _sniff_one_source(name, module, data_dir)
+            else:
+                result["reason"] = (
+                    "download attempted (--download-if-missing) but "
+                    "failed; file still not present"
+                )
+        results.append(result)
+
+    drift_count = sum(1 for r in results if r["status"] == "drift")
+    error_count = sum(
+        1 for r in results if r["status"] in ("error", "missing")
+    )
+    if drift_count > 0:
+        exit_code = 1
+    elif error_count > 0:
+        exit_code = 2
+    else:
+        exit_code = 0
+
+    if args.as_json:
+        payload = {
+            "sources": results,
+            "drift_count": drift_count,
+            "error_count": error_count,
+            "exit_code": exit_code,
+        }
+        print(json.dumps(payload, indent=2, default=str))
+        return exit_code
+
+    print("lleolydd-cache schema-sniff")
+    print("-" * 60)
+    for r in results:
+        tag = {
+            "ok":      "[ok]    ",
+            "drift":   "[drift] ",
+            "skip":    "[skip]  ",
+            "missing": "[miss]  ",
+            "error":   "[err]   ",
+        }.get(r["status"], "[?]     ")
+        line = f"{tag}{r['name']:<18}"
+        if r["status"] == "ok":
+            mode = r.get("drift_mode", "strict")
+            extra = r.get("added") or []
+            if mode == "must_include" and extra:
+                # GML: surfacing the auto-generated / upstream extras
+                # without failing — informational, not drift.
+                print(
+                    f"{line} — all {len(r['expected'])} required columns "
+                    f"present (must-include mode); "
+                    f"extras present (informational): {tuple(extra)}"
+                )
+            else:
+                print(
+                    f"{line} — all {len(r['expected'])} expected columns "
+                    f"present"
+                )
+        elif r["status"] == "drift":
+            mode = r.get("drift_mode", "strict")
+            print(f"{line} — schema drift (mode={mode})")
+            print(f"           expected: {tuple(r['expected'])}")
+            print(f"           actual:   {tuple(r['actual'])}")
+            print(f"           added:    {tuple(r['added'])}")
+            print(f"           removed:  {tuple(r['removed'])}")
+        elif r["status"] == "skip":
+            print(f"{line} — skip ({r.get('reason', '')})")
+        elif r["status"] == "missing":
+            print(f"{line} — missing: {r.get('reason', '')}")
+        else:
+            print(f"{line} — error: {r.get('reason', '')}")
+    print("-" * 60)
+    print(f"summary: drift={drift_count} error/missing={error_count}")
+    return exit_code
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="lleolydd-cache",
@@ -302,6 +614,35 @@ def main(argv: list[str] | None = None) -> int:
     p_derive.add_argument("--force", action="store_true",
                           help="re-download even if zip is present")
     p_derive.set_defaults(func=cmd_derive_bounds)
+
+    p_sniff = sub.add_parser(
+        "schema-sniff",
+        help=(
+            "compare each source's EXPECTED_COLUMNS against the live "
+            "file on disk; catch upstream OGL data-format drift before "
+            "a full cache build hits it"
+        ),
+    )
+    p_sniff.add_argument(
+        "--source", default=None,
+        help=(
+            "scope to one source (e.g. open-uprn, open-toid, "
+            "open-linked-ids, inspire, boundary-line, zoomstack). "
+            "Default: all six."
+        ),
+    )
+    p_sniff.add_argument(
+        "--download-if-missing", action="store_true",
+        dest="download_if_missing",
+        help=(
+            "if the live file isn't on disk, call the source's "
+            "download() to fetch it (best-effort; per-source download "
+            "failures are reported, not raised). Files land under "
+            "seed/lleolydd/snapshots/schema-sniff/downloads/ to keep "
+            "them out of real release directories."
+        ),
+    )
+    p_sniff.set_defaults(func=cmd_schema_sniff)
 
     args = parser.parse_args(argv)
     return args.func(args)
