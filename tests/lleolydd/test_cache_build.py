@@ -235,18 +235,35 @@ def _write_synthetic_toid_csv(path: Path) -> None:
 
 
 def _write_synthetic_lids_csv(path: Path) -> None:
-    """LIDS BLPU-UPRN-TopographicArea-TOID file. Header present."""
+    """LIDS BLPU-UPRN-TopographicArea-TOID file, 2026-03 shape.
+
+    Schema reference: open_linked_ids.LIDS_BLPU_COLUMNS_AS_OF_2026_03.
+    Pre-2026 releases shipped IDENTIFIER_*_TYPE + CORRELATION_METHOD;
+    the current shape has CORRELATION_ID (composite) plus per-side
+    VERSION_NUMBER / VERSION_DATE and a free-text CONFIDENCE column.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["IDENTIFIER_1", "IDENTIFIER_1_TYPE",
-                    "IDENTIFIER_2", "IDENTIFIER_2_TYPE",
-                    "VERSION_DATE", "CORRELATION_METHOD"])
-        w.writerow([1001, "BLPU UPRN", "osgb-bldg-1001",
-                    "TopographicArea TOID", "2024-01-01", "1"])
+        w.writerow([
+            "CORRELATION_ID", "IDENTIFIER_1",
+            "VERSION_NUMBER_1", "VERSION_DATE_1",
+            "IDENTIFIER_2", "VERSION_NUMBER_2", "VERSION_DATE_2",
+            "CONFIDENCE",
+        ])
+        w.writerow([
+            "BLPU_1001_TopographicArea_osgb-bldg-1001_5",
+            1001, "1", "20240101",
+            "osgb-bldg-1001", "1", "20240101",
+            "Version information is correct",
+        ])
         # UPRN 1002 deliberately ABSENT from LIDS → non-postal
-        w.writerow([1003, "BLPU UPRN", "osgb-bldg-1003",
-                    "TopographicArea TOID", "2024-01-01", "1"])
+        w.writerow([
+            "BLPU_1003_TopographicArea_osgb-bldg-1003_5",
+            1003, "1", "20240101",
+            "osgb-bldg-1003", "1", "20240101",
+            "Version information is correct",
+        ])
 
 
 def test_build_end_to_end_with_synthetic_fixtures(tmp_path: Path):
@@ -269,8 +286,7 @@ def test_build_end_to_end_with_synthetic_fixtures(tmp_path: Path):
     _write_synthetic_uprn_csv(paths.downloads_dir / "osopenuprn_202605.csv")
     _write_synthetic_toid_csv(paths.downloads_dir / "osopentoid_202605_csv_sh.csv")
     _write_synthetic_lids_csv(
-        paths.downloads_dir
-        / "lids-2026-03_csv_BLPU-UPRN-TopographicArea-TOID-5.csv"
+        paths.downloads_dir / "BLPU_UPRN_TopographicArea_TOID_5.csv"
     )
 
     summary = build(
