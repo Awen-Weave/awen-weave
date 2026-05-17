@@ -1,0 +1,33 @@
+# Python build / packaging
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenvs
+.venv/
+.venv-*/
+venv/
+env/
+
+# Operational data (Craidd / Prawf / Lleolydd cache)
+*.duckdb
+*.duckdb.wal
+seed/lleolydd/cache.duckdb
+seed/lleolydd/snapshots/
+
+# Test + coverage artefacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Local env
+.env
+.env.local
