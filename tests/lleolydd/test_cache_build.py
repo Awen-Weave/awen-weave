@@ -151,6 +151,10 @@ def test_build_dry_run_validates_paths(tmp_path: Path):
 
     assert summary["dry_run"] is True
     assert "area_bounds_wkt_length" in summary
+    # bbox derived from the synthetic Gwynedd polygon (a 20x15 km
+    # square in EPSG:27700 centred on Dolgellau). Used by the spatial
+    # loaders as a cheap prefilter before ST_Within / ST_Intersects.
+    assert summary["area_bounds_bbox"] == [265000.0, 310000.0, 285000.0, 325000.0]
     # cache.duckdb should NOT exist after dry-run
     assert not (data_dir / "seed" / "lleolydd" / "cache.duckdb").exists()
 
@@ -319,6 +323,89 @@ def test_build_end_to_end_with_synthetic_fixtures(tmp_path: Path):
         1002: "non-postal",     # not in any building TOID, no LIDS row
         1003: "auto-snapped",   # in osgb-bldg-1003, LIDS confirms
     }
+
+
+def test_build_bbox_prefilter_keeps_polygon_only_rows(tmp_path: Path):
+    """The bbox prefilter is a prefilter, not a replacement for
+    ST_Within. A row inside the bbox but outside the (non-rectangular)
+    polygon must still be dropped by the polygon test — the bbox check
+    only removes the obviously-outside rows cheaply.
+
+    Polygon shape: L-shape carved from the synthetic 20x15 km bbox.
+    The bbox covers [265000..285000, 310000..325000]; the L excludes
+    the south-west quadrant [265000..275000, 310000..317500]. A
+    UPRN placed at (270000, 312000) is inside the bbox but inside the
+    excluded notch — bbox passes, ST_Within drops.
+    """
+    from lleolydd.cache.build import BuildPaths, build
+
+    # L-shaped polygon: full bbox minus the south-west quadrant.
+    bounds = tmp_path / "area-bounds.geojson"
+    bounds.parent.mkdir(parents=True, exist_ok=True)
+    bounds.write_text(json.dumps({
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "properties": {"name": "Gwynedd-L"},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [265000, 317500],  # NW of the notch
+                    [275000, 317500],
+                    [275000, 310000],
+                    [285000, 310000],
+                    [285000, 325000],
+                    [265000, 325000],
+                    [265000, 317500],
+                ]],
+            },
+        }],
+    }))
+
+    data_dir = tmp_path / "data"
+    paths = BuildPaths.resolve(data_dir, "2026-05")
+    paths.downloads_dir.mkdir(parents=True, exist_ok=True)
+
+    # Three UPRNs:
+    # - 3001: outside bbox entirely (bbox catches it).
+    # - 3002: inside bbox AND inside L (kept).
+    # - 3003: inside bbox but inside the excluded notch (bbox passes,
+    #         polygon test drops).
+    with (paths.downloads_dir / "osopenuprn_202605.csv").open(
+        "w", newline=""
+    ) as f:
+        w = csv.writer(f)
+        w.writerow(["UPRN", "X_COORDINATE", "Y_COORDINATE",
+                    "LATITUDE", "LONGITUDE"])
+        w.writerow([3001, 600000, 200000, 51.0, -1.0])    # outside bbox
+        w.writerow([3002, 280000, 320000, 52.8, -3.8])    # in L (NE corner)
+        w.writerow([3003, 270000, 312000, 52.7, -3.9])    # in notch
+
+    summary = build(
+        data_dir=data_dir,
+        area_bounds=bounds,
+        release="2026-05",
+        sources=["open-uprn"],
+        skip_download=True,
+        force=True,
+    )
+
+    # rows_in is the national total (3); rows_in_area is the polygon
+    # survivors (1 — only 3002).
+    assert summary["per_source"]["open-uprn"]["rows_in"] == 3
+    assert summary["per_source"]["open-uprn"]["rows_in_area"] == 1
+
+    # Spot-check the surviving UPRN.
+    conn = duckdb.connect(str(paths.cache_db), read_only=True)
+    uprns = [r[0] for r in conn.execute(
+        "SELECT uprn FROM uprn ORDER BY uprn"
+    ).fetchall()]
+    conn.close()
+    assert uprns == [3002], (
+        "expected only UPRN 3002 (inside L-polygon) to survive; "
+        f"got {uprns}. Did the bbox prefilter accidentally replace "
+        "the ST_Within polygon test?"
+    )
 
 
 def test_build_refuses_to_overwrite_existing_snapshot(tmp_path: Path):

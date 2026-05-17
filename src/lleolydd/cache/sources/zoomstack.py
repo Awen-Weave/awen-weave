@@ -69,6 +69,7 @@ def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
     area_bounds_wkt: str,    # noqa: ARG001 — MBTiles isn't clip-able
+    area_bounds_bbox: tuple[float, float, float, float],  # noqa: ARG001
     snapshot_id: str,
 ) -> dict:
     """Record the Zoomstack MBTiles location + hash. Doesn't load tile
@@ -80,6 +81,11 @@ def load_into_duckdb(
             f"{file_paths}"
         )
     target = mbtiles[0]
+    print(
+        f"[zoomstack] hashing {target.name} "
+        f"({target.stat().st_size / (1024**3):.2f} GB) …",
+        flush=True,
+    )
     file_hash = sha256_file(target)
     size = target.stat().st_size
 
@@ -90,6 +96,11 @@ def load_into_duckdb(
         VALUES (?, ?, ?, ?)
         """,
         [snapshot_id, str(target), file_hash, size],
+    )
+    print(
+        f"[zoomstack]   recorded MBTiles manifest "
+        f"({file_hash[:16]}…)",
+        flush=True,
     )
 
     return {

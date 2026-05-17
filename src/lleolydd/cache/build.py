@@ -162,32 +162,44 @@ class BuildPaths:
         )
 
 
-def _read_area_bounds_wkt(geojson_path: Path) -> str:
-    """Read the area-bounds GeoJSON, return WKT in EPSG:27700.
+def _load_area_bounds(
+    geojson_path: Path,
+) -> tuple[str, tuple[float, float, float, float]]:
+    """Read the area-bounds GeoJSON, return (wkt, bbox) in EPSG:27700.
 
     The geojson is expected to carry the Gwynedd boundary in BNG
     (matching how OS BoundaryLine encodes admin polygons). We parse it
     via DuckDB spatial (the same parser the source modules use) to
-    avoid a hard geopandas dependency."""
+    avoid a hard geopandas dependency.
+
+    bbox = (xmin, ymin, xmax, ymax) is the polygon's bounding rectangle.
+    The spatial loaders use it as a cheap BNG-coordinate prefilter
+    before the expensive per-row ST_Within / ST_Intersects test against
+    the full polygon — see open_uprn.py, open_toid.py, inspire.py.
+    """
     conn = duckdb.connect(":memory:")
     conn.execute("INSTALL spatial; LOAD spatial;")
-    rows = conn.execute(
-        "SELECT ST_AsText(geom) FROM ST_Read(?)",
+    # ST_Union_Agg unifies any multi-feature input into one polygon
+    # (rare for LAD data, but defensive — and it's the no-op identity
+    # for single-feature input).
+    row = conn.execute(
+        """
+        SELECT
+            ST_AsText(ST_Union_Agg(geom)) AS wkt,
+            ST_XMin(ST_Union_Agg(geom)) AS xmin,
+            ST_YMin(ST_Union_Agg(geom)) AS ymin,
+            ST_XMax(ST_Union_Agg(geom)) AS xmax,
+            ST_YMax(ST_Union_Agg(geom)) AS ymax
+        FROM ST_Read(?)
+        """,
         [str(geojson_path)],
-    ).fetchall()
-    if not rows:
+    ).fetchone()
+    if row is None or row[0] is None:
         raise RuntimeError(
             f"area-bounds: no features in {geojson_path}"
         )
-    # Unify multi-feature inputs into a single polygon (rare for LAD
-    # data but defensive).
-    if len(rows) > 1:
-        union = conn.execute(
-            "SELECT ST_AsText(ST_Union_Agg(geom)) FROM ST_Read(?)",
-            [str(geojson_path)],
-        ).fetchone()[0]
-        return union
-    return rows[0][0]
+    wkt, xmin, ymin, xmax, ymax = row
+    return wkt, (float(xmin), float(ymin), float(xmax), float(ymax))
 
 
 def _release_default() -> str:
@@ -240,8 +252,9 @@ def build(
         # Validate inputs without writing anything. Useful for CI.
         if not area_bounds.is_file():
             raise FileNotFoundError(f"area-bounds: {area_bounds}")
-        area_bounds_wkt = _read_area_bounds_wkt(area_bounds)
+        area_bounds_wkt, area_bounds_bbox = _load_area_bounds(area_bounds)
         summary["area_bounds_wkt_length"] = len(area_bounds_wkt)
+        summary["area_bounds_bbox"] = list(area_bounds_bbox)
         summary["plan"] = "dry-run — paths + sources validated, no writes"
         return summary
 
@@ -255,8 +268,8 @@ def build(
     paths.snapshot_dir.mkdir(parents=True, exist_ok=True)
     paths.downloads_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- Load area bounds.
-    area_bounds_wkt = _read_area_bounds_wkt(area_bounds)
+    # --- Load area bounds (polygon WKT + cheap bbox prefilter).
+    area_bounds_wkt, area_bounds_bbox = _load_area_bounds(area_bounds)
     manifest = open_manifest(snapshot_id, release, area_bounds)
 
     # --- Open / initialise the cache DB.
@@ -306,7 +319,7 @@ def build(
             )
 
         load_stats = module.load_into_duckdb(
-            conn, files, area_bounds_wkt, snapshot_id
+            conn, files, area_bounds_wkt, area_bounds_bbox, snapshot_id
         )
         per_source_summary[name] = load_stats
         manifest.add_source(
