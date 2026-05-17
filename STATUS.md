@@ -1,18 +1,19 @@
 # Awen Weave — STATUS
 
-**Last updated:** 2026-05-17 (v0.1.0 release)
+**Last updated:** 2026-05-17 (post v0.1.0 release)
 
 ## What works
-- Framework code extracted via subtree split (Brief 1 complete).
-- Package scaffolding in place.
-- **v0.1.0 published to PyPI** — `pip install awen-weave`
+- Framework extracted (Brief 1 ✓)
+- **v0.1.0 published to PyPI** ✓ — `pip install awen-weave`
+- Smoke install + import verified ✓
+- CI check workflow green ✓
 
 ## What doesn't yet
-- town-dataset has not yet been slimmed; framework code still also lives there until Brief 3 lands.
-- Namespace restructure (Option β proper) deferred to v0.2.
+- town-dataset still has framework code duplicated (Brief 3 will slim it)
+- Namespace restructure deferred to v0.2
 
-## In flight
-- Brief 3 (town-dataset slim + Pi deploy) — pending.
+## Next
+- Brief 3: town-dataset slim + rewire to consume awen-weave from PyPI + Pi deploy.
 
 ## Deferred from initial migration
 
