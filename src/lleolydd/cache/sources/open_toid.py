@@ -49,15 +49,20 @@ FILENAME_PATTERN = "osopentoid"
 # south-eastern slivers (around Bala, Corwen).
 GWYNEDD_GRID_TILES: tuple[str, ...] = ("SH", "SJ")
 
-# Expected column names for the 2026-04 schema. Surfaced as a constant
-# so the schema-sniff CLI (separate brief) can use it as the
-# expected-columns reference. If OS changes the schema again, update
-# both this tuple and the INSERT below; the test suite + integration
-# build will surface any mismatch.
-OPEN_TOID_COLUMNS_AS_OF_2026_04: tuple[str, ...] = (
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff
+# subcommand and _common.sniff_columns. EXPECTED_COLUMNS is the
+# 2026-04 schema, surfaced as a constant so the schema-sniff CLI can
+# diff it against the live file. If OS changes the schema again,
+# update this tuple and the INSERT below.
+SOURCE_KIND = "csv"
+EXPECTED_COLUMNS: tuple[str, ...] = (
     "TOID", "VERSION_NUMBER", "VERSION_DATE",
     "SOURCE_PRODUCT", "EASTING", "NORTHING",
 )
+# Date-tagged alias kept for diagnostic readability — when OS publishes
+# yet another schema, leaving the *_AS_OF_2026_04 here makes the prior
+# spec auditable next to the new one.
+OPEN_TOID_COLUMNS_AS_OF_2026_04: tuple[str, ...] = EXPECTED_COLUMNS
 
 
 def list_remote_files() -> list[dict]:

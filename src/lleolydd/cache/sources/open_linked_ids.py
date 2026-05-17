@@ -38,12 +38,13 @@ DOWNLOAD_FORMAT = "CSV"
 # the case-insensitive "blpu_uprn".
 FILENAME_PATTERN = "BLPU_UPRN"
 
-# Expected columns for the 2026-03 release; surfaced as a constant so
-# the schema-sniff CLI (future brief) can use this as the reference.
-# Pre-2026 releases used IDENTIFIER_1_TYPE / IDENTIFIER_2_TYPE / a
-# single VERSION_DATE / CORRELATION_METHOD. Update both this tuple
-# and the INSERT below when OS changes the schema again.
-LIDS_BLPU_COLUMNS_AS_OF_2026_03: tuple[str, ...] = (
+# schema-sniff contract — see src/cli/lleolydd_cache.py schema-sniff
+# subcommand and _common.sniff_columns. EXPECTED_COLUMNS is the
+# 2026-03 schema. Pre-2026 releases used IDENTIFIER_1_TYPE /
+# IDENTIFIER_2_TYPE / a single VERSION_DATE / CORRELATION_METHOD;
+# update both this tuple and the INSERT below when OS changes again.
+SOURCE_KIND = "csv"
+EXPECTED_COLUMNS: tuple[str, ...] = (
     "CORRELATION_ID",
     "IDENTIFIER_1",       # BLPU UPRN
     "VERSION_NUMBER_1",
@@ -53,6 +54,10 @@ LIDS_BLPU_COLUMNS_AS_OF_2026_03: tuple[str, ...] = (
     "VERSION_DATE_2",
     "CONFIDENCE",         # confidence-statement text (replaces CORRELATION_METHOD)
 )
+# Date-tagged alias kept for diagnostic readability — when OS
+# publishes yet another schema, leaving *_AS_OF_2026_03 makes the
+# prior spec auditable next to the new one.
+LIDS_BLPU_COLUMNS_AS_OF_2026_03: tuple[str, ...] = EXPECTED_COLUMNS
 
 # Substring match for the file we want. OS releases bump the date
 # prefix (e.g. lids-2026-03_csv_...) so we match on the constant suffix
