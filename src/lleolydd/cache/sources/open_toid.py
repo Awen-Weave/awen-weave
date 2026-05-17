@@ -16,6 +16,10 @@ For Lleolydd we keep only Building / Structure-typed features —
 buildings are what we snap UPRNs to. The other feature types (roads,
 boundaries, water) live in OS data but aren't relevant for UPRN
 verification at v1.
+
+The polygon clip uses a bbox prefilter on the parsed geometry's
+ST_XMin/XMax/YMin/YMax (a rectangle-overlap test, cheap) before the
+expensive ST_Intersects against Gwynedd's full multi-polygon.
 """
 from __future__ import annotations
 
@@ -101,21 +105,27 @@ def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
     area_bounds_wkt: str,
+    area_bounds_bbox: tuple[float, float, float, float],
     snapshot_id: str,
 ) -> dict:
     """Load OS Open TOID into the cache `toid` table, clipped to
     area_bounds_wkt AND filtered to building-shaped feature types.
 
-    The CSV's GEOMETRY column is WKT in EPSG:27700. We use
-    ST_GeomFromText to parse it, then ST_Intersects against the area
-    bounds polygon for the clip. Building filter is on
-    DESCRIPTION_GROUP.
+    The CSV's GEOMETRY column is WKT in EPSG:27700. The load is one
+    INSERT per tile, with the WKT-parsed geometry materialised once
+    in an inner subquery so each row's geometry is parsed exactly
+    twice (once for the polygon/centroid projection, once for the
+    bbox + ST_Intersects clip). The bbox-overlap test is four
+    cheap comparisons on the parsed geom's MBR; ST_Intersects against
+    the full Gwynedd polygon only runs on bbox survivors.
     """
     csv_paths = [p for p in file_paths if p.suffix.lower() == ".csv"]
     if not csv_paths:
         raise RuntimeError(
             f"OS Open TOID: no CSV in extracted files: {file_paths}"
         )
+
+    xmin, ymin, xmax, ymax = area_bounds_bbox
 
     total_in = 0
     total_buildings = 0
@@ -149,15 +159,25 @@ def load_into_duckdb(
 
     for csv_path in csv_paths:
         source_hashes[csv_path.name] = sha256_file(csv_path)
-        # Count input rows for this tile (cheap, single COUNT).
+        print(
+            f"[open_toid] counting rows in {csv_path.name} …",
+            flush=True,
+        )
         n_tile = conn.execute(
             "SELECT COUNT(*) FROM read_csv_auto(?, header=false, columns={"
             + columns_arg + "})",
             [str(csv_path)],
         ).fetchone()[0]
         total_in += n_tile
+        print(
+            f"[open_toid]   {n_tile:,} rows in tile; "
+            f"filtering to buildings inside Gwynedd bbox + polygon …",
+            flush=True,
+        )
 
         # Insert building polygons that intersect area_bounds.
+        # Inner subquery: building filter + materialise WKT geom once.
+        # Outer WHERE: bbox-overlap on the geom's MBR + ST_Intersects.
         before = conn.execute("SELECT COUNT(*) FROM toid").fetchone()[0]
         conn.execute(
             f"""
@@ -165,25 +185,43 @@ def load_into_duckdb(
                 (toid, polygon_geom, feature_type, description_group,
                  description_term, centroid_geom, snapshot_id)
             SELECT
-                toid,
-                ST_GeomFromText(geometry_wkt) AS polygon_geom,
-                feature_type,
-                description_group,
-                description_term,
-                ST_Centroid(ST_GeomFromText(geometry_wkt)) AS centroid_geom,
+                t.toid,
+                t.geom AS polygon_geom,
+                t.feature_type,
+                t.description_group,
+                t.description_term,
+                ST_Centroid(t.geom) AS centroid_geom,
                 ? AS snapshot_id
-            FROM read_csv_auto(?, header=false, columns={{{columns_arg}}})
-            WHERE ({group_predicate})
+            FROM (
+                SELECT
+                    toid,
+                    feature_type,
+                    description_group,
+                    description_term,
+                    ST_GeomFromText(geometry_wkt) AS geom
+                FROM read_csv_auto(?, header=false, columns={{{columns_arg}}})
+                WHERE ({group_predicate})
+            ) AS t
+            WHERE ST_XMax(t.geom) >= ?
+              AND ST_XMin(t.geom) <= ?
+              AND ST_YMax(t.geom) >= ?
+              AND ST_YMin(t.geom) <= ?
               AND ST_Intersects(
-                  ST_GeomFromText(geometry_wkt),
+                  t.geom,
                   ST_GeomFromText('{area_bounds_wkt}')
               )
             ON CONFLICT (toid) DO NOTHING
             """,
-            [snapshot_id, str(csv_path)],
+            [snapshot_id, str(csv_path), xmin, xmax, ymin, ymax],
         )
         after = conn.execute("SELECT COUNT(*) FROM toid").fetchone()[0]
-        total_buildings += (after - before)
+        added = after - before
+        total_buildings += added
+        print(
+            f"[open_toid]   +{added:,} building polygons "
+            f"(total in toid table: {after:,})",
+            flush=True,
+        )
 
     return {
         "rows_in": total_in,

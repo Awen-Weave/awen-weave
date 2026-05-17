@@ -10,7 +10,10 @@ Each ZIP contains a GML file (`Land_Registry_Cadastral_Parcels.gml`)
 with feature INSPIREID + GEOMETRY polygons in EPSG:27700 (BNG).
 
 For Phase 1 we download just the Gwynedd LAD zip (~30-60 MB), unpack
-the GML, and load via DuckDB's spatial ST_Read.
+the GML, and load via DuckDB's spatial ST_Read. The HMLR data is
+already LAD-scoped so the polygon clip is a belt-and-braces guard
+against edge mismatches with the OS BoundaryLine Gwynedd polygon; the
+bbox prefilter keeps that guard cheap.
 """
 from __future__ import annotations
 
@@ -71,6 +74,7 @@ def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
     area_bounds_wkt: str,
+    area_bounds_bbox: tuple[float, float, float, float],
     snapshot_id: str,
 ) -> dict:
     """Load Gwynedd INSPIRE parcels into the `inspire_parcel` table.
@@ -83,6 +87,10 @@ def load_into_duckdb(
         edge parcels).
       - Future builds may use a tighter bounding polygon (e.g.
         Dolgellau community-level for an extreme zoom).
+    Bbox-overlap on the parcel geom's MBR runs first as a cheap
+    prefilter — for the LAD-scoped HMLR file almost every parcel
+    passes, but the constant is cheap and keeps behaviour uniform
+    with the other spatial loaders.
     """
     gml_paths = [p for p in file_paths if p.suffix.lower() == ".gml"]
     if not gml_paths:
@@ -90,14 +98,24 @@ def load_into_duckdb(
             f"INSPIRE: no GML in extracted files: {file_paths}"
         )
     gml_path = gml_paths[0]
+    xmin, ymin, xmax, ymax = area_bounds_bbox
 
     # DuckDB spatial's ST_Read reads GML via GDAL/OGR. The layer name
     # varies by HMLR release; we use the first layer.
     # Column names per HMLR docs: INSPIREID, LABEL, NATIONALCADASTRAL-
     # REFERENCE, VALIDFROM, BEGINLIFESPANVERSION.
+    print(
+        f"[inspire] counting parcels in {gml_path.name} …",
+        flush=True,
+    )
     rows_in = conn.execute(
         "SELECT COUNT(*) FROM ST_Read(?)", [str(gml_path)]
     ).fetchone()[0]
+    print(
+        f"[inspire]   {rows_in:,} parcels in source; "
+        f"clipping to Gwynedd bbox + polygon …",
+        flush=True,
+    )
 
     conn.execute(
         f"""
@@ -107,18 +125,27 @@ def load_into_duckdb(
             geom AS polygon_geom,
             ? AS snapshot_id
         FROM ST_Read(?)
-        WHERE ST_Intersects(
-            geom,
-            ST_GeomFromText('{area_bounds_wkt}')
-        )
+        WHERE ST_XMax(geom) >= ?
+          AND ST_XMin(geom) <= ?
+          AND ST_YMax(geom) >= ?
+          AND ST_YMin(geom) <= ?
+          AND ST_Intersects(
+              geom,
+              ST_GeomFromText('{area_bounds_wkt}')
+          )
         ON CONFLICT (inspire_id) DO NOTHING
         """,
-        [snapshot_id, str(gml_path)],
+        [snapshot_id, str(gml_path), xmin, xmax, ymin, ymax],
     )
 
     rows_in_area = conn.execute(
         "SELECT COUNT(*) FROM inspire_parcel"
     ).fetchone()[0]
+    print(
+        f"[inspire]   {rows_in_area:,} parcels in Gwynedd "
+        f"(of {rows_in:,} in source)",
+        flush=True,
+    )
 
     return {
         "rows_in": rows_in,

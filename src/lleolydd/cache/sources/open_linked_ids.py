@@ -83,6 +83,7 @@ def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
     area_bounds_wkt: str,    # noqa: ARG001
+    area_bounds_bbox: tuple[float, float, float, float],  # noqa: ARG001
     snapshot_id: str,
 ) -> dict:
     """Load LIDS BLPU-UPRN-TopographicArea-TOID into the `linked_id`
@@ -109,29 +110,26 @@ def load_into_duckdb(
         )
     csv_path = csv_paths[0]
 
-    # Stage the national CSV into a temp table so we can JOIN against
-    # uprn for the area-filter. Subquery alias avoids the binder error
-    # described in open_uprn.py (DuckDB case-insensitive column refs).
-    conn.execute("DROP TABLE IF EXISTS _staging_lids")
-    conn.execute(
-        """
-        CREATE TEMP TABLE _staging_lids AS
-        SELECT
-            CAST(src."IDENTIFIER_1" AS BIGINT) AS uprn,
-            CAST(src."IDENTIFIER_2" AS VARCHAR) AS toid,
-            CAST(src."CORRELATION_METHOD" AS VARCHAR) AS correlation_method
-        FROM read_csv_auto(?, header=true) AS src
-        """,
+    print(
+        f"[open_linked_ids] counting rows in {csv_path.name} …",
+        flush=True,
+    )
+    total_in = conn.execute(
+        "SELECT COUNT(*) FROM read_csv_auto(?, header=true)",
         [str(csv_path)],
+    ).fetchone()[0]
+    print(
+        f"[open_linked_ids]   {total_in:,} BLPU-UPRN-TOID links; "
+        f"filtering to UPRNs already in cache …",
+        flush=True,
     )
 
-    total_in = conn.execute(
-        "SELECT COUNT(*) FROM _staging_lids"
-    ).fetchone()[0]
-
     # INSERT … WHERE uprn IN (SELECT uprn FROM uprn) is the area-clip.
-    # PK is (uprn, toid) — ON CONFLICT DO NOTHING to be tolerant of any
-    # exact-duplicate rows OS might emit.
+    # The Gwynedd `uprn` table is small (~50k rows), so DuckDB hashes
+    # it into a build-side and probes per LIDS row. PK is (uprn, toid)
+    # — ON CONFLICT DO NOTHING tolerates any exact-duplicate rows OS
+    # might emit. Subquery alias avoids the binder error described in
+    # open_uprn.py (DuckDB case-insensitive column refs).
     conn.execute(
         """
         INSERT INTO linked_id (uprn, toid, correlation_method, snapshot_id)
@@ -140,17 +138,26 @@ def load_into_duckdb(
             s.toid,
             s.correlation_method,
             ? AS snapshot_id
-        FROM _staging_lids s
+        FROM (
+            SELECT
+                CAST(src."IDENTIFIER_1" AS BIGINT) AS uprn,
+                CAST(src."IDENTIFIER_2" AS VARCHAR) AS toid,
+                CAST(src."CORRELATION_METHOD" AS VARCHAR) AS correlation_method
+            FROM read_csv_auto(?, header=true) AS src
+        ) AS s
         WHERE s.uprn IN (SELECT uprn FROM uprn)
         ON CONFLICT (uprn, toid) DO NOTHING
         """,
-        [snapshot_id],
+        [snapshot_id, str(csv_path)],
     )
 
     rows_in_area = conn.execute(
         "SELECT COUNT(*) FROM linked_id"
     ).fetchone()[0]
-    conn.execute("DROP TABLE _staging_lids")
+    print(
+        f"[open_linked_ids]   {rows_in_area:,} links for Gwynedd UPRNs",
+        flush=True,
+    )
 
     return {
         "rows_in": total_in,

@@ -5,10 +5,10 @@ Ships as a single national CSV (no Wales-only cut available on OS
 Data Hub). ~617 MB compressed → ~3.5 GB uncompressed CSV with columns
 UPRN, X_COORDINATE, Y_COORDINATE, LATITUDE, LONGITUDE.
 
-We load the whole national CSV into a temporary DuckDB table, then
-INSERT … WHERE ST_Within(point, area_bounds) into the final `uprn`
-table. The national file disappears from cache.duckdb after the clip;
-only the Gwynedd subset persists.
+We load the whole national CSV through a streaming INSERT, clipping to
+`area_bounds`. To keep the spatial-clip tractable on a Pi, a cheap BNG
+bbox prefilter runs first (5 BETWEEN tests in EPSG:27700); ST_Within
+against the full polygon only evaluates on bbox survivors.
 
 Worked out 2026-05-16: ~50k Gwynedd UPRNs out of ~37M GB UPRNs total.
 """
@@ -72,6 +72,7 @@ def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
     area_bounds_wkt: str,
+    area_bounds_bbox: tuple[float, float, float, float],
     snapshot_id: str,
 ) -> dict:
     """Load OS Open UPRN into the cache `uprn` table, clipped to
@@ -82,6 +83,18 @@ def load_into_duckdb(
     The CSV columns are UPRN, X_COORDINATE, Y_COORDINATE, LATITUDE,
     LONGITUDE. Phase 1 doesn't yet use LATITUDE/LONGITUDE — Phase 2
     viewer rendering does.
+
+    Two passes over the CSV:
+      1. COUNT(*) — manifest semantic for `rows_in` is "rows in the
+         national source file". Cheap CSV scan; DuckDB doesn't
+         materialise per-row state for a bare COUNT.
+      2. INSERT — streaming pass with bbox prefilter inside the
+         subquery (cheap, 4 BETWEEN comparisons in BNG) and ST_Within
+         against the full polygon as the outer WHERE (expensive,
+         scales with polygon-vertex count). With Gwynedd's
+         72k-vertex multipolygon the bbox prefilter discards ~99% of
+         national rows before any spatial test runs, so the previous
+         OOM-grade RSS + multi-hour runtime is gone.
     """
     csv_paths = [p for p in file_paths if p.suffix.lower() == ".csv"]
     if not csv_paths:
@@ -89,63 +102,66 @@ def load_into_duckdb(
             f"OS Open UPRN: no CSV in extracted files: {file_paths}"
         )
     csv_path = csv_paths[0]
+    xmin, ymin, xmax, ymax = area_bounds_bbox
 
-    # Use a temp table for the national load, then INSERT-with-clip into
-    # the final `uprn` table. The temp goes away with the connection
-    # (or could be explicitly dropped); the national data never lands
-    # in the persistent cache.
-    # DuckDB treats column names case-insensitively, so a literal
-    # `CAST(UPRN AS BIGINT) AS uprn` triggers a "column UPRN exists
-    # in SELECT clause - but cannot be referenced before defined"
-    # binder error (it reads the alias as a self-reference). Read via
-    # subquery first, then transform — keeps the original column names
-    # from the CSV separate from our aliases.
-    conn.execute("DROP TABLE IF EXISTS _staging_uprn")
-    conn.execute(
-        """
-        CREATE TEMP TABLE _staging_uprn AS
-        SELECT
-            CAST(src."UPRN" AS BIGINT) AS uprn,
-            CAST(src."X_COORDINATE" AS DOUBLE) AS x_bng,
-            CAST(src."Y_COORDINATE" AS DOUBLE) AS y_bng,
-            CAST(src."LATITUDE" AS DOUBLE) AS latitude,
-            CAST(src."LONGITUDE" AS DOUBLE) AS longitude
-        FROM read_csv_auto(?, header=true) AS src
-        """,
+    print(
+        f"[open_uprn] counting national rows in {csv_path.name} …",
+        flush=True,
+    )
+    total_in = conn.execute(
+        "SELECT COUNT(*) FROM read_csv_auto(?, header=true)",
         [str(csv_path)],
+    ).fetchone()[0]
+    print(
+        f"[open_uprn]   {total_in:,} national rows; "
+        f"clipping to Gwynedd bbox + polygon …",
+        flush=True,
     )
 
-    total_in = conn.execute(
-        "SELECT COUNT(*) FROM _staging_uprn"
-    ).fetchone()[0]
-
-    # Insert clipped rows. ST_Within on BNG point against the bounds
-    # polygon (also in BNG). Point geometry is ST_Point(x, y).
+    # INSERT-from-subquery. The inner SELECT renames columns away from
+    # the case-insensitive collision (CSV "UPRN" vs. INSERT alias
+    # "uprn"), applies the cheap bbox prefilter, and casts coords once.
+    # The outer SELECT then runs ST_Within on bbox survivors only.
+    # Streaming end-to-end — no national staging table.
     conn.execute(
         f"""
         INSERT INTO uprn
             (uprn, point_geom, snapped_toid, snap_band, snap_confidence,
              latitude, longitude, snapshot_id)
         SELECT
-            uprn,
-            ST_Point(x_bng, y_bng) AS point_geom,
+            t.uprn,
+            ST_Point(t.x_bng, t.y_bng) AS point_geom,
             NULL,        -- snapped_toid: filled later by bands.py
             NULL,        -- snap_band: ditto
             NULL,        -- snap_confidence: ditto
-            latitude,
-            longitude,
+            t.latitude,
+            t.longitude,
             ?
-        FROM _staging_uprn
+        FROM (
+            SELECT
+                CAST(src."UPRN" AS BIGINT) AS uprn,
+                CAST(src."X_COORDINATE" AS DOUBLE) AS x_bng,
+                CAST(src."Y_COORDINATE" AS DOUBLE) AS y_bng,
+                CAST(src."LATITUDE" AS DOUBLE) AS latitude,
+                CAST(src."LONGITUDE" AS DOUBLE) AS longitude
+            FROM read_csv_auto(?, header=true) AS src
+            WHERE CAST(src."X_COORDINATE" AS DOUBLE) BETWEEN ? AND ?
+              AND CAST(src."Y_COORDINATE" AS DOUBLE) BETWEEN ? AND ?
+        ) AS t
         WHERE ST_Within(
-            ST_Point(x_bng, y_bng),
+            ST_Point(t.x_bng, t.y_bng),
             ST_GeomFromText('{area_bounds_wkt}')
         )
         """,
-        [snapshot_id],
+        [snapshot_id, str(csv_path), xmin, xmax, ymin, ymax],
     )
 
     rows_in_area = conn.execute("SELECT COUNT(*) FROM uprn").fetchone()[0]
-    conn.execute("DROP TABLE _staging_uprn")
+    print(
+        f"[open_uprn]   {rows_in_area:,} rows in Gwynedd "
+        f"(of {total_in:,} national)",
+        flush=True,
+    )
 
     return {
         "rows_in": total_in,
