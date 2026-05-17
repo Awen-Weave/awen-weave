@@ -81,7 +81,8 @@ def _print_build_summary(summary: dict, as_json: bool) -> None:
         print()
         print("  band distribution:")
         total = band.get("total", 0)
-        for label in ("auto-snapped", "unsnapped", "contested", "non-postal"):
+        for label in ("auto-snapped", "unsnapped",
+                      "contested-prox", "contested-lids", "non-postal"):
             n = band.get(label, 0)
             pct = (100 * n / total) if total else 0
             print(f"    {label:13s} : {n:>8,}  ({pct:5.1f}%)")
@@ -163,7 +164,8 @@ def cmd_snapshot_show(args: argparse.Namespace) -> int:
     if band:
         print("  band distribution:")
         total = band.get("total", 0)
-        for label in ("auto-snapped", "unsnapped", "contested", "non-postal"):
+        for label in ("auto-snapped", "unsnapped",
+                      "contested-prox", "contested-lids", "non-postal"):
             n = band.get(label, 0)
             pct = (100 * n / total) if total else 0
             print(f"    {label:13s} : {n:>8,}  ({pct:5.1f}%)")
@@ -196,8 +198,8 @@ def cmd_snapshot_diff(args: argparse.Namespace) -> int:
               "band_stats": _band(b)},
         "deltas": {
             band: _band(b).get(band, 0) - _band(a).get(band, 0)
-            for band in ("auto-snapped", "unsnapped", "contested",
-                         "non-postal", "total")
+            for band in ("auto-snapped", "unsnapped", "contested-prox",
+                         "contested-lids", "non-postal", "total")
         },
     }
     if args.as_json:

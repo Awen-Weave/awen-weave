@@ -1,24 +1,43 @@
 """
-Tests for src/lleolydd/cache/bands.py — the UPRN status-band classifier.
+Tests for src/lleolydd/cache/bands.py — the UPRN status-band classifier
+(v1 point-proximity semantics).
 
-These are the load-bearing Lleolydd tests. Use small synthetic polygons
-+ points (no real OS data); each test sets up an in-memory DuckDB with
-the cache schema, populates it with a handful of UPRNs / TOIDs /
-linked_id rows, calls classify_bands, and asserts the band assignment
-matches the rule from design/lleolydd.md §4.
+These are the load-bearing Lleolydd tests. Use small synthetic TOID
+points + UPRN points (no real OS data); each test sets up an in-memory
+DuckDB with the cache schema, populates it with a handful of UPRNs /
+TOIDs / linked_id rows, calls classify_bands, and asserts the band
+assignment matches the v1 (point-proximity) decision matrix.
 
-The fixtures use OSGB BNG coordinates near Dolgellau (E~272000, N~317000)
+Fixtures use OSGB BNG coordinates near Dolgellau (E~272000, N~317000)
 so anyone reading a failure can intuit "yes that's a Dolgellau-shaped
 test" rather than abstract numbers.
+
+v1 semantics — see src/lleolydd/cache/bands.py module docstring:
+  auto-snapped     UPRN within SNAP_THRESHOLD_M of exactly one TOID
+                   point AND LIDS agrees with that TOID.
+  unsnapped        no TOID point within SNAP_THRESHOLD_M.
+  contested-prox   multiple TOID points within SNAP_THRESHOLD_M.
+  contested-lids   exactly one within, LIDS disagrees.
+  non-postal       no LIDS row (overrides spatial state).
+
+When OS NGD restores polygons in Phase 1.x the polygon-based
+classifier returns and contested-prox/contested-lids collapse back
+into a single `contested` band — these tests will need to be
+re-shaped at that point.
 """
 from __future__ import annotations
 
 import duckdb
 import pytest
 
-# The cache schema. Re-defined here rather than imported from build.py
-# so tests don't depend on build.py's full surface — keeps the schema
-# unit testable in isolation.
+# The cache schema (subset relevant to bands). Re-defined here rather
+# than imported from build.py so tests don't depend on build.py's full
+# surface — keeps the schema unit-testable in isolation.
+#
+# Schema matches build.py's CACHE_DDL for the v1 (point-proximity)
+# shape: toid carries point_geom + nullable polygon_geom / feature_type
+# / description_group / description_term / centroid_geom (the columns
+# Phase 1.x will populate via OS NGD).
 TEST_DDL = """
 INSTALL spatial; LOAD spatial;
 
@@ -35,6 +54,7 @@ CREATE TABLE uprn (
 
 CREATE TABLE toid (
     toid VARCHAR PRIMARY KEY,
+    point_geom GEOMETRY,
     polygon_geom GEOMETRY,
     feature_type VARCHAR,
     description_group VARCHAR,
@@ -73,32 +93,21 @@ def _insert_uprn(conn, uprn: int, x: float, y: float) -> None:
     )
 
 
-def _insert_building_toid(
+def _insert_toid_point(
     conn,
     toid: str,
-    cx: float,
-    cy: float,
-    half_side: float = 5.0,
+    x: float,
+    y: float,
 ) -> None:
-    """Insert a building TOID as a square polygon centred at (cx, cy)
-    in BNG, with half-side `half_side` metres. ~10m square by default
-    — small Welsh terraced house scale."""
-    minx, miny = cx - half_side, cy - half_side
-    maxx, maxy = cx + half_side, cy + half_side
-    wkt = (
-        f"POLYGON(({minx} {miny}, {maxx} {miny}, "
-        f"{maxx} {maxy}, {minx} {maxy}, {minx} {miny}))"
-    )
+    """Insert a TOID at its representative point (BNG). v1 shape:
+    point_geom populated, polygon_geom + feature_type / description
+    columns NULL (Phase 1.x NGD will fill them)."""
     conn.execute(
         """
-        INSERT INTO toid (toid, polygon_geom, feature_type,
-                          description_group, description_term,
-                          centroid_geom)
-        VALUES (?, ST_GeomFromText(?), 'TopographicArea',
-                'Building', 'Building',
-                ST_Point(?, ?))
+        INSERT INTO toid (toid, point_geom)
+        VALUES (?, ST_Point(?, ?))
         """,
-        [toid, wkt, cx, cy],
+        [toid, x, y],
     )
 
 
@@ -113,13 +122,12 @@ def _link(conn, uprn: int, toid: str) -> None:
 
 
 def test_auto_snapped_single_toid_lids_agrees(conn):
-    """UPRN inside exactly one building TOID; LIDS confirms the link.
+    """UPRN within 15m of exactly one TOID point; LIDS confirms.
     The canonical 'good' case."""
     from lleolydd.cache.bands import classify_bands
 
-    # Building roughly at Tŷ Newyddion, Bridge Street.
-    _insert_building_toid(conn, "osgb-001", cx=272030, cy=317900)
-    _insert_uprn(conn, 100, x=272030, y=317900)
+    _insert_toid_point(conn, "osgb-001", x=272030, y=317900)
+    _insert_uprn(conn, 100, x=272035, y=317905)  # 7.07m away
     _link(conn, 100, "osgb-001")
 
     stats = classify_bands(conn, "test-snap")
@@ -132,23 +140,19 @@ def test_auto_snapped_single_toid_lids_agrees(conn):
     assert row[2] == 1.0
     assert stats.auto_snapped == 1
     assert stats.unsnapped == 0
-    assert stats.contested == 0
+    assert stats.contested_prox == 0
+    assert stats.contested_lids == 0
     assert stats.non_postal == 0
 
 
-def test_unsnapped_uprn_outside_any_toid(conn):
-    """UPRN point sits well outside any TOID polygon — classic rural
-    farmstead case where the UPRN coordinate is on the road junction
-    and the building is 200m down the driveway."""
+def test_unsnapped_uprn_far_from_any_toid(conn):
+    """UPRN sits >>15m from any TOID point — the rural-driveway case.
+    LIDS still has a row (so it isn't non-postal) but the spatial
+    proximity test fails."""
     from lleolydd.cache.bands import classify_bands
 
-    # TOID at one location, UPRN 200m away.
-    _insert_building_toid(conn, "osgb-002", cx=272030, cy=317900)
-    _insert_uprn(conn, 200, x=272230, y=317900)
-    # LIDS records that the UPRN belongs to the TOID (so it ISN'T
-    # non-postal — LIDS has a row). The UPRN just doesn't sit in the
-    # polygon spatially. This is exactly the rural-driveway shape
-    # Lleolydd is for.
+    _insert_toid_point(conn, "osgb-002", x=272030, y=317900)
+    _insert_uprn(conn, 200, x=272230, y=317900)   # 200m away
     _link(conn, 200, "osgb-002")
 
     classify_bands(conn, "test-unsnapped")
@@ -161,62 +165,73 @@ def test_unsnapped_uprn_outside_any_toid(conn):
     assert row[2] == 0.0
 
 
-def test_contested_uprn_inside_two_overlapping_toids(conn):
-    """UPRN point sits inside two TOIDs. Happens with party-wall
-    geometries where OS records two adjacent building polygons that
-    abut — the UPRN can fall on the boundary and ST_Within picks both.
-    """
+def test_unsnapped_just_outside_threshold(conn):
+    """Boundary test: UPRN at 16m from the nearest TOID — outside the
+    15m default threshold, so unsnapped."""
     from lleolydd.cache.bands import classify_bands
 
-    # Two slightly-overlapping building TOIDs.
-    _insert_building_toid(conn, "osgb-003", cx=272030, cy=317900, half_side=5)
-    _insert_building_toid(conn, "osgb-004", cx=272036, cy=317900, half_side=5)
-    # UPRN sits exactly on their overlap.
-    _insert_uprn(conn, 300, x=272032, y=317900)
-    _link(conn, 300, "osgb-003")
+    _insert_toid_point(conn, "osgb-edge", x=272030, y=317900)
+    _insert_uprn(conn, 201, x=272046, y=317900)   # 16m east
+    _link(conn, 201, "osgb-edge")
 
-    classify_bands(conn, "test-contested-spatial")
+    classify_bands(conn, "test-just-outside")
+
+    row = conn.execute(
+        "SELECT snap_band FROM uprn WHERE uprn=201"
+    ).fetchone()
+    assert row[0] == "unsnapped"
+
+
+def test_contested_prox_two_toids_within_threshold(conn):
+    """UPRN is within 15m of two distinct TOID points — terrace /
+    multi-building UPRN case. Classified contested-prox regardless of
+    what LIDS says."""
+    from lleolydd.cache.bands import classify_bands
+
+    _insert_toid_point(conn, "osgb-003a", x=272030, y=317900)
+    _insert_toid_point(conn, "osgb-003b", x=272040, y=317900)  # 10m east
+    _insert_uprn(conn, 300, x=272035, y=317900)                # 5m from each
+    _link(conn, 300, "osgb-003a")
+
+    classify_bands(conn, "test-contested-prox")
 
     row = conn.execute(
         "SELECT snap_band, snap_confidence FROM uprn WHERE uprn=300"
     ).fetchone()
-    assert row[0] == "contested"
+    assert row[0] == "contested-prox"
     assert row[1] == 0.5
 
 
-def test_contested_lids_disagrees_with_spatial(conn):
-    """UPRN spatially in TOID A, but LIDS says it belongs to TOID B.
-    Genuine conflict between the two authority signals — curator
-    judgement needed."""
+def test_contested_lids_one_within_but_disagrees(conn):
+    """UPRN has exactly one TOID within 15m, but LIDS says a different
+    TOID — genuine conflict between spatial and authority signals."""
     from lleolydd.cache.bands import classify_bands
 
-    _insert_building_toid(conn, "toid-A", cx=272030, cy=317900)
-    _insert_building_toid(conn, "toid-B", cx=272500, cy=317900)
+    # Spatially close TOID A; LIDS says B (which is 500m away — outside
+    # threshold so it doesn't count as a second proximity hit).
+    _insert_toid_point(conn, "toid-A", x=272030, y=317900)
+    _insert_toid_point(conn, "toid-B", x=272530, y=317900)
     _insert_uprn(conn, 400, x=272030, y=317900)
-    _link(conn, 400, "toid-B")  # LIDS says B, spatial says A
+    _link(conn, 400, "toid-B")  # LIDS says B, spatial closest is A
 
-    classify_bands(conn, "test-contested-disagree")
+    classify_bands(conn, "test-contested-lids")
 
     row = conn.execute(
         "SELECT snap_band, snap_confidence FROM uprn WHERE uprn=400"
     ).fetchone()
-    assert row[0] == "contested"
+    assert row[0] == "contested-lids"
     assert row[1] == 0.5
 
 
 def test_non_postal_no_lids_row(conn):
-    """OS-allocated UPRN for a non-postal feature (substation, post
-    box, defibrillator). LIDS BLPU-UPRN-TopographicArea-TOID file
-    only carries UPRNs that ARE linked to a building TOID; non-postal
-    UPRNs are absent. Classify by absence."""
+    """OS-allocated UPRN with no LIDS row — non-postal feature
+    (substation, defibrillator). LIDS absence is the authority
+    signal; overrides any spatial proximity."""
     from lleolydd.cache.bands import classify_bands
 
-    # Building exists, UPRN sits in it, but LIDS has no row → the
-    # UPRN is non-postal (e.g. a defibrillator UPRN that happens to
-    # be physically inside the village hall TOID).
-    _insert_building_toid(conn, "osgb-005", cx=272030, cy=317900)
-    _insert_uprn(conn, 500, x=272030, y=317900)
-    # No _link call.
+    _insert_toid_point(conn, "osgb-005", x=272030, y=317900)
+    _insert_uprn(conn, 500, x=272030, y=317900)   # coincident
+    # No _link call — UPRN has no LIDS row.
 
     classify_bands(conn, "test-non-postal")
 
@@ -225,17 +240,16 @@ def test_non_postal_no_lids_row(conn):
     ).fetchone()
     assert row[0] == "non-postal"
     assert row[1] is None
-    assert row[2] == 1.0  # confident classification (LIDS authority)
+    assert row[2] == 1.0  # LIDS authority is a confident signal
 
 
-def test_non_postal_outside_any_toid(conn):
-    """Edge case — non-postal UPRN (no LIDS row) that ALSO doesn't sit
-    in any TOID polygon. Still classifies as non-postal: LIDS absence
-    is the authority signal."""
+def test_non_postal_isolated(conn):
+    """Edge case — non-postal UPRN (no LIDS) that also has no nearby
+    TOID. Still classifies as non-postal: LIDS absence dominates."""
     from lleolydd.cache.bands import classify_bands
 
     _insert_uprn(conn, 600, x=200000, y=200000)
-    # No TOID near it; no LIDS row.
+    # No TOID, no LIDS.
 
     classify_bands(conn, "test-non-postal-isolated")
 
@@ -245,41 +259,78 @@ def test_non_postal_outside_any_toid(conn):
     assert row[0] == "non-postal"
 
 
-# --- mixed populations ------------------------------------------------------
+# --- threshold parameterisation --------------------------------------------
+
+
+def test_threshold_respected_classification_changes(conn):
+    """Changing snap_threshold_m must move the boundary. Single
+    UPRN-TOID pair at 12m apart:
+      - threshold 15m → auto-snapped (within)
+      - threshold 5m  → unsnapped (outside)
+    This pins the contract that the threshold isn't ignored or
+    hard-coded inside the SQL.
+    """
+    from lleolydd.cache.bands import classify_bands
+
+    _insert_toid_point(conn, "osgb-thr", x=272000, y=317000)
+    _insert_uprn(conn, 700, x=272012, y=317000)   # 12m away
+    _link(conn, 700, "osgb-thr")
+
+    # First pass — default 15m, should auto-snap.
+    classify_bands(conn, "test-thr-15")
+    assert conn.execute(
+        "SELECT snap_band FROM uprn WHERE uprn=700"
+    ).fetchone()[0] == "auto-snapped"
+
+    # Second pass — tighter 5m threshold; should fall back to unsnapped.
+    classify_bands(conn, "test-thr-5", snap_threshold_m=5.0)
+    assert conn.execute(
+        "SELECT snap_band FROM uprn WHERE uprn=700"
+    ).fetchone()[0] == "unsnapped"
+
+
+# --- mixed populations -----------------------------------------------------
 
 
 def test_mixed_population_classified_correctly(conn):
-    """A handful of UPRNs covering all four bands — verifies the band
+    """A handful of UPRNs across all five bands — verifies the band
     stats counts."""
     from lleolydd.cache.bands import classify_bands
 
-    # auto-snapped UPRN
-    _insert_building_toid(conn, "tA", cx=272000, cy=317000)
-    _insert_uprn(conn, 1, x=272000, y=317000)
+    # auto-snapped UPRN — single TOID within 15m, LIDS agrees.
+    _insert_toid_point(conn, "tA", x=272000, y=317000)
+    _insert_uprn(conn, 1, x=272001, y=317000)
     _link(conn, 1, "tA")
 
-    # unsnapped UPRN
-    _insert_building_toid(conn, "tB", cx=272500, cy=317000)
+    # unsnapped UPRN — TOID 200m away.
+    _insert_toid_point(conn, "tB", x=272500, y=317000)
     _insert_uprn(conn, 2, x=272700, y=317000)
     _link(conn, 2, "tB")
 
-    # contested (spatial overlap)
-    _insert_building_toid(conn, "tC1", cx=273000, cy=317000, half_side=5)
-    _insert_building_toid(conn, "tC2", cx=273006, cy=317000, half_side=5)
-    _insert_uprn(conn, 3, x=273003, y=317000)
+    # contested-prox — UPRN equidistant between two TOIDs within 15m.
+    _insert_toid_point(conn, "tC1", x=273000, y=317000)
+    _insert_toid_point(conn, "tC2", x=273010, y=317000)
+    _insert_uprn(conn, 3, x=273005, y=317000)
     _link(conn, 3, "tC1")
 
-    # non-postal (no LIDS)
-    _insert_building_toid(conn, "tD", cx=273500, cy=317000)
-    _insert_uprn(conn, 4, x=273500, y=317000)
+    # contested-lids — one TOID within 15m, LIDS points elsewhere.
+    _insert_toid_point(conn, "tDa", x=274000, y=317000)
+    _insert_toid_point(conn, "tDb", x=275000, y=317000)
+    _insert_uprn(conn, 4, x=274000, y=317000)
+    _link(conn, 4, "tDb")
+
+    # non-postal — no LIDS row.
+    _insert_toid_point(conn, "tE", x=276000, y=317000)
+    _insert_uprn(conn, 5, x=276000, y=317000)
 
     stats = classify_bands(conn, "test-mixed")
 
     assert stats.auto_snapped == 1
     assert stats.unsnapped == 1
-    assert stats.contested == 1
+    assert stats.contested_prox == 1
+    assert stats.contested_lids == 1
     assert stats.non_postal == 1
-    assert stats.total == 4
+    assert stats.total == 5
 
     bands_by_uprn = dict(conn.execute(
         "SELECT uprn, snap_band FROM uprn ORDER BY uprn"
@@ -287,39 +338,42 @@ def test_mixed_population_classified_correctly(conn):
     assert bands_by_uprn == {
         1: "auto-snapped",
         2: "unsnapped",
-        3: "contested",
-        4: "non-postal",
+        3: "contested-prox",
+        4: "contested-lids",
+        5: "non-postal",
     }
 
 
 def test_band_stats_as_dict_shape():
-    """The BandStats.as_dict serialisation pins the keys craidd-status
-    and the CLI rely on."""
+    """The BandStats.as_dict serialisation pins the manifest keys
+    the CLI's `snapshot show` and downstream consumers rely on."""
     from lleolydd.cache.bands import BandStats
 
     stats = BandStats(
         auto_snapped=10,
         unsnapped=20,
-        contested=3,
+        contested_prox=2,
+        contested_lids=1,
         non_postal=2,
     )
     d = stats.as_dict()
     assert d == {
         "auto-snapped": 10,
         "unsnapped": 20,
-        "contested": 3,
+        "contested-prox": 2,
+        "contested-lids": 1,
         "non-postal": 2,
         "total": 35,
     }
 
 
 def test_classify_bands_is_idempotent(conn):
-    """Running classify_bands twice on the same data produces the same
-    result. Important because a routine cache refresh re-runs band
+    """Running classify_bands twice on the same data produces the
+    same result. Important because a routine cache refresh re-runs
     classification against a possibly-changed downstream snapshot."""
     from lleolydd.cache.bands import classify_bands
 
-    _insert_building_toid(conn, "tX", cx=272030, cy=317900)
+    _insert_toid_point(conn, "tX", x=272030, y=317900)
     _insert_uprn(conn, 700, x=272030, y=317900)
     _link(conn, 700, "tX")
 
@@ -330,4 +384,4 @@ def test_classify_bands_is_idempotent(conn):
     snapshot_id = conn.execute(
         "SELECT snapshot_id FROM uprn WHERE uprn=700"
     ).fetchone()[0]
-    assert snapshot_id == "snap-2"  # latest run wins, as expected
+    assert snapshot_id == "snap-2"   # latest run wins

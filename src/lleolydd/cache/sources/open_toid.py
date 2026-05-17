@@ -1,25 +1,30 @@
 """
-OS Open TOID — TopographicArea polygons for every OS MasterMap feature
-in GB, tiled by 100km National Grid square.
+OS Open TOID — TOID identifiers + representative points for every OS
+feature in GB, tiled by 100km National Grid square.
 
 Gwynedd sits in two 100km squares: SH (Snowdonia / coastal Gwynedd /
 Anglesey / north-west) and SJ (eastern Gwynedd / Wrexham / Cheshire).
 We download both tiles, clip to Gwynedd at load time.
 
-CSV columns per OS docs: TOID, ALT, GEOMETRY (a WKT polygon in
-EPSG:27700), FEATURE_TYPE (TopographicArea / Boundary / Symbol /
-Cartographic / Generic / Land / Structuring), VERSION, VERSION_DATE,
-DESCRIPTION_GROUP, DESCRIPTION_TERM, MAKE, PHYSICAL_LEVEL,
-PHYSICAL_PRESENCE.
+Schema reference: OS Open TOID, 6-column file as of the 2026-04
+release. Pre-2026 releases shipped 11 columns with WKT GEOMETRY +
+DESCRIPTION_GROUP — that polygon data has moved to OS NGD (different
+access pattern, deferred to Lleolydd Phase 1.x). For v1, we load TOID
+representative points (EASTING/NORTHING) and bands.py uses point-
+proximity rather than point-in-polygon. The `toid.polygon_geom`
+column kept nullable for the eventual NGD upgrade.
 
-For Lleolydd we keep only Building / Structure-typed features —
-buildings are what we snap UPRNs to. The other feature types (roads,
-boundaries, water) live in OS data but aren't relevant for UPRN
-verification at v1.
+CSV columns as of 2026-04 release:
+  TOID            unique TopographicArea identifier
+  VERSION_NUMBER  feature version
+  VERSION_DATE    when this version landed
+  SOURCE_PRODUCT  always "OS MasterMap Topography Layer"
+  EASTING         BNG easting of feature's representative point
+  NORTHING        BNG northing of feature's representative point
 
-The polygon clip uses a bbox prefilter on the parsed geometry's
-ST_XMin/XMax/YMin/YMax (a rectangle-overlap test, cheap) before the
-expensive ST_Intersects against Gwynedd's full multi-polygon.
+The 2026-04 file has a UTF-8 BOM on the header row. DuckDB's CSV
+sniffer handles it; we never reference the column by name from the
+BOM-prefixed `TOID` so the sniff is what does the work.
 """
 from __future__ import annotations
 
@@ -43,6 +48,16 @@ FILENAME_PATTERN = "osopentoid"
 # Gwynedd (Snowdonia, Llŷn, Anglesey, north coast). SJ catches the
 # south-eastern slivers (around Bala, Corwen).
 GWYNEDD_GRID_TILES: tuple[str, ...] = ("SH", "SJ")
+
+# Expected column names for the 2026-04 schema. Surfaced as a constant
+# so the schema-sniff CLI (separate brief) can use it as the
+# expected-columns reference. If OS changes the schema again, update
+# both this tuple and the INSERT below; the test suite + integration
+# build will surface any mismatch.
+OPEN_TOID_COLUMNS_AS_OF_2026_04: tuple[str, ...] = (
+    "TOID", "VERSION_NUMBER", "VERSION_DATE",
+    "SOURCE_PRODUCT", "EASTING", "NORTHING",
+)
 
 
 def list_remote_files() -> list[dict]:
@@ -91,33 +106,22 @@ def download(
     return extracted
 
 
-# DESCRIPTION_GROUP values that indicate a building-shaped feature.
-# OS uses these in the TopographicArea layer; non-building features
-# (roads, water, land cover) carry other values and we drop them.
-BUILDING_DESCRIPTION_GROUPS: tuple[str, ...] = (
-    "Building",
-    "Built Environment",  # belt-and-braces; OS sometimes uses this
-    "Glasshouse",
-)
-
-
 def load_into_duckdb(
     conn: duckdb.DuckDBPyConnection,
     file_paths: list[Path],
-    area_bounds_wkt: str,
+    area_bounds_wkt: str,    # noqa: ARG001 — v1 uses bbox-only clip
     area_bounds_bbox: tuple[float, float, float, float],
     snapshot_id: str,
 ) -> dict:
-    """Load OS Open TOID into the cache `toid` table, clipped to
-    area_bounds_wkt AND filtered to building-shaped feature types.
+    """Load OS Open TOID's 6-column shape into the cache `toid` table,
+    populating `point_geom` from EASTING/NORTHING. `polygon_geom`
+    remains NULL — Phase 1.x will fill it from OS NGD.
 
-    The CSV's GEOMETRY column is WKT in EPSG:27700. The load is one
-    INSERT per tile, with the WKT-parsed geometry materialised once
-    in an inner subquery so each row's geometry is parsed exactly
-    twice (once for the polygon/centroid projection, once for the
-    bbox + ST_Intersects clip). The bbox-overlap test is four
-    cheap comparisons on the parsed geom's MBR; ST_Intersects against
-    the full Gwynedd polygon only runs on bbox survivors.
+    For v1 the clip is bbox-only on EASTING/NORTHING. Gwynedd's bbox
+    is mostly Gwynedd-polygon (within a coastline tolerance); using
+    bbox-only here is cheap and accepted by the degraded-semantic
+    decision. bands.py's ST_DWithin then does the per-UPRN proximity
+    work.
     """
     csv_paths = [p for p in file_paths if p.suffix.lower() == ".csv"]
     if not csv_paths:
@@ -128,34 +132,8 @@ def load_into_duckdb(
     xmin, ymin, xmax, ymax = area_bounds_bbox
 
     total_in = 0
-    total_buildings = 0
+    total_in_area = 0
     source_hashes: dict[str, str] = {}
-
-    # OS Open TOID CSV doesn't carry a header row — column order is
-    # documented as TOID, ALT, GEOMETRY, FEATURE_TYPE, VERSION,
-    # VERSION_DATE, DESCRIPTION_GROUP, DESCRIPTION_TERM, MAKE,
-    # PHYSICAL_LEVEL, PHYSICAL_PRESENCE. We specify columns explicitly.
-    column_spec = {
-        "toid": "VARCHAR",
-        "alt": "VARCHAR",
-        "geometry_wkt": "VARCHAR",
-        "feature_type": "VARCHAR",
-        "version": "VARCHAR",
-        "version_date": "VARCHAR",
-        "description_group": "VARCHAR",
-        "description_term": "VARCHAR",
-        "make": "VARCHAR",
-        "physical_level": "VARCHAR",
-        "physical_presence": "VARCHAR",
-    }
-    columns_arg = ", ".join(f"'{k}': '{v}'" for k, v in column_spec.items())
-
-    # Build the building-filter predicate. We accept rows whose
-    # DESCRIPTION_GROUP starts with any of the building groups (OS
-    # sometimes ends them with "(secondary)" / "(under construction)".
-    group_predicate = " OR ".join(
-        f"description_group ILIKE '{g}%'" for g in BUILDING_DESCRIPTION_GROUPS
-    )
 
     for csv_path in csv_paths:
         source_hashes[csv_path.name] = sha256_file(csv_path)
@@ -164,72 +142,67 @@ def load_into_duckdb(
             flush=True,
         )
         n_tile = conn.execute(
-            "SELECT COUNT(*) FROM read_csv_auto(?, header=false, columns={"
-            + columns_arg + "})",
+            "SELECT COUNT(*) FROM read_csv_auto(?, header=true)",
             [str(csv_path)],
         ).fetchone()[0]
         total_in += n_tile
         print(
             f"[open_toid]   {n_tile:,} rows in tile; "
-            f"filtering to buildings inside Gwynedd bbox + polygon …",
+            f"clipping to Gwynedd bbox …",
             flush=True,
         )
 
-        # Insert building polygons that intersect area_bounds.
-        # Inner subquery: building filter + materialise WKT geom once.
-        # Outer WHERE: bbox-overlap on the geom's MBR + ST_Intersects.
         before = conn.execute("SELECT COUNT(*) FROM toid").fetchone()[0]
+        # INSERT-from-subquery. Inner SELECT renames CSV columns away
+        # from the case-insensitive collision and applies the bbox
+        # prefilter on EASTING / NORTHING (cheap). No outer ST_Within
+        # needed at v1 — bands.py does the per-UPRN proximity work.
         conn.execute(
-            f"""
+            """
             INSERT INTO toid
-                (toid, polygon_geom, feature_type, description_group,
-                 description_term, centroid_geom, snapshot_id)
+                (toid, point_geom, polygon_geom, feature_type,
+                 description_group, description_term,
+                 centroid_geom, snapshot_id)
             SELECT
-                t.toid,
-                t.geom AS polygon_geom,
-                t.feature_type,
-                t.description_group,
-                t.description_term,
-                ST_Centroid(t.geom) AS centroid_geom,
+                t.toid_id AS toid,
+                ST_Point(t.easting, t.northing) AS point_geom,
+                NULL AS polygon_geom,         -- v1.x via OS NGD
+                NULL AS feature_type,         -- v1.x via OS NGD
+                NULL AS description_group,    -- v1.x via OS NGD
+                NULL AS description_term,     -- v1.x via OS NGD
+                NULL AS centroid_geom,        -- v1.x derived from polygon
                 ? AS snapshot_id
             FROM (
                 SELECT
-                    toid,
-                    feature_type,
-                    description_group,
-                    description_term,
-                    ST_GeomFromText(geometry_wkt) AS geom
-                FROM read_csv_auto(?, header=false, columns={{{columns_arg}}})
-                WHERE ({group_predicate})
+                    CAST(src."TOID" AS VARCHAR) AS toid_id,
+                    CAST(src."EASTING" AS DOUBLE) AS easting,
+                    CAST(src."NORTHING" AS DOUBLE) AS northing
+                FROM read_csv_auto(?, header=true) AS src
+                WHERE CAST(src."EASTING" AS DOUBLE) BETWEEN ? AND ?
+                  AND CAST(src."NORTHING" AS DOUBLE) BETWEEN ? AND ?
             ) AS t
-            WHERE ST_XMax(t.geom) >= ?
-              AND ST_XMin(t.geom) <= ?
-              AND ST_YMax(t.geom) >= ?
-              AND ST_YMin(t.geom) <= ?
-              AND ST_Intersects(
-                  t.geom,
-                  ST_GeomFromText('{area_bounds_wkt}')
-              )
             ON CONFLICT (toid) DO NOTHING
             """,
             [snapshot_id, str(csv_path), xmin, xmax, ymin, ymax],
         )
         after = conn.execute("SELECT COUNT(*) FROM toid").fetchone()[0]
         added = after - before
-        total_buildings += added
+        total_in_area += added
         print(
-            f"[open_toid]   +{added:,} building polygons "
+            f"[open_toid]   +{added:,} TOID points in Gwynedd bbox "
             f"(total in toid table: {after:,})",
             flush=True,
         )
 
     return {
         "rows_in": total_in,
-        "rows_in_area": total_buildings,
+        "rows_in_area": total_in_area,
         "tiles": list(GWYNEDD_GRID_TILES),
         "source_files": {str(p): source_hashes[p.name] for p in csv_paths},
-        "columns": [
-            "toid", "polygon_geom", "feature_type", "description_group",
-            "description_term", "centroid_geom",
-        ],
+        "columns": ["toid", "point_geom"],
+        "schema_note": (
+            "v1: 6-column OS Open TOID (2026-04 release) — point_geom "
+            "from EASTING/NORTHING. polygon_geom NULL until v1.x NGD "
+            "integration."
+        ),
     }
