@@ -87,20 +87,29 @@ CREATE TABLE IF NOT EXISTS uprn (
     snapped_toid VARCHAR,
     snap_band VARCHAR
         CHECK (snap_band IS NULL OR snap_band IN
-            ('verified','auto-snapped','unsnapped','contested','non-postal')),
+            ('verified','auto-snapped','unsnapped',
+             'contested','contested-prox','contested-lids','non-postal')),
     snap_confidence DOUBLE,
     latitude DOUBLE,
     longitude DOUBLE,
     snapshot_id VARCHAR
 );
 
+-- Schema note: v1 (post-2026-04 OS Open TOID schema drift) only
+-- populates `point_geom` (TOID representative point from EASTING/
+-- NORTHING). `polygon_geom`, `feature_type`, `description_group`,
+-- `description_term`, `centroid_geom` are kept nullable for the
+-- Phase 1.x OS NGD integration that will restore polygon-shaped
+-- TOIDs. bands.py v1 uses ST_DWithin on point_geom; bands.py v1.x
+-- (post-NGD) will use ST_Within on polygon_geom.
 CREATE TABLE IF NOT EXISTS toid (
     toid VARCHAR PRIMARY KEY,
-    polygon_geom GEOMETRY,
-    feature_type VARCHAR,
-    description_group VARCHAR,
-    description_term VARCHAR,
-    centroid_geom GEOMETRY,
+    point_geom GEOMETRY,        -- v1 — OS Open TOID 2026-04 (EASTING/NORTHING)
+    polygon_geom GEOMETRY,      -- v1.x — OS NGD building polygons
+    feature_type VARCHAR,       -- v1.x — OS NGD attribute
+    description_group VARCHAR,  -- v1.x — OS NGD attribute
+    description_term VARCHAR,   -- v1.x — OS NGD attribute
+    centroid_geom GEOMETRY,     -- v1.x — derived from polygon_geom
     snapshot_id VARCHAR
 );
 

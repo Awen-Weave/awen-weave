@@ -64,7 +64,8 @@ def test_snapshot_manifest_writes_and_reloads(tmp_path: Path):
         files=[tmp_path / "fake.csv"],
         load_stats={"rows_in": 100, "rows_in_area": 5},
     )
-    m.band_stats = {"auto-snapped": 4, "unsnapped": 1, "contested": 0,
+    m.band_stats = {"auto-snapped": 4, "unsnapped": 1,
+                    "contested-prox": 0, "contested-lids": 0,
                     "non-postal": 0, "total": 5}
     snap_dir = tmp_path / "snapshots" / "lleolydd-cache-2026-05"
     written = m.write(snap_dir)
@@ -207,32 +208,26 @@ def _write_synthetic_uprn_csv(path: Path) -> None:
 
 
 def _write_synthetic_toid_csv(path: Path) -> None:
-    """OS Open TOID has no header row. Columns:
-    TOID, ALT, GEOMETRY, FEATURE_TYPE, VERSION, VERSION_DATE,
-    DESCRIPTION_GROUP, DESCRIPTION_TERM, MAKE, PHYSICAL_LEVEL,
-    PHYSICAL_PRESENCE."""
+    """OS Open TOID 6-column shape (2026-04 release). Header row +
+    columns: TOID, VERSION_NUMBER, VERSION_DATE, SOURCE_PRODUCT,
+    EASTING, NORTHING. No polygon, no DESCRIPTION_GROUP — those moved
+    to OS NGD (Phase 1.x). Coordinates picked so 1001 and 1003 land
+    inside the synthetic Gwynedd bbox; 9999 lands at the SW corner
+    of the bbox (still inside, no longer filtered out by feature type
+    since v1 has no feature-type filter)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     rows = [
-        # toid, alt, wkt, feature_type, version, version_date,
-        #   description_group, description_term, make,
-        #   physical_level, physical_presence
-        ["osgb-bldg-1001", "1",
-         "POLYGON((272020 317890, 272040 317890, 272040 317910, "
-         "272020 317910, 272020 317890))",
-         "TopographicArea", "1", "2024-01-01",
-         "Building", "Building", "Manmade", "Surface Level", "Obstructing"],
-        ["osgb-bldg-1003", "1",
-         "POLYGON((272490 317790, 272510 317790, 272510 317810, "
-         "272490 317810, 272490 317790))",
-         "TopographicArea", "1", "2024-01-01",
-         "Building", "Building", "Manmade", "Surface Level", "Obstructing"],
-        # Non-building feature — should be filtered out at load time
-        ["osgb-road-9999", "1",
-         "POLYGON((265000 310000, 270000 310000, 270000 311000, "
-         "265000 311000, 265000 310000))",
-         "TopographicArea", "1", "2024-01-01",
-         "Road Or Track", "Road Or Track", "Manmade",
-         "Surface Level", "Obstructing"],
+        ["TOID", "VERSION_NUMBER", "VERSION_DATE",
+         "SOURCE_PRODUCT", "EASTING", "NORTHING"],
+        ["osgb-bldg-1001", "9", "20240101",
+         "OS MasterMap Topography Layer", "272030", "317900"],
+        ["osgb-bldg-1003", "9", "20240101",
+         "OS MasterMap Topography Layer", "272500", "317800"],
+        # No more "building filter" at v1 — the TOID type column is
+        # gone from OS Open TOID. This row lands inside the synthetic
+        # bbox and gets loaded as a TOID point.
+        ["osgb-other-9999", "9", "20240101",
+         "OS MasterMap Topography Layer", "266000", "311000"],
     ]
     with path.open("w", newline="") as f:
         w = csv.writer(f)
@@ -303,25 +298,32 @@ def test_build_end_to_end_with_synthetic_fixtures(tmp_path: Path):
     assert summary["per_source"]["open-uprn"]["rows_in"] == 4
     assert summary["per_source"]["open-uprn"]["rows_in_area"] == 3
 
-    # - open-toid: 3 rows in CSV, only 2 are buildings AND in bounds.
-    #              The "Road Or Track" row is dropped by the building
-    #              filter even though its polygon overlaps bounds.
+    # - open-toid: 3 rows in CSV, all 3 inside the synthetic Gwynedd
+    #              bbox so all 3 are loaded as TOID points. v1 has no
+    #              feature-type filter (DESCRIPTION_GROUP is gone from
+    #              the post-2026-04 OS Open TOID schema).
     assert summary["per_source"]["open-toid"]["rows_in"] == 3
-    assert summary["per_source"]["open-toid"]["rows_in_area"] == 2
+    assert summary["per_source"]["open-toid"]["rows_in_area"] == 3
 
     # - open-linked-ids: 2 LIDS rows match UPRNs in the cache (1001, 1003)
     assert summary["per_source"]["open-linked-ids"]["rows_in_area"] == 2
 
-    # Spot-check band assignments
+    # Spot-check band assignments under v1 point-proximity semantics.
+    # UPRN 1001 at (272030, 317900) is coincident with TOID 1001's
+    #   point. Only TOID 1001 within 15m. LIDS says 1001. → auto-snapped.
+    # UPRN 1002 at (272200, 317000) has no nearby TOID (nearest is
+    #   ~850m away), and crucially has no LIDS row at all → non-postal.
+    # UPRN 1003 at (272500, 317800) is coincident with TOID 1003's
+    #   point. Only TOID 1003 within 15m. LIDS says 1003. → auto-snapped.
     conn = duckdb.connect(str(paths.cache_db), read_only=True)
     bands = dict(conn.execute(
         "SELECT uprn, snap_band FROM uprn ORDER BY uprn"
     ).fetchall())
     conn.close()
     assert bands == {
-        1001: "auto-snapped",   # in osgb-bldg-1001, LIDS confirms
-        1002: "non-postal",     # not in any building TOID, no LIDS row
-        1003: "auto-snapped",   # in osgb-bldg-1003, LIDS confirms
+        1001: "auto-snapped",
+        1002: "non-postal",
+        1003: "auto-snapped",
     }
 
 
