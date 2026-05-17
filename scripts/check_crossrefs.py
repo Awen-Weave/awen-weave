@@ -62,6 +62,7 @@ KNOWN_FILES: tuple[str, ...] = (
     "bra-v2-estate-agents-pilot.md",
     "sources-backlog.md",
     "v0-schema.md",
+    "migration-2026-05.md",
 )
 
 # A parenthetical that begins with one of these tokens, or contains one
