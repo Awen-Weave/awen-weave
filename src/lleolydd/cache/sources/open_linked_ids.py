@@ -29,8 +29,30 @@ from ._common import (
 PRODUCT_NAME = "os-open-linked-identifiers"
 PRODUCT_ID = "LIDS"
 DOWNLOAD_FORMAT = "CSV"
-# Matches lids-<YYYY-MM>_csv_BLPU-UPRN-TopographicArea-TOID-5.{zip,csv}
-FILENAME_PATTERN = "lids-"
+# Matches the extracted CSV `BLPU_UPRN_TopographicArea_TOID_5.csv` (2026
+# release pattern). The wrapping zip uses dashes (`lids-...-BLPU-UPRN-
+# TopographicArea-TOID-5.zip`) and isn't matched by this substring —
+# load_into_duckdb wants the .csv anyway. Pre-2026 releases used
+# `lids-<YYYY-MM>_csv_BLPU-UPRN-TopographicArea-TOID-5.csv` as the
+# extracted name; if that style returns the substring still matches via
+# the case-insensitive "blpu_uprn".
+FILENAME_PATTERN = "BLPU_UPRN"
+
+# Expected columns for the 2026-03 release; surfaced as a constant so
+# the schema-sniff CLI (future brief) can use this as the reference.
+# Pre-2026 releases used IDENTIFIER_1_TYPE / IDENTIFIER_2_TYPE / a
+# single VERSION_DATE / CORRELATION_METHOD. Update both this tuple
+# and the INSERT below when OS changes the schema again.
+LIDS_BLPU_COLUMNS_AS_OF_2026_03: tuple[str, ...] = (
+    "CORRELATION_ID",
+    "IDENTIFIER_1",       # BLPU UPRN
+    "VERSION_NUMBER_1",
+    "VERSION_DATE_1",
+    "IDENTIFIER_2",       # TopographicArea TOID
+    "VERSION_NUMBER_2",
+    "VERSION_DATE_2",
+    "CONFIDENCE",         # confidence-statement text (replaces CORRELATION_METHOD)
+)
 
 # Substring match for the file we want. OS releases bump the date
 # prefix (e.g. lids-2026-03_csv_...) so we match on the constant suffix
@@ -92,15 +114,23 @@ def load_into_duckdb(
     `uprn.load_into_duckdb` must run BEFORE this. The build orchestrator
     enforces that ordering.
 
-    Per OS docs, the CSV has columns:
-      IDENTIFIER_1   the source identifier (BLPU UPRN)
-      IDENTIFIER_1_TYPE  always "BLPU UPRN"
-      IDENTIFIER_2   the target identifier (TopographicArea TOID)
-      IDENTIFIER_2_TYPE  always "TopographicArea TOID"
-      VERSION_DATE   when the linkage was published
-      CORRELATION_METHOD  internal OS confidence indicator
+    Per OS docs (2026-03 release; the pre-2026 IDENTIFIER_*_TYPE +
+    CORRELATION_METHOD shape is gone — see LIDS_BLPU_COLUMNS_AS_OF_2026_03):
+      CORRELATION_ID    composite identifier "BLPU_<uprn>_TopographicArea_<toid>_5"
+      IDENTIFIER_1      BLPU UPRN
+      VERSION_NUMBER_1  source-side version
+      VERSION_DATE_1    source-side version date
+      IDENTIFIER_2      TopographicArea TOID
+      VERSION_NUMBER_2  target-side version
+      VERSION_DATE_2    target-side version date
+      CONFIDENCE        confidence-statement text (replaces CORRELATION_METHOD)
 
-    For the cache we keep uprn + toid + correlation_method.
+    For the cache we keep uprn (IDENTIFIER_1), toid (IDENTIFIER_2), and
+    the CONFIDENCE text in the `correlation_method` local column (we
+    keep the existing column name on this side — it's metadata used by
+    nothing in bands.py, just preserved for downstream curator/audit
+    use). When OS changes the schema again the LIDS_BLPU_COLUMNS_AS_OF_*
+    constant will need updating alongside the SELECT below.
     """
     csv_paths = [p for p in file_paths if p.suffix.lower() == ".csv"]
     if not csv_paths:
@@ -142,7 +172,7 @@ def load_into_duckdb(
             SELECT
                 CAST(src."IDENTIFIER_1" AS BIGINT) AS uprn,
                 CAST(src."IDENTIFIER_2" AS VARCHAR) AS toid,
-                CAST(src."CORRELATION_METHOD" AS VARCHAR) AS correlation_method
+                CAST(src."CONFIDENCE" AS VARCHAR) AS correlation_method
             FROM read_csv_auto(?, header=true) AS src
         ) AS s
         WHERE s.uprn IN (SELECT uprn FROM uprn)
