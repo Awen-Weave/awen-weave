@@ -1,12 +1,13 @@
 # Awen Weave — STATUS
 
-**Last updated:** 2026-05-17 (Brief 3 complete; town-dataset successfully consuming)
+**Last updated:** 2026-05-22 (v0.1.1 released — description_cy backfill live on PyPI; town-dataset pin bump in flight)
 
 ## What works
 - Framework extracted (Brief 1 ✓)
 - **v0.1.0 published to PyPI** ✓ — `pip install awen-weave`
+- **v0.1.1 published to PyPI** ✓ — `pip install awen-weave==0.1.1`; clean-venv smoke test on the Dolgellau Pi (Python 3.13.5) confirms `address.description_cy == 'cyfeiriad post'` and zero remaining `CY_PENDING` across all 60 predicates
 - CI check workflow green ✓
-- **First downstream consumer (Dolgellau Town Dataset) now running on v0.1.0** ✓ — Pi at Arloesi Dolgellau pulled the migrated repo, installed awen-weave==0.1.0, framework imports resolve from site-packages, all 3 entry-point scripts work, operational data (51 claims / 12 entities / 60 predicates) intact through the migration.
+- **First downstream consumer (Dolgellau Town Dataset) now running on v0.1.0** ✓ — Pi at Arloesi Dolgellau pulled the migrated repo, installed awen-weave==0.1.0, framework imports resolve from site-packages, all 3 entry-point scripts work, operational data (51 claims / 12 entities / 60 predicates) intact through the migration. (Pi is one upgrade behind v0.1.1 — picks up the Welsh on its next `pip install --upgrade`.)
 
 ## What doesn't yet
 - Namespace restructure (Option β proper) deferred to v0.2.
@@ -14,7 +15,11 @@
 
 ## Next
 - v0.2 work — design questions parked: namespace restructure, BRA refactor + extraction.
-- Welsh tutor session (week of 2026-05-19) — predicate translations target this repo directly per the 2026-05-17 decision (`src/craidd/schema/predicates.py`).
+- Brief 16 (Welsh place-names) — framework-module ingestion that targets this repo (not town-dataset) per the 2026-05-22 routing decision.
+
+## Recent releases
+
+- **2026-05-22 — v0.1.1** — `description_cy` backfill (additive bilingual data; no API change). All 60 predicates now carry tutor-attested Welsh from Catrin Stephens' 2026-05-19 magic-link session. PyPI: <https://pypi.org/project/awen-weave/0.1.1/>. Tag: `v0.1.1`. Workflow run: 26294896889 (success). _(cowork-to-code-awen-weave-0.1.1-cy-republish.md)_
 
 ## Deferred from initial migration
 
