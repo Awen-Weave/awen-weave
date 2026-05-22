@@ -47,3 +47,6 @@ lleolydd-cache = "cli.lleolydd_cache:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/craidd", "src/cli", "src/lleolydd", "client"]
+# CSV data file for the Welsh place-names authority lives at
+# `src/craidd/placenames/data/*.csv`. The `data/` dir has a stub
+# `__init__.py` so hatchling auto-includes it as a sub-package.
