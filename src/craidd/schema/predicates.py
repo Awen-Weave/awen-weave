@@ -14,10 +14,14 @@ location_verification_status), bringing the total to 60. The "52" figure
 should be corrected in the doc.
 
 NOTE — Welsh descriptions: the predicate table requires description_cy
-NOT NULL, but §3.5 supplies English meanings only. Rather than machine-
-translate (which would breach the project's Welsh-honesty discipline),
-every description_cy here is the placeholder CY_PENDING. Filling these
-properly is a deliberate Welsh-pass task — see the foundation handover.
+NOT NULL, but §3.5 supplies English meanings only. Every description_cy
+below is the tutor-attested form from the 2026-05-19 Catrin Stephens
+session via the magic-link cards app — see
+Huw-Lab/awen-cards/welsh-tutor-cards.yaml (each card's `chosen` block
+carries the verified attestor + capture timestamp) and the session
+export at Huw-Lab/awen-cards/sessions/2026-05-19-catrin-stephens.json.
+CY_PENDING remains in this module as a placeholder for any future
+predicate added before its Welsh form is attested.
 """
 from __future__ import annotations
 
@@ -67,59 +71,59 @@ class PredicateDef:
 # ---------------------------------------------------------------------------
 _BUILDING: tuple[PredicateDef, ...] = (
     PredicateDef("address", "bilingual", "single", ("building",),
-                 "Postal address."),
+                 "Postal address.", description_cy="cyfeiriad post"),
     PredicateDef("geometry", "geom", "single", ("building",),
-                 "Building footprint or point."),
+                 "Building footprint or point.", description_cy="geometreg yr adeilad - ôl troed yr adeilad"),
     PredicateDef("uprn", "int", "single", ("building",),
-                 "OS Unique Property Reference Number."),
+                 "OS Unique Property Reference Number.", description_cy="Rhif Cyfeirnod Unigryw Eiddo (UPRN) yr OS"),
     PredicateDef("building_type", "text", "single", ("building",),
                  "Building type. v0.1-schema.md §3.5 marks this a controlled "
-                 "enum but does not yet define the enum values."),
+                 "enum but does not yet define the enum values.", description_cy="math o adeilad"),
     PredicateDef("floor_area_m2", "real", "single", ("building",),
-                 "Total internal floor area in square metres."),
+                 "Total internal floor area in square metres.", description_cy="cyfanswm arwynebedd llawr mewnol mewn metrau sgwâr"),
     PredicateDef("build_year", "int", "single", ("building",),
-                 "Year built — use only when the date is exact."),
+                 "Year built — use only when the date is exact.", description_cy="blwyddyn adeiladu — defnyddiwch dim ond pan fo'r dyddiad yn fanwl gywir"),
     PredicateDef("build_period", "text", "single", ("building",),
                  "Imprecise build period, e.g. 'c.1885', 'late C18'.",
-                 required_qualifiers=("date_precision",)),
+                 required_qualifiers=("date_precision",), description_cy="Cyfnod adeiladu yn fras"),
     PredicateDef("original_use", "bilingual", "multi", ("building",),
-                 "Historic primary use(s)."),
+                 "Historic primary use(s).", description_cy="defnydd(iau) gwreiddiol"),
     PredicateDef("current_use", "bilingual", "single", ("building",),
-                 "Today's primary use."),
+                 "Today's primary use.", description_cy="defnydd presennol"),
     PredicateDef("listed_grade", "text", "single", ("building",),
                  "Statutory listing grade.",
-                 constraint_json='{"enum": ["I", "II*", "II"]}'),
+                 constraint_json='{"enum": ["I", "II*", "II"]}', description_cy="gradd restredig statudol"),
     PredicateDef("listed_id", "text", "multi", ("building",),
                  "Cadw or British Listed Buildings register reference. "
-                 "Multi-cardinality: a building may carry several."),
+                 "Multi-cardinality: a building may carry several.", description_cy="cyfeirnod cofrestr Cadw neu adeiladau rhestredig Prydain"),
     PredicateDef("conservation_area", "text", "multi", ("building",),
-                 "Conservation area(s) the building sits within."),
+                 "Conservation area(s) the building sits within.", description_cy="ardal gadwraeth"),
     PredicateDef("name_cy", "text", "multi", ("building",),
                  "Welsh name. Multi-cardinality; every claim must carry a "
                  "name_type qualifier.",
-                 required_qualifiers=("name_type",)),
+                 required_qualifiers=("name_type",), description_cy="enw Cymraeg"),
     PredicateDef("name_en", "text", "multi", ("building",),
                  "English name. Multi-cardinality; every claim must carry a "
                  "name_type qualifier.",
-                 required_qualifiers=("name_type",)),
+                 required_qualifiers=("name_type",), description_cy="enw Saesneg"),
     PredicateDef("historical_note", "bilingual", "multi", ("building",),
-                 "Free-text historical claim."),
+                 "Free-text historical claim.", description_cy="nodyn hanesyddol — testun rhydd"),
     PredicateDef("architectural_description", "bilingual", "multi", ("building",),
-                 "Structured architectural detail."),
+                 "Structured architectural detail.", description_cy="disgrifiad pensaernïol strwythuredig"),
     PredicateDef("material_primary", "text", "single", ("building",),
                  "Primary external wall material, e.g. 'snecked rubble "
-                 "dolerite'."),
+                 "dolerite'.", description_cy="prif ddeunydd wal allanol"),
     PredicateDef("roof_type", "text", "single", ("building",),
-                 "Roof form and material, e.g. 'hipped slate'."),
+                 "Roof form and material, e.g. 'hipped slate'.", description_cy="math o do — ffurf a deunydd"),
     PredicateDef("storeys", "int", "single", ("building",),
-                 "Number of full storeys."),
+                 "Number of full storeys.", description_cy="nifer y lloriau llawn"),
     PredicateDef("adjacent_to", "entity_ref", "multi", ("building",),
-                 "Another building physically adjacent to this one."),
+                 "Another building physically adjacent to this one.", description_cy="adeilad arall sy'n gyfagos yn gorfforol i hwn"),
     PredicateDef("contemporary_with", "entity_ref", "multi", ("building",),
-                 "A building of the same construction period."),
+                 "A building of the same construction period.", description_cy="adeilad o'r un cyfnod adeiladu"),
     PredicateDef("group_value_with", "entity_ref", "multi", ("building",),
                  "A building whose listing reason is shared or related "
-                 "(listed 'group value')."),
+                 "(listed 'group value').", description_cy="adeilad sy'n rhannu rheswm rhestru (gwerth grŵp)"),
     # --- §10 item 7 — Lleolydd UPRN-verification predicates (2026-05-16) ---
     PredicateDef(
         name="verified_building_toid",
@@ -131,7 +135,7 @@ _BUILDING: tuple[PredicateDef, ...] = (
             "confirmed represents this building's footprint. Distinct from "
             "any auto-snapped TOID, which lives only as a derivation."
         ),
-        description_cy=CY_PENDING,
+        description_cy="TOID OS MasterMap Topographic Area wedi cadarnhau yn benodol gan guradur fel amlinelliad yr adeilad",
         required_qualifiers=(
             "verification_method", "verified_at", "cache_snapshot_id",
         ),
@@ -153,7 +157,7 @@ _BUILDING: tuple[PredicateDef, ...] = (
             "rebuild, and broadcast tick. One of: verified, auto-snapped, "
             "unsnapped, contested, non-postal."
         ),
-        description_cy=CY_PENDING,
+        description_cy="statws gwirio lleoliad — band sy'n deillio o honiadau byw a haen ddarlledu Lleolydd",
         required_qualifiers=("cache_snapshot_id",),
         constraint_json=(
             '{"enum": ["verified", "auto-snapped", "unsnapped", '
@@ -167,25 +171,25 @@ _BUILDING: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _TENANCY: tuple[PredicateDef, ...] = (
     PredicateDef("tenancy_of", "entity_ref", "single", ("tenancy",),
-                 "The building (or area) this tenancy occupies."),
+                 "The building (or area) this tenancy occupies.", description_cy="yr adeilad (neu'r ardal) y mae'r denantiaeth hon yn ei feddiannu"),
     PredicateDef("tenant_name", "text", "single", ("tenancy",),
-                 "Common name of the tenant."),
+                 "Common name of the tenant.", description_cy="enw cyffredin y tenant"),
     PredicateDef("tenant_organisation", "text", "single", ("tenancy",),
-                 "Formal organisation name, where applicable."),
+                 "Formal organisation name, where applicable.", description_cy="enw'r sefydliad yn ffurfiol, lle bo'n berthnasol"),
     PredicateDef("tenancy_type", "text", "single", ("tenancy",),
                  "Tenancy type.",
                  constraint_json='{"enum": ["commercial_retail", '
                  '"commercial_wholesale", "residential", "office", '
-                 '"hospitality", "community", "mixed", "vacant", "other"]}'),
+                 '"hospitality", "community", "mixed", "vacant", "other"]}', description_cy="math o denantiaeth"),
     PredicateDef("tenant_business_type", "bilingual", "single", ("tenancy",),
                  "Nature of the tenant's business, e.g. 'newsagents and "
-                 "bookshop'."),
+                 "bookshop'.", description_cy="natur busnes y tenant, e.e. 'siop bapurau newydd a llyfrau'"),
     PredicateDef("period_start", "date", "single", ("tenancy",),
                  "Earliest plausible start of the tenancy.",
-                 required_qualifiers=("date_precision",)),
+                 required_qualifiers=("date_precision",), description_cy="dechrau cynharaf credadwy y denantiaeth"),
     PredicateDef("period_end", "date", "single", ("tenancy",),
                  "Earliest plausible end of the tenancy; null means current.",
-                 required_qualifiers=("date_precision",)),
+                 required_qualifiers=("date_precision",), description_cy="diwedd cynharaf credadwy y denantiaeth; gadael yn wag ar gyfer tenantiaeth cyfredol"),
 )
 
 # ---------------------------------------------------------------------------
@@ -196,23 +200,23 @@ _EVENT: tuple[PredicateDef, ...] = (
                  "Event type.",
                  constraint_json='{"enum": ["refurbishment", "designation", '
                  '"change_of_use", "sale", "construction", "demolition", '
-                 '"fire", "flood", "other"]}'),
+                 '"fire", "flood", "other"]}', description_cy="math o ddigwyddiad"),
     PredicateDef("event_start", "date", "single", ("event",),
                  "Event start date.",
-                 required_qualifiers=("date_precision",)),
+                 required_qualifiers=("date_precision",), description_cy="dyddiad dechrau'r digwyddiad"),
     PredicateDef("event_end", "date", "single", ("event",),
                  "Event end date; null means ongoing.",
-                 required_qualifiers=("date_precision",)),
+                 required_qualifiers=("date_precision",), description_cy="dyddiad diwedd y digwyddiad; gadael yn wag ar gyfer digwyddiad cyfredol"),
     PredicateDef("affects_entity", "entity_ref", "multi", ("event",),
-                 "An entity this event acts upon."),
+                 "An entity this event acts upon.", description_cy="endid y mae'r digwyddiad hwn yn ei effeithio"),
     PredicateDef("funder", "entity_ref", "multi", ("event",),
-                 "A funder, where the funder is itself a recorded entity."),
+                 "A funder, where the funder is itself a recorded entity.", description_cy="arianwr, lle bo'r arianwr ei hun yn endid sydd wedi'i gofnodi"),
     PredicateDef("funder_text", "text", "multi", ("event",),
-                 "A funder, where recorded as a string only."),
+                 "A funder, where recorded as a string only.", description_cy="arianwr, lle'i nodir fel llinyn yn unig"),
     PredicateDef("scope_description", "bilingual", "single", ("event",),
-                 "What the event did."),
+                 "What the event did.", description_cy="disgrifiad y digwyddiad - beth wnaeth y digwyddiad"),
     PredicateDef("consent_reference", "text", "multi", ("event",),
-                 "Listed-building-consent, planning, or designation reference."),
+                 "Listed-building-consent, planning, or designation reference.", description_cy="cyfeirnod cydsynio adeilad rhestredig, cynllunio, neu ddynodi"),
 )
 
 # ---------------------------------------------------------------------------
@@ -220,21 +224,21 @@ _EVENT: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _RESEARCH_QUESTION: tuple[PredicateDef, ...] = (
     PredicateDef("question_text", "bilingual", "single", ("research_question",),
-                 "The research question itself."),
+                 "The research question itself.", description_cy="y cwestiwn ymchwil ei hun"),
     PredicateDef("relates_to_entity", "entity_ref", "multi",
                  ("research_question",),
-                 "An entity the question is about."),
+                 "An entity the question is about.", description_cy="pwnc y mae'r cwestiwn yn ei gylch"),
     PredicateDef("suggested_sources", "text", "multi", ("research_question",),
-                 "Where to look — free text."),
+                 "Where to look — free text.", description_cy="ble i edrych — testun rhydd"),
     PredicateDef("priority", "text", "single", ("research_question",),
                  "Question priority.",
-                 constraint_json='{"enum": ["low", "medium", "high"]}'),
+                 constraint_json='{"enum": ["low", "medium", "high"]}', description_cy="blaenoriaeth cwestiwn"),
     PredicateDef("status", "text", "single", ("research_question",),
                  "Question status.",
                  constraint_json='{"enum": ["open", "in_progress", '
-                 '"answered", "abandoned"]}'),
+                 '"answered", "abandoned"]}', description_cy="statws cwestiwn"),
     PredicateDef("answered_by_claim", "text", "single", ("research_question",),
-                 "claim_id of the claim that resolved the question."),
+                 "claim_id of the claim that resolved the question.", description_cy="claim_id yr honiad a ddatrysodd y cwestiwn"),
 )
 
 # ---------------------------------------------------------------------------
@@ -242,21 +246,21 @@ _RESEARCH_QUESTION: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _SOURCE: tuple[PredicateDef, ...] = (
     PredicateDef("title_cy", "text", "single", ("source",),
-                 "Welsh title, where applicable."),
+                 "Welsh title, where applicable.", description_cy="teitl Cymraeg, lle bo'n berthnasol"),
     PredicateDef("title_en", "text", "single", ("source",),
-                 "English title."),
+                 "English title.", description_cy="teitl Saesneg"),
     PredicateDef("citation", "text", "single", ("source",),
-                 "Full citation string."),
+                 "Full citation string.", description_cy="mynegai cyfeirio"),
     PredicateDef("url", "text", "single", ("source",),
-                 "Canonical URL."),
+                 "Canonical URL.", description_cy="URL canhwynol"),
     PredicateDef("organisation", "text", "single", ("source",),
-                 "Authoring or holding organisation."),
+                 "Authoring or holding organisation.", description_cy="sefydliad awduriaethol neu storfa"),
     PredicateDef("licence", "text", "single", ("source",),
-                 "Licence — OGL, CC-BY-SA, internal, etc."),
+                 "Licence — OGL, CC-BY-SA, internal, etc.", description_cy="trwydded — OGL, CC-BY-SA, mewnol, ac yn y blaen"),
     PredicateDef("accessed_at", "date", "single", ("source",),
-                 "Most recent retrieval date."),
+                 "Most recent retrieval date.", description_cy="dyddiad agor mwyaf diweddar"),
     PredicateDef("file_hash", "text", "single", ("source",),
-                 "SHA-256 of the evidence file, where applicable."),
+                 "SHA-256 of the evidence file, where applicable.", description_cy="SHA-256 y ffeil dystiolaeth, lle bo'n berthnasol"),
 )
 
 # ---------------------------------------------------------------------------
@@ -264,22 +268,22 @@ _SOURCE: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _TOWN: tuple[PredicateDef, ...] = (
     PredicateDef("material_tradition", "bilingual", "multi", ("town",),
-                 "The town's building-material tradition."),
+                 "The town's building-material tradition.", description_cy="traddodiad deunyddiau adeiladu'r dref"),
     PredicateDef("street_pattern", "bilingual", "single", ("town",),
-                 "Narrative description of the town's street pattern."),
+                 "Narrative description of the town's street pattern.", description_cy="disgrifiad naratif o batrwm strydoedd y dref"),
     PredicateDef("notable_event", "bilingual", "multi", ("town",),
-                 "A notable event in the town's history."),
+                 "A notable event in the town's history.", description_cy="digwyddiad nodedig yn hanes y dref"),
     PredicateDef("conservation_authority", "text", "single", ("town",),
-                 "Local planning authority for conservation consent."),
+                 "Local planning authority for conservation consent.", description_cy="awdurdod cynllunio lleol ar gyfer cydsynio cadwraeth"),
     PredicateDef("unitary_authority", "text", "single", ("town",),
-                 "Council responsible for non-planning matters."),
+                 "Council responsible for non-planning matters.", description_cy="cyngor unedol"),
     PredicateDef("listed_building_count", "int", "single", ("town",),
                  "Count of listed buildings in the town. v0.1-schema.md §3.5 "
                  "notes the count should record the date it was made; "
                  "'accessed_at' is not a §3.2 qualifier, so record that date "
-                 "in the claim note or via the source until v0.2 resolves it."),
+                 "in the claim note or via the source until v0.2 resolves it.", description_cy="nifer yr adeiladau rhestredig yn y dref"),
     PredicateDef("parish", "text", "single", ("town",),
-                 "Ecclesiastical parish, where relevant."),
+                 "Ecclesiastical parish, where relevant.", description_cy="plwyf eglwysig, lle bo'n berthnasol"),
 )
 
 
