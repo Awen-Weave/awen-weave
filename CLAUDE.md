@@ -17,4 +17,4 @@ This repo follows the conventions in https://github.com/Huw-Lab/working-patterns
 
 ## Multi-account gh-auth
 
-This repo lives under Huw-Lab. Code sessions touching it must `gh auth switch -u Huw-Lab` before pushing. See multi-account-gh-auth lesson in working-patterns.
+This repo lives under the **Awen-Weave** GitHub org. Push as an account with write access to `Awen-Weave` — for Huw that's `gh auth switch -u huw-awenweave` (note: the account is `huw-awenweave`, **not** `Huw-Lab`, and not the org name `Awen-Weave`). Watch the multi-account gh-auth gotcha: confirm the active account with `gh auth status` before pushing. See multi-account-gh-auth lesson in working-patterns.
