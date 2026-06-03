@@ -12,7 +12,7 @@ This repo follows the conventions in https://github.com/Huw-Lab/working-patterns
 ## Relationship to other repos
 
 - `arloesidolgellau/town-dataset` — the Dolgellau instance, consumes this framework via PyPI
-- `Huw-Lab/awenweave-site` — public-facing docs at awenweave.com
+- `Awen-Weave/awenweave-site` — public-facing docs at awenweave.com
 - `Huw-Lab/working-patterns` — the working-pattern foundation this repo inherits
 
 ## Multi-account gh-auth
