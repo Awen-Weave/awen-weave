@@ -36,9 +36,9 @@ dev = ["pytest>=8.0", "pytest-cov>=4.0"]
 
 [project.urls]
 Homepage = "https://awenweave.com"
-Repository = "https://github.com/Huw-Lab/awen-weave"
+Repository = "https://github.com/Awen-Weave/awen-weave"
 Documentation = "https://awenweave.com"
-Issues = "https://github.com/Huw-Lab/awen-weave/issues"
+Issues = "https://github.com/Awen-Weave/awen-weave/issues"
 
 [project.scripts]
 craidd-init = "cli.craidd_init:main"

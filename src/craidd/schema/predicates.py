@@ -17,9 +17,9 @@ NOTE — Welsh descriptions: the predicate table requires description_cy
 NOT NULL, but §3.5 supplies English meanings only. Every description_cy
 below is the tutor-attested form from the 2026-05-19 Catrin Stephens
 session via the magic-link cards app — see
-Huw-Lab/awen-cards/welsh-tutor-cards.yaml (each card's `chosen` block
+Awen-Weave/awen-cards/welsh-tutor-cards.yaml (each card's `chosen` block
 carries the verified attestor + capture timestamp) and the session
-export at Huw-Lab/awen-cards/sessions/2026-05-19-catrin-stephens.json.
+export at Awen-Weave/awen-cards/sessions/2026-05-19-catrin-stephens.json.
 CY_PENDING remains in this module as a placeholder for any future
 predicate added before its Welsh form is attested.
 """
