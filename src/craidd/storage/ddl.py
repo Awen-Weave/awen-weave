@@ -70,6 +70,16 @@ CREATE TABLE claim (
   value_cy          VARCHAR,
   value_en          VARCHAR,
   value_entity_ref  VARCHAR REFERENCES entity(entity_id),
+  -- qualifiers_json carries the claim-level qualifier map (schema/qualifiers.py).
+  -- Qualifier VOCABULARIES are enforced at the schema/validation layer, not by
+  -- DDL CHECK constraints, so adding a qualifier domain is a schema-layer change
+  -- with no column change here. Phase 2.1 (2026-07-03) added the `binding`
+  -- qualifier (incl. `federated`) and the `federated_from` / `source_ran_at`
+  -- source-of-record keys. All travel in this column, and the full federation
+  -- stamp is written to prawf_log.payload_json below (design/v0.1-schema.md
+  -- item 8 of section 10, craidd/federation.py). This comment is the same-commit
+  -- (arch boundary 4) acknowledgement that the storage shape is unchanged.
+  -- NB keep DDL comments semicolon-free — _split_statements splits on the semicolon.
   qualifiers_json   VARCHAR,
   source_id         VARCHAR NOT NULL REFERENCES entity(entity_id),
   recorded_by       VARCHAR NOT NULL,
