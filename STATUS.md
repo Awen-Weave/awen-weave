@@ -1,9 +1,10 @@
 # Awen Weave — STATUS
 
-**Last updated:** 2026-07-03 (v0.2.0 prepared — `federated` binding + provenance contract in core; full suite green (234); **publish to PyPI + tag + push pending on the Mac** under an Awen-Weave identity)
+**Last updated:** 2026-07-03 (**v0.2.0 published to PyPI** — `federated` binding + provenance contract in core; full suite green (234); `pip install awen-weave==0.2.0`)
 
 ## What works
 - Framework extracted (Brief 1 ✓)
+- **v0.2.0 published to PyPI** ✓ — `pip install awen-weave==0.2.0`; Phase 2.1 `federated` binding + provenance contract in core (`craidd.federation`); 234 tests green
 - **v0.1.0 published to PyPI** ✓ — `pip install awen-weave`
 - **v0.1.1 published to PyPI** ✓ — `pip install awen-weave==0.1.1`; clean-venv smoke test on the Dolgellau Pi (Python 3.13.5) confirms `address.description_cy == 'cyfeiriad post'` and zero remaining `CY_PENDING` across all 60 predicates
 - CI check workflow green ✓
@@ -14,13 +15,13 @@
 - BRA refactor + extraction (Brief 4) — `src/bra/` stays in town-dataset until instance-specific constants are lifted into config.
 
 ## Next
-- **Publish v0.2.0** — build + `twine upload` from the Mac under an Awen-Weave-capable identity, tag `v0.2.0`, push. Then signal Wnion + Dolgellau Energy to re-pin (Phase 2.5).
+- **Phase 2.5 — consumers re-pin** to `awen-weave==0.2.0`: Wnion (refactor `federation.py` onto core imports — brief staged) and Dolgellau Energy `EGNI-001` (native on the core binding — note staged). Both in their own chats.
 - Remaining v0.2 design questions parked: namespace restructure, BRA refactor + extraction.
 - Brief 16 (Welsh place-names) — framework-module ingestion that targets this repo (not town-dataset) per the 2026-05-22 routing decision.
 
 ## Recent releases
 
-- **2026-07-03 — v0.2.0 (prepared, publish pending)** — Phase 2.1: the `federated` binding + provenance contract promoted into the core (design/v0.1-schema.md §10 item 8). Additive over 0.1.1 — no API break. New: `binding` closed qualifier domain (`asserted`/`measured`/`curated`/`derived`/`federated`, no default), `federated_from` + `source_ran_at` source-of-record keys, the federated cross-rule (fail-loud), and `craidd/federation.py` (`SourceOfRecord`, `FederatedResult`, `provenance_stamp`, `federation_qualifiers`, `now_utc`, `FederationError`). DDL shape unchanged (qualifiers travel in `qualifiers_json`; stamp in `prawf_log.payload_json`). Full suite green: **234 passed**. Unblocks Wnion's Craidd migration + Dolgellau Energy federation. _(IDR-006 Awen/phase-2/awen-weave-federated-binding-BRIEF.md)_
+- **2026-07-03 — v0.2.0** ✓ published — Phase 2.1: the `federated` binding + provenance contract promoted into the core (design/v0.1-schema.md §10 item 8). Additive over 0.1.1 — no API break. PyPI: <https://pypi.org/project/awen-weave/0.2.0/>. Tag: `v0.2.0`. PR #7. (Publish note: after the Huw-Lab→Awen-Weave org move the PyPI trusted publisher had to be re-registered to owner `Awen-Weave` before the workflow could upload.) New: `binding` closed qualifier domain (`asserted`/`measured`/`curated`/`derived`/`federated`, no default), `federated_from` + `source_ran_at` source-of-record keys, the federated cross-rule (fail-loud), and `craidd/federation.py` (`SourceOfRecord`, `FederatedResult`, `provenance_stamp`, `federation_qualifiers`, `now_utc`, `FederationError`). DDL shape unchanged (qualifiers travel in `qualifiers_json`; stamp in `prawf_log.payload_json`). Full suite green: **234 passed**. Unblocks Wnion's Craidd migration + Dolgellau Energy federation. _(IDR-006 Awen/phase-2/awen-weave-federated-binding-BRIEF.md)_
 
 - **2026-05-22 — v0.1.1** — `description_cy` backfill (additive bilingual data; no API change). All 60 predicates now carry tutor-attested Welsh from Catrin Stephens' 2026-05-19 magic-link session. PyPI: <https://pypi.org/project/awen-weave/0.1.1/>. Tag: `v0.1.1`. Workflow run: 26294896889 (success). _(cowork-to-code-awen-weave-0.1.1-cy-republish.md)_
 
