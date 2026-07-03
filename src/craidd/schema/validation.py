@@ -241,12 +241,19 @@ def validate_qualifiers(
                 f"{sorted(domain)}"
             )
             continue
-        # Open-form item-7 keys with type/format expectations.
-        if key == "verified_at":
+        # Open-form keys with type/format expectations.
+        # ISO-8601 timestamps: verified_at (item 7), source_ran_at (Phase 2.1).
+        if key in ("verified_at", "source_ran_at"):
             err = _validate_iso_date(value)
             if err is not None:
-                errors.append(f"qualifier 'verified_at' {err}")
-        elif key in ("cache_snapshot_id", "field_session_id", "co_signed_by"):
+                errors.append(f"qualifier '{key}' {err}")
+        # Non-empty strings: item-7 keys + federated_from (Phase 2.1).
+        elif key in (
+            "cache_snapshot_id",
+            "field_session_id",
+            "co_signed_by",
+            "federated_from",
+        ):
             if not isinstance(value, str) or _is_empty(value):
                 errors.append(
                     f"qualifier '{key}' must be a non-empty string"
@@ -262,6 +269,26 @@ def validate_qualifiers(
             "same qualifier set — co-sign requires a named session "
             "(design/lleolydd.md §12.A)"
         )
+
+    # Cross-qualifier rule (Phase 2.1): a federated binding requires its
+    # source-of-record. A claim marked binding=federated is a read-only
+    # reference to ANOTHER instance's datum (invariant 1, "reference don't
+    # copy"); it is invalid unless it carries the minimal source-of-record —
+    # the source instance id (`federated_from`) and the source's OWN run-UTC
+    # (`source_ran_at`). Missing either is a hard error (mirrors invariants
+    # 2 & 3 in the federation spec; the full stamp lives in
+    # craidd/federation.py). Mirrors the co_signed_by ⇒ field_session_id
+    # shape above. See design/v0.1-schema.md §10 item 8.
+    if qualifiers.get("binding") == "federated":
+        for required in ("federated_from", "source_ran_at"):
+            if required not in qualifiers or _is_empty(qualifiers.get(required)):
+                errors.append(
+                    f"qualifier 'binding'='federated' requires "
+                    f"'{required}' in the same qualifier set — a federated "
+                    f"read must carry its source-of-record (source instance "
+                    f"id + source run-UTC); reference, don't copy "
+                    f"(design/v0.1-schema.md §10 item 8)"
+                )
     return errors
 
 

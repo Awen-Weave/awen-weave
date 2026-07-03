@@ -20,11 +20,28 @@ values — the listed values are recognised but a value outside is permitted
   values get type/format checks in validation.py rather than enum checks.
 - Cross-qualifier rule (enforced in validation.py): `co_signed_by` must
   be accompanied by `field_session_id`. Co-sign requires a named session.
+
+Phase 2.1 additions (2026-07-03) — the `federated` binding:
+- `binding` — a new CLOSED domain (BINDINGS) recording *how* a claim's
+  value was derived: asserted / measured / curated / derived / federated.
+  Follows the §10 item 7 precedent exactly (closed-domain qualifier +
+  validation + a cross-qualifier rule). No default — binding is explicit.
+- `federated_from`, `source_ran_at` — two new OPEN-form keys carrying the
+  minimal source-of-record for a federated read (the source instance id
+  and the source's OWN run-UTC). Structured, not free text: `source_ran_at`
+  parses as ISO-8601 in validation.py; `federated_from` is a non-empty
+  string. The FULL federation stamp (repo, paths, counts, licence, …)
+  lives in craidd/federation.py and is what Prawf logs — these two keys
+  are only the fail-loud gate on the claim itself.
+- Cross-qualifier rule (enforced in validation.py): a claim with
+  `binding == "federated"` MUST carry both `federated_from` and
+  `source_ran_at` (mirrors `co_signed_by` ⇒ `field_session_id`).
+  See design/v0.1-schema.md §10 item 8 and craidd/federation.py.
 """
 from __future__ import annotations
 
 # The qualifier keys that exist at all in v0.1.
-# 4 original + 7 added by §10 item 7 = 11 total.
+# 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 = 14 total.
 QUALIFIER_KEYS: frozenset[str] = frozenset(
     {
         # Original v0.1 vocabulary.
@@ -41,6 +58,10 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         "cache_snapshot_id",
         "field_session_id",
         "co_signed_by",
+        # Phase 2.1 — the federated binding.
+        "binding",              # CLOSED domain (BINDINGS).
+        "federated_from",       # open-form: source instance id.
+        "source_ran_at",        # open-form: source's OWN run-UTC (ISO-8601).
     }
 )
 
@@ -94,14 +115,32 @@ GEOMETRY_BASES: frozenset[str] = frozenset(
     }
 )
 
+# --- binding: CLOSED domain. Phase 2.1 (2026-07-03), v0.1-schema.md §10 item 8.
+# Records HOW a claim's value was derived. The provenance-derivation axis,
+# distinct from confidence (how sure) and verification_method (how a curator
+# decided). No DEFAULT_BINDING — a binding, when carried, is always explicit;
+# claims may omit `binding` entirely (it is not a required qualifier), but a
+# stated binding must be in this set.
+#   asserted  — stated by a source (a source entity says so).
+#   measured  — an instrument / open-data reading.
+#   curated   — a human decided it.
+#   derived   — computed from other claims on this instance.
+#   federated — referenced read-only from ANOTHER Awen instance (never copied).
+#               Requires source-of-record provenance — see the cross-rule in
+#               validation.py and the stamp in craidd/federation.py.
+BINDINGS: frozenset[str] = frozenset(
+    {"asserted", "measured", "curated", "derived", "federated"}
+)
+
 # Closed domains: a qualifier value here MUST be in the set.
-# Order: original v0.1 entries first, then §10 item 7 additions.
+# Order: original v0.1 entries first, then §10 item 7 additions, then Phase 2.1.
 CLOSED_QUALIFIER_DOMAINS: dict[str, frozenset[str]] = {
     "name_type": NAME_TYPES,
     "date_precision": DATE_PRECISIONS,
     "verification_method": VERIFICATION_METHODS,
     "temporal_status": TEMPORAL_STATUSES,
     "geometry_basis": GEOMETRY_BASES,
+    "binding": BINDINGS,
 }
 
 # Open domains: the listed values are recognised, but a value outside the

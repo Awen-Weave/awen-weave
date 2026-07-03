@@ -257,3 +257,70 @@ def test_verified_at_must_be_iso():
     claim["qualifiers"]["verified_at"] = "yesterday morning"
     errors = validate_claim(claim, subject_entity_type="building")
     assert any("verified_at" in e for e in errors)
+
+
+# --- §10 item 8: the `binding` qualifier + federated cross-rule --------------
+
+@pytest.mark.parametrize("binding", ["asserted", "measured", "curated", "derived"])
+def test_non_federated_bindings_accepted(binding: str):
+    """The four non-federated bindings need no source-of-record and validate
+    clean as a plain closed-domain qualifier."""
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = binding
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert errors == []
+
+
+def test_binding_closed_domain_rejects_unknown():
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "teleported"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("binding" in e for e in errors)
+
+
+def test_binding_federated_requires_source_of_record():
+    """binding=federated is invalid without BOTH federated_from and
+    source_ran_at — reference, don't copy (mirrors co_signed_by rule)."""
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "federated"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("federated_from" in e for e in errors)
+    assert any("source_ran_at" in e for e in errors)
+
+
+def test_binding_federated_missing_only_run_utc_rejected():
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "federated"
+    claim["qualifiers"]["federated_from"] = "dolgellau-town-dataset"
+    # source_ran_at deliberately omitted
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("source_ran_at" in e for e in errors)
+    assert not any("federated_from" in e for e in errors)
+
+
+def test_binding_federated_with_source_of_record_accepted():
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "federated"
+    claim["qualifiers"]["federated_from"] = "dolgellau-town-dataset"
+    claim["qualifiers"]["source_ran_at"] = "2026-06-30T09:15:00+00:00"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert errors == []
+
+
+def test_source_ran_at_must_be_iso():
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "federated"
+    claim["qualifiers"]["federated_from"] = "dolgellau-town-dataset"
+    claim["qualifiers"]["source_ran_at"] = "last Tuesday"
+    errors = validate_claim(claim, subject_entity_type="building")
+    assert any("source_ran_at" in e for e in errors)
+
+
+def test_federated_from_must_be_nonempty_string():
+    claim = _base_address_claim()
+    claim["qualifiers"]["binding"] = "federated"
+    claim["qualifiers"]["federated_from"] = ""
+    claim["qualifiers"]["source_ran_at"] = "2026-06-30T09:15:00+00:00"
+    errors = validate_claim(claim, subject_entity_type="building")
+    # empty string fails both the non-empty-string check AND the cross-rule
+    assert any("federated_from" in e for e in errors)
