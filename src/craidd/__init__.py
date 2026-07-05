@@ -22,3 +22,13 @@ from __future__ import annotations
 # The schema version this package implements. Bump deliberately, in step
 # with a new design/vX.Y-schema.md document — never silently.
 SCHEMA_VERSION = "v0.1"
+
+# The awen-constitution release this package validates against
+# (compatibility.md: constitution 0.1.x ↔ awen-weave 0.2.x). From constitution
+# 0.2.0 the spec LEADS and this package validates against it; the CI drift
+# check (scripts/constitution_drift.py, .github/workflows/constitution-drift.yml)
+# fails loud if the in-code model here drifts from the SCH-* at this tag.
+# Bump these together with the compatibility.md row when adopting a new
+# constitution release.
+CONSTITUTION_VERSION = "0.1.0"
+CONSTITUTION_TAG = "v0.1.0"

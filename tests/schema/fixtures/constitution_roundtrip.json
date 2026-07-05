@@ -1,0 +1,129 @@
+{
+  "_comment": "Round-trip corpus for the constitution drift check (scripts/constitution_drift.py, brief §6). Each entry is a document run through BOTH this package's validators AND the awen-constitution SCH-* at the pinned tag; the check fails loud if code-accept and schema-accept disagree. Documents span valid shapes and the two cross-rules (co_signed_by⇒field_session_id; binding=federated⇒federated_from+source_ran_at), the behavioural cases the enum model-diff cannot see. `expect`/`note` are documentation; the check compares code vs schema, not against `expect`.",
+  "fixtures": [
+    {
+      "id": "claim-valid-address",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "pass",
+      "note": "minimal valid bilingual address claim",
+      "document": {
+        "subject_id": "TDS-DOL-B-00001", "predicate": "address",
+        "value_cy": "Tŷ Coch", "value_en": "Red House",
+        "source_id": "TDS-SRC-OSOPEN", "recorded_by": "huw@awenweave.com",
+        "confidence": "high"
+      }
+    },
+    {
+      "id": "claim-cosigned-with-session",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "pass",
+      "note": "cross-rule satisfied",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"co_signed_by": "cat@x.com", "field_session_id": "FS-1"}
+      }
+    },
+    {
+      "id": "claim-cosigned-without-session",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "fail",
+      "note": "cross-rule violated: co_signed_by without field_session_id",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"co_signed_by": "cat@x.com"}
+      }
+    },
+    {
+      "id": "claim-federated-full",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "pass",
+      "note": "binding=federated with both source-of-record keys",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"binding": "federated", "federated_from": "dolgellau-town-dataset", "source_ran_at": "2026-06-30T09:15:00+00:00"}
+      }
+    },
+    {
+      "id": "claim-federated-missing-source-ran-at",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "fail",
+      "note": "cross-rule violated: federated without source_ran_at",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"binding": "federated", "federated_from": "x"}
+      }
+    },
+    {
+      "id": "claim-bad-binding",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "fail",
+      "note": "binding value outside the closed domain",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"binding": "guessed"}
+      }
+    },
+    {
+      "id": "claim-bad-name-type",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "fail",
+      "note": "name_type value outside the closed domain",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "high",
+        "qualifiers": {"name_type": "nickname"}
+      }
+    },
+    {
+      "id": "claim-bad-confidence",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "fail",
+      "note": "confidence outside {high,medium,low}",
+      "document": {
+        "subject_id": "B1", "predicate": "address", "value_cy": "T",
+        "source_id": "S", "recorded_by": "r@x.com", "confidence": "very-high"
+      }
+    },
+    {
+      "id": "entity-valid-building",
+      "kind": "entity",
+      "expect": "pass",
+      "note": "valid building, no visibility",
+      "document": {"entity_id": "TDS-DOL-B-00001", "entity_type": "building"}
+    },
+    {
+      "id": "entity-source-with-visibility",
+      "kind": "entity",
+      "expect": "pass",
+      "note": "visibility valid on a source entity",
+      "document": {"entity_id": "TDS-SRC-OSOPEN", "entity_type": "source", "visibility": "restricted"}
+    },
+    {
+      "id": "entity-visibility-on-nonsource",
+      "kind": "entity",
+      "expect": "fail",
+      "note": "cross-rule: visibility only on source entities",
+      "document": {"entity_id": "B1", "entity_type": "building", "visibility": "public"}
+    },
+    {
+      "id": "entity-bad-type",
+      "kind": "entity",
+      "expect": "fail",
+      "note": "entity_type outside the nine",
+      "document": {"entity_id": "X", "entity_type": "spaceship"}
+    }
+  ]
+}

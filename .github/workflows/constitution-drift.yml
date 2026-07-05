@@ -1,0 +1,52 @@
+name: constitution-drift
+
+# Fail loud if this package's in-code model drifts from the awen-constitution
+# SCH-* it declares compatibility with (craidd.CONSTITUTION_TAG). From
+# constitution 0.2.0 the spec LEADS and awen-weave validates against it — this
+# job is that enforcement (compatibility.md / constitution-mcp brief §6).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout awen-weave
+        uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Read the pinned constitution tag from the code
+        id: pin
+        run: |
+          TAG=$(python -c "import sys; sys.path.insert(0,'src'); from craidd import CONSTITUTION_TAG; print(CONSTITUTION_TAG)")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "pinned constitution tag: $TAG"
+
+      - name: Checkout awen-constitution at the pinned tag
+        uses: actions/checkout@v5
+        with:
+          repository: Awen-Weave/awen-constitution
+          ref: ${{ steps.pin.outputs.tag }}
+          path: _constitution
+          # A read-only token with access to awen-constitution. If that repo
+          # is public, github.token suffices; if private, set a fine-grained
+          # PAT secret CONSTITUTION_RO_TOKEN (contents:read on the constitution).
+          token: ${{ secrets.CONSTITUTION_RO_TOKEN || github.token }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . || true
+          pip install jsonschema
+
+      - name: Constitution drift check (fail loud on drift)
+        run: python scripts/constitution_drift.py --constitution ./_constitution
