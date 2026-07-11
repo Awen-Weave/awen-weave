@@ -261,15 +261,17 @@ def test_build_gazetteer_declares_ran_at_basis_in_notes():
 # --- committed sample: diffable provenance backstop (exit #5) ----------------
 
 def test_committed_sample_snapshot_still_validates():
-    """The committed sample under samples/ must stay constitution-clean against
-    the offline gate — a regression guard on the diffable backstop, and proof a
-    consumer can re-verify a fetched snapshot record-by-record."""
+    """The committed delivery snapshot (snapshots/dolgellau-gazetteer/) must stay
+    constitution-clean against the offline gate — a regression guard on the
+    artefact CHI's pull_tref.py consumes, and proof a consumer can re-verify a
+    fetched snapshot record-by-record."""
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
-    snap = repo / "samples" / "dolgellau-gazetteer" / "snapshot-20260711T000000Z"
+    snap = (repo / "snapshots" / "dolgellau-gazetteer"
+            / "snapshot-20260711T000000Z")
     if not snap.is_dir():
-        pytest.skip("sample snapshot not present in this checkout")
+        pytest.skip("delivery snapshot not present in this checkout")
     gate = SchemaValidator()
     manifest = json.loads((snap / "manifest.json").read_text(encoding="utf-8"))
     for fname, kind in (

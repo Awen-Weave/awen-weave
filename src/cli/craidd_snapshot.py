@@ -10,8 +10,14 @@ Runs on craidd, where the store and the porth validation sibling both live:
 
     python -m cli.craidd_snapshot dolgellau-gazetteer \
         --source-root /srv/town-dataset \
-        --duckdb /srv/town-dataset/craidd.duckdb \
-        --out /srv/town-dataset/snapshots
+        --duckdb /srv/town-dataset/craidd.duckdb
+        # --out defaults to the committed repo path snapshots/dolgellau-gazetteer/
+
+Delivery is committed-to-repo (resolved 2026-07-11): the snapshot lands in the
+tracked repo path CHI's build pulls, so the flow is `craidd-snapshot …` then
+`git add snapshots/ && git push` (as huw-awenweave) — no external dir to copy in.
+CHI's pull_tref.py --snapshot points at the checked-out snapshot dir; the static
+craidd endpoint is the later transport-hop option, not needed for the first proof.
 
 Every record is constitution.validate-clean (live porth gate on craidd, else the
 vendored offline gate) before anything is written; the build fails loud and
@@ -22,12 +28,20 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from craidd.readers.dolgellau import build_gazetteer, read_from_duckdb
 from craidd.ran_at import resolve_ran_at
 from craidd.federation import SourceOfRecord
 from craidd.snapshot import SnapshotBuilder, SnapshotError
 from craidd.validation_gate import DEFAULT_PORTH_URL, default_gate
+
+# Delivery is committed-to-repo (resolved 2026-07-11): the emitted snapshot lands
+# in the tracked repo path CHI's build pulls (snapshots/dolgellau-gazetteer/), NOT
+# an external craidd dir that then needs copying in. Computed from this file's
+# location so it resolves to whatever checkout runs the CLI on craidd.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_COMMITTED_OUT = str(_REPO_ROOT / "snapshots" / "dolgellau-gazetteer")
 
 
 def _build_dolgellau(args) -> int:
@@ -93,7 +107,12 @@ def main(argv=None) -> int:
                          help="materialise the Dolgellau gazetteer snapshot")
     dol.add_argument("--source-root", default="/srv/town-dataset")
     dol.add_argument("--duckdb", default="/srv/town-dataset/craidd.duckdb")
-    dol.add_argument("--out", default="/srv/town-dataset/snapshots")
+    dol.add_argument("--out", default=_COMMITTED_OUT,
+                     help="output dir; default = the committed repo path "
+                          "snapshots/dolgellau-gazetteer/ so the emitted "
+                          "snapshot lands where CHI's build pulls it (then "
+                          "git add + push as huw-awenweave). pull_tref.py "
+                          "--snapshot points at the checked-out snapshot dir.")
     dol.add_argument("--consumer", default="care-home-insight")
     dol.add_argument("--recorded-by", default="huw@arloesidolgellau.cymru")
     dol.add_argument("--grade", default="B", choices=["A", "B", "C"])
