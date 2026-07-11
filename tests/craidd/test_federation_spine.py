@@ -19,9 +19,13 @@ import json
 
 import pytest
 
+import json as _json
+
 from craidd.federation import FederationError, SourceOfRecord
 from craidd.gazetteer import federated_name_claim, gazetteer_stamp, place_anchor
 from craidd.queue import RequestQueue, QueueError, validate_request, write_request
+from craidd.ran_at import RanAt, RanAtError, resolve_ran_at
+from craidd.readers.dolgellau import build_gazetteer
 from craidd.snapshot import (
     SnapshotBuilder,
     SnapshotError,
@@ -203,6 +207,55 @@ def test_queue_reader_stub_and_lifecycle(tmp_path):
 def test_write_request_refuses_malformed(tmp_path):
     with pytest.raises(QueueError):
         write_request(tmp_path / "requests", "bad", {"place": "Dolgellau"})
+
+
+# --- ran_at_utc resolution order + self-declaring basis ----------------------
+
+def test_resolve_ran_at_prefers_run_manifest(tmp_path):
+    manifest = tmp_path / "run-manifest.json"
+    manifest.write_text(_json.dumps({"ran_at_utc": "2026-06-01T09:00:00+00:00"}))
+    got = resolve_ran_at(tmp_path)  # conventional run-manifest.json at root
+    assert got == RanAt("2026-06-01T09:00:00+00:00", "run-manifest")
+    assert got.note() == "ran_at_utc basis: run-manifest"
+
+
+def test_resolve_ran_at_falls_back_to_git_head():
+    # this repo IS a git tree — HEAD commit time, declared a proxy
+    from pathlib import Path
+    repo = Path(__file__).resolve().parents[2]
+    got = resolve_ran_at(repo)
+    assert got.basis == "git-head-commit"
+    assert got.value  # a real ISO stamp
+    assert got.note() == "ran_at_utc basis: git-head-commit"
+
+
+def test_resolve_ran_at_fails_loud_without_source(tmp_path):
+    # not a git tree, no manifest -> never the builder's clock
+    with pytest.raises(RanAtError):
+        resolve_ran_at(tmp_path)
+
+
+def test_explicit_missing_manifest_fails_loud(tmp_path):
+    with pytest.raises(RanAtError):
+        resolve_ran_at(tmp_path, manifest_path=str(tmp_path / "nope.json"))
+
+
+def test_build_gazetteer_declares_ran_at_basis_in_notes():
+    src = _dol_source()
+    recs = build_gazetteer(
+        buildings=[{"subject_id": "TDS-DOL-B-00001", "uprn": 200003184697,
+                    "lat": 52.7438, "lng": -3.8848}],
+        name_claims=[{"subject_id": "TDS-DOL-B-00001", "predicate": "name_en",
+                      "value": "Glyndwr Buildings",
+                      "source_id": "TDS-DOL-SRC-INTERNAL-HUW-2026",
+                      "name_type": "vernacular"}],
+        source=src, consumer_instance="care-home-insight",
+        recorded_by="huw@arloesidolgellau.cymru",
+        federated_utc=BUILT_UTC, ran_at_basis="git-head-commit",
+    )
+    assert recs.stamps[0]["notes"] == "ran_at_utc basis: git-head-commit"
+    # still validates — notes is free-text on SCH-FEDERATION-001
+    assert SchemaValidator().validate("federation-stamp", recs.stamps[0]).valid
 
 
 # --- committed sample: diffable provenance backstop (exit #5) ----------------

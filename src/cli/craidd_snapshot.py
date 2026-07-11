@@ -23,11 +23,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from craidd.readers.dolgellau import (
-    build_gazetteer,
-    read_from_duckdb,
-    resolve_source_ran_at,
-)
+from craidd.readers.dolgellau import build_gazetteer, read_from_duckdb
+from craidd.ran_at import resolve_ran_at
 from craidd.federation import SourceOfRecord
 from craidd.snapshot import SnapshotBuilder, SnapshotError
 from craidd.validation_gate import DEFAULT_PORTH_URL, default_gate
@@ -41,14 +38,14 @@ def _build_dolgellau(args) -> int:
               file=sys.stderr)
         return 2
 
-    ran_at = args.source_ran_at or resolve_source_ran_at(args.source_root)
+    ran_at = resolve_ran_at(args.source_root, manifest_path=args.source_manifest)
     source = SourceOfRecord(
         instance="dolgellau-town-dataset",
         repo="arloesidolgellau/town-dataset",
         framework="tref",
         root=args.source_root,
         paths={"gazetteer": args.duckdb},
-        ran_at_utc=ran_at,
+        ran_at_utc=ran_at.value,
         release=args.release,
     )
 
@@ -68,6 +65,7 @@ def _build_dolgellau(args) -> int:
         craidd_source="dolgellau-town-dataset",
         grade=args.grade,
         federated_utc=args.built_utc,  # None -> now at build time
+        ran_at_basis=ran_at.basis,     # declared in the stamp notes
     )
 
     gate = default_gate(args.porth_url, prefer_porth=not args.offline)
@@ -83,7 +81,7 @@ def _build_dolgellau(args) -> int:
     print(f"OK: wrote {snap_dir}")
     print(f"  place_anchors={len(records.place_anchors)} "
           f"claims={len(records.claims)} stamps={len(records.stamps)}")
-    print(f"  source ran_at_utc={ran_at}")
+    print(f"  source ran_at_utc={ran_at.value} (basis: {ran_at.basis})")
     return 0
 
 
@@ -100,8 +98,10 @@ def main(argv=None) -> int:
     dol.add_argument("--recorded-by", default="huw@arloesidolgellau.cymru")
     dol.add_argument("--grade", default="B", choices=["A", "B", "C"])
     dol.add_argument("--release", default="complete")
-    dol.add_argument("--source-ran-at", default=None,
-                     help="ISO source run-UTC; default = town-dataset git HEAD")
+    dol.add_argument("--source-manifest", default=None,
+                     help="path to the source's run manifest (authoritative "
+                          "ran_at_utc); default = <source-root>/run-manifest.json "
+                          "if present, else the town-dataset git HEAD (proxy)")
     dol.add_argument("--built-utc", default=None,
                      help="ISO build time (default now); set for a reproducible build")
     dol.add_argument("--porth-url", default=DEFAULT_PORTH_URL)
