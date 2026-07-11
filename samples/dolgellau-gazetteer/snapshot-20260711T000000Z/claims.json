@@ -1,0 +1,59 @@
+[
+  {
+    "confidence": "high",
+    "predicate": "name_cy",
+    "qualifiers": {
+      "binding": "federated",
+      "dialect": "cy-GB-north",
+      "federated_from": "dolgellau-town-dataset",
+      "name_type": "current_local",
+      "source_ran_at": "2026-05-26T16:04:43+01:00"
+    },
+    "recorded_by": "huw@arloesidolgellau.cymru",
+    "source_id": "TDS-DOL-SRC-INTERNAL-HUW-2026",
+    "subject_id": "TDS-DOL-B-00001",
+    "value_text": "Tŷ Newyddion"
+  },
+  {
+    "confidence": "high",
+    "predicate": "name_en",
+    "qualifiers": {
+      "binding": "federated",
+      "federated_from": "dolgellau-town-dataset",
+      "name_type": "vernacular",
+      "source_ran_at": "2026-05-26T16:04:43+01:00"
+    },
+    "recorded_by": "huw@arloesidolgellau.cymru",
+    "source_id": "TDS-DOL-SRC-INTERNAL-HUW-2026",
+    "subject_id": "TDS-DOL-B-00001",
+    "value_text": "Glyndwr Buildings"
+  },
+  {
+    "confidence": "high",
+    "predicate": "name_en",
+    "qualifiers": {
+      "binding": "federated",
+      "federated_from": "dolgellau-town-dataset",
+      "name_type": "listed_register",
+      "source_ran_at": "2026-05-26T16:04:43+01:00"
+    },
+    "recorded_by": "huw@arloesidolgellau.cymru",
+    "source_id": "TDS-DOL-SRC-CADW-4938",
+    "subject_id": "TDS-DOL-B-00001",
+    "value_text": "Newsagents"
+  },
+  {
+    "confidence": "high",
+    "predicate": "name_en",
+    "qualifiers": {
+      "binding": "federated",
+      "federated_from": "dolgellau-town-dataset",
+      "name_type": "current_local",
+      "source_ran_at": "2026-05-26T16:04:43+01:00"
+    },
+    "recorded_by": "huw@arloesidolgellau.cymru",
+    "source_id": "TDS-DOL-SRC-INTERNAL-HUW-2026",
+    "subject_id": "TDS-DOL-B-00001",
+    "value_text": "Tŷ Newyddion"
+  }
+]

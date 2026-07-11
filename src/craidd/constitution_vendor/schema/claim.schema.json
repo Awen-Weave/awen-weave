@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/claim.schema.json",
+  "title": "Claim (honiad)",
+  "x-awen-rule-id": "SCH-CLAIM-001",
+  "x-awen-status": "reconciled 2026-07-04 against awen-weave 0.2.0 (SCHEMA_VERSION v0.1)",
+  "description": "An honiad asserts a value about an entity via a predicate (perthynas), with provenance and a confidence. This schema mirrors the claim-table contract the live awen-weave validator enforces (craidd.schema.validation.validate_claim + storage/ddl.py CHECK constraints, SCHEMA_VERSION v0.1). The canonical Welsh term for the predicate concept is perthynas, locked by Catrin Stephens 2026-05-19 (VOC-PERTHYNAS); the machine field name stays English (`predicate`) per the tutor's schema-identifiers-stay-English attestation. NB tier and source.kind are constitution/policy-layer classification attributes (see POL-TIERAB-001, SOV-003), NOT stored claim columns in v0.1 code — they are applied at classification/policy time, not carried on the claim row; see compatibility.md.",
+  "type": "object",
+  "required": ["subject_id", "predicate", "source_id", "recorded_by", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable claim id (PK). Instance-scoped; the code does not constrain its format. Absent on the pre-insert validation shape, present on stored rows."
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Entity id this claim is about (FK to entity.entity_id)."
+    },
+    "predicate": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The predicate/relationship (perthynas). FK to predicate.name; must be a registered predicate. Drawn from the controlled predicate set (awen-weave predicates.py); the Welsh concept term is perthynas (VOC-PERTHYNAS)."
+    },
+    "value_text": { "type": ["string", "null"], "description": "Value column for value_type=text." },
+    "value_int": { "type": ["integer", "null"], "description": "Value column for value_type=int (DDL BIGINT)." },
+    "value_real": { "type": ["number", "null"], "description": "Value column for value_type=real (DDL DOUBLE)." },
+    "value_date": { "type": ["string", "null"], "format": "date", "description": "Precise date value for value_type=date (DDL DATE). Precision recorded via the date_precision qualifier." },
+    "value_date_text": { "type": ["string", "null"], "description": "Free-text companion for imprecise dates (value_type=date)." },
+    "value_geom": { "type": ["string", "null"], "description": "Geometry value for value_type=geom, carried as WKT (e.g. 'POINT(-3.886 52.741)'). Stored as GEOMETRY via the DuckDB spatial extension." },
+    "value_cy": { "type": ["string", "null"], "description": "Welsh value for value_type=bilingual (at least one of value_cy / value_en must be set)." },
+    "value_en": { "type": ["string", "null"], "description": "English value for value_type=bilingual (at least one of value_cy / value_en must be set)." },
+    "value_entity_ref": { "type": ["string", "null"], "description": "Entity id this claim points to, for value_type=entity_ref (FK to entity.entity_id)." },
+    "qualifiers": {
+      "$ref": "https://awenweave.com/constitution/0.1/claim.schema.json#/$defs/qualifiers",
+      "description": "Claim-level metadata map (stored as claim.qualifiers_json). Vocabularies enforced at the schema/validation layer, not by DDL CHECK."
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Provenance: FK to a source entity (entity_type=source). Source metadata — licence, organisation, url, citation — lives as predicates on that entity, not inline here."
+    },
+    "recorded_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Curator/actor identity that recorded the claim (typically an email)."
+    },
+    "recorded_at": { "type": "string", "format": "date-time", "description": "When the claim was recorded (DDL DEFAULT NOW())." },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Curator confidence. DDL NOT NULL CHECK (high/medium/low). Distinct from the binding qualifier (how the value was derived)."
+    },
+    "evidence_uri": { "type": ["string", "null"], "description": "Optional pointer to evidence backing the claim." },
+    "superseded_by": { "type": ["string", "null"], "description": "claim_id of the claim that supersedes this one, if any (forward-additive; supersede, do not delete)." },
+    "status": {
+      "type": "string",
+      "enum": ["active", "superseded", "disputed", "withdrawn"],
+      "default": "active",
+      "description": "Claim lifecycle status. DDL NOT NULL DEFAULT 'active' CHECK."
+    }
+  },
+  "$defs": {
+    "qualifiers": {
+      "type": "object",
+      "description": "The 14 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Two cross-qualifier rules are enforced below.",
+      "additionalProperties": false,
+      "properties": {
+        "dialect": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN domain — any ISO language code accepted. Known values: cy-GB-north (Dolgellau default), cy-GB-south, cy-GB-mid, cy-GB."
+        },
+        "name_type": {
+          "type": "string",
+          "enum": ["current_local", "listed_register", "historic", "vernacular"],
+          "description": "CLOSED domain. Required on every name_cy / name_en claim."
+        },
+        "floor_scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN domain — free text accepted. Known values: whole, ground, first, upper, attic, basement. Used on tenancy and event claims."
+        },
+        "date_precision": {
+          "type": "string",
+          "enum": ["exact", "year", "decade", "century", "range"],
+          "description": "CLOSED domain. Used on claims carrying a value_date."
+        },
+        "verification_method": {
+          "type": "string",
+          "enum": ["on-site", "aerial", "local-knowledge", "documentary", "desk-derived"],
+          "description": "CLOSED domain (§10 item 7). How a curator reached a verification decision."
+        },
+        "temporal_status": {
+          "type": "string",
+          "enum": ["existing", "proposed", "historic", "removed"],
+          "description": "CLOSED domain (§10 item 7). Default 'existing'."
+        },
+        "geometry_basis": {
+          "type": "string",
+          "enum": ["os-open-uprn-original", "auto-snapped-to-toid", "curator-placed", "curator-confirmed-original"],
+          "description": "CLOSED domain (§10 item 7). Optional; how a geometry value was arrived at."
+        },
+        "binding": {
+          "type": "string",
+          "enum": ["asserted", "measured", "curated", "derived", "federated"],
+          "description": "CLOSED domain (Phase 2.1 §10 item 8). How the claim's value was derived. No default — a stated binding is always explicit. 'federated' requires source-of-record (see cross-rule)."
+        },
+        "verified_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (§10 item 7). ISO-8601 date or datetime; validated by _validate_iso_date in validation.py."
+        },
+        "cache_snapshot_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (§10 item 7). Non-empty string."
+        },
+        "field_session_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (§10 item 7). Non-empty string; required when co_signed_by is present."
+        },
+        "co_signed_by": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (§10 item 7). Non-empty string. Requires field_session_id in the same qualifier set (co-sign needs a named session)."
+        },
+        "federated_from": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (Phase 2.1). Source instance id for a federated read; required when binding=federated."
+        },
+        "source_ran_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPEN-form (Phase 2.1). The SOURCE's own run-UTC (ISO-8601), read from its manifest — verify-not-recall. Required when binding=federated."
+        }
+      },
+      "dependentRequired": {
+        "co_signed_by": ["field_session_id"]
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "binding": { "const": "federated" } }, "required": ["binding"] },
+          "then": { "required": ["federated_from", "source_ran_at"] }
+        }
+      ]
+    }
+  }
+}

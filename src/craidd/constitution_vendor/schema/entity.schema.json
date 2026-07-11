@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/entity.schema.json",
+  "title": "Entity (endid)",
+  "x-awen-rule-id": "SCH-ENTITY-001",
+  "x-awen-status": "reconciled 2026-07-04 against awen-weave 0.2.0 (SCHEMA_VERSION v0.1)",
+  "description": "An endid is a thing the substrate knows about — the anchor for claims; it does not itself assert facts. This schema mirrors the entity-table contract the live awen-weave validator enforces (craidd.schema.entity_types.VALID_ENTITY_TYPES + storage/ddl.py entity CHECK, SCHEMA_VERSION v0.1). The nine v0.1 entity types are closed. `place_anchor` and `labels` are constitution/interface-layer optional extensions (interface-contract §2/§4), NOT columns in the v0.1 code entity table — they are omitted by live entities and do not affect round-trip; see compatibility.md.",
+  "type": "object",
+  "required": ["entity_id", "entity_type"],
+  "additionalProperties": false,
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable entity id (PK), instance-scoped. The code does not constrain its format."
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": ["building", "street", "area", "town", "tenancy", "event", "research_question", "source", "person"],
+      "description": "One of the nine v0.1 controlled entity types (entity_types.py VALID_ENTITY_TYPES / DDL CHECK). street & area have no dedicated seed predicates yet; person is declared but not pre-populated."
+    },
+    "uprn": {
+      "type": ["integer", "null"],
+      "description": "OS Unique Property Reference Number (DDL BIGINT). Nullable — most are null until Town Dataset / Lleolydd coverage resolves them."
+    },
+    "toid": {
+      "type": ["string", "null"],
+      "description": "OS MasterMap TopographicArea TOID, where known."
+    },
+    "visibility": {
+      "type": ["string", "null"],
+      "enum": ["public", "restricted", "private", null],
+      "description": "Entity visibility. DDL CHECK (public/restricted/private OR NULL). Only meaningful for `source` entities — validate_entity rejects a non-null visibility on any other type (see cross-rule below)."
+    },
+    "created_at": { "type": "string", "format": "date-time", "description": "When the entity was created (DDL DEFAULT NOW())." },
+    "notes": { "type": ["string", "null"], "description": "Free-text notes (DDL TEXT)." },
+    "place_anchor": {
+      "$ref": "https://awenweave.com/constitution/0.1/place-anchor.schema.json",
+      "description": "Constitution/interface-layer OPTIONAL extension — the geographic joint between instances (interface-contract §2/§4). Not a v0.1 code entity column."
+    },
+    "labels": {
+      "type": "object",
+      "description": "Constitution/interface-layer OPTIONAL extension: bilingual display labels. Not a v0.1 code entity column — in code, names live as name_cy/name_en claims.",
+      "properties": {
+        "cy": { "type": "string" },
+        "en": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "visibility": { "type": "string" } },
+        "required": ["visibility"]
+      },
+      "then": {
+        "properties": { "entity_type": { "const": "source" } },
+        "description": "A non-null visibility is only valid on a source entity (validate_entity)."
+      }
+    }
+  ]
+}

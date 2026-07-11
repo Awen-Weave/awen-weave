@@ -1,0 +1,36 @@
+[
+  {
+    "community_council_gss": null,
+    "county_gss": "W06000002",
+    "labels": {
+      "cy": "Tŷ Newyddion",
+      "en": "Tŷ Newyddion"
+    },
+    "lat": 52.7438,
+    "lng": -3.8848,
+    "lsoa": null,
+    "postcode": null,
+    "uprn": "200003184697",
+    "ward_gss": null
+  },
+  {
+    "community_council_gss": null,
+    "county_gss": "W06000002",
+    "lat": null,
+    "lng": null,
+    "lsoa": null,
+    "postcode": null,
+    "uprn": "200001814231",
+    "ward_gss": null
+  },
+  {
+    "community_council_gss": null,
+    "county_gss": "W06000002",
+    "lat": null,
+    "lng": null,
+    "lsoa": null,
+    "postcode": null,
+    "uprn": "10024095434",
+    "ward_gss": null
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/place-anchor.schema.json",
+  "title": "Place anchor",
+  "x-awen-rule-id": "SCH-PLACEANCHOR-001",
+  "x-awen-status": "reconciled 2026-07-04 — constitution/interface-layer schema (interface-contract §2/§4); no direct awen-weave craidd validator in v0.1 (the entity table carries uprn/toid only). Candidate awen-weave upstream from 0.2.0.",
+  "description": "The shared geographic anchor that lets instances join on the same place. UPRN is the single most important joint between instances (interface-contract §2). All fields optional — most UPRNs are null until Town Dataset / Lleolydd coverage resolves them.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "uprn": { "type": ["string", "null"], "description": "Unique Property Reference Number; FK joint between instances. Null tolerated." },
+    "postcode": { "type": ["string", "null"] },
+    "lsoa": { "type": ["string", "null"], "description": "Lower Super Output Area (GSS) — for IMD / Marmot analysis." },
+    "ward_gss": { "type": ["string", "null"] },
+    "community_council_gss": { "type": ["string", "null"], "description": "Parish/community-council boundary (Gwynedd has 100+)." },
+    "county_gss": { "type": ["string", "null"], "description": "e.g. Gwynedd = W06000002." },
+    "lat": { "type": ["number", "null"] },
+    "lng": { "type": ["number", "null"] },
+    "labels": {
+      "type": "object",
+      "description": "Bilingual place names where ONS provides both.",
+      "properties": { "cy": { "type": "string" }, "en": { "type": "string" } },
+      "additionalProperties": false
+    }
+  }
+}

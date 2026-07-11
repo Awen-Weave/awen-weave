@@ -17,6 +17,10 @@ dependencies = [
     "shapely>=2.1",
     "pyogrio>=0.7",
     "requests>=2.30",
+    # Federation spine (S1): the offline constitution.validate gate validates
+    # snapshot records against the vendored SCH-* schemas when porth is off-tailnet.
+    "jsonschema>=4.20",
+    "referencing>=0.30",
 ]
 keywords = ["AI governance", "civic data", "place-based knowledge", "provenance", "data governance"]
 classifiers = [
@@ -43,6 +47,7 @@ Issues = "https://github.com/Awen-Weave/awen-weave/issues"
 [project.scripts]
 craidd-init = "cli.craidd_init:main"
 craidd-propose = "cli.craidd_propose:main"
+craidd-snapshot = "cli.craidd_snapshot:main"
 lleolydd-cache = "cli.lleolydd_cache:main"
 
 [tool.hatch.build.targets.wheel]

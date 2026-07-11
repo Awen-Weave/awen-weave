@@ -1,0 +1,8 @@
+{
+  "emitted_at": "2026-07-11T00:00:00+00:00",
+  "nation": "wales",
+  "place": "Dolgellau",
+  "reason": "S2 proof — CHI pull_tref.py consumes the Dolgellau gazetteer snapshot to retire its hardcoded town->LA map for this place.",
+  "requested_by": "care-home-insight",
+  "wanted_layers": ["gazetteer"]
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "binding": "federated",
+    "consumer": {
+      "craidd_node": "place:dolgellau",
+      "craidd_source": "dolgellau-town-dataset",
+      "grade": "B",
+      "instance": "care-home-insight"
+    },
+    "notes": "",
+    "read": {
+      "aoi": "dolgellau",
+      "clipped": false,
+      "counts": {
+        "claims": 4,
+        "place_anchors": 3
+      },
+      "crs": "EPSG:4326",
+      "federated_utc": "2026-07-11T00:00:00+00:00",
+      "licence": "OGL"
+    },
+    "source_of_record": {
+      "framework": "tref",
+      "instance": "dolgellau-town-dataset",
+      "paths": {
+        "gazetteer": "/srv/town-dataset/craidd.duckdb"
+      },
+      "ran_at_utc": "2026-05-26T16:04:43+01:00",
+      "release": "complete",
+      "repo": "arloesidolgellau/town-dataset",
+      "root": "/srv/town-dataset"
+    }
+  }
+]
