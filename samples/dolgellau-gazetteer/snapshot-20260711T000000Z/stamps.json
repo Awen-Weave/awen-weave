@@ -7,7 +7,7 @@
       "grade": "B",
       "instance": "care-home-insight"
     },
-    "notes": "",
+    "notes": "ran_at_utc basis: git-head-commit",
     "read": {
       "aoi": "dolgellau",
       "clipped": false,

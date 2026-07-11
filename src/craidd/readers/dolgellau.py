@@ -24,11 +24,11 @@ resolves them (the place-anchor schema is null-tolerant).
 """
 from __future__ import annotations
 
-import subprocess
 from typing import Optional
 
 from ..federation import SourceOfRecord
 from ..gazetteer import federated_name_claim, gazetteer_stamp, place_anchor
+from ..ran_at import RanAt, resolve_ran_at  # re-exported for callers/tests
 from ..snapshot import SnapshotRecords
 
 GWYNEDD_COUNTY_GSS = "W06000002"
@@ -65,12 +65,18 @@ def build_gazetteer(
     grade: str = "B",
     county_gss: str = GWYNEDD_COUNTY_GSS,
     federated_utc: Optional[str] = None,
+    ran_at_basis: Optional[str] = None,
 ) -> SnapshotRecords:
     """Turn read building + name-claim rows into a validated-shape record set.
 
     `buildings` items: {subject_id, uprn(int|None), lat(float|None), lng(float|None)}.
     `name_claims` items: {subject_id, predicate('name_cy'|'name_en'), value,
         source_id, name_type, dialect(optional), confidence(optional)}.
+
+    `ran_at_basis` (from `resolve_ran_at().basis` — "run-manifest" | "git-head-
+    commit") is declared in the stamp's `notes` so a Craffter can see whether
+    `source.ran_at_utc` is authoritative or a proxy, without touching the Tier-1
+    schema.
 
     Pure: no I/O, no wall-clock except the caller-supplied federated_utc. Emits a
     place-anchor per building that carries at least one of uprn / geometry /
@@ -115,6 +121,7 @@ def build_gazetteer(
         counts={"place_anchors": len(anchors), "claims": len(claims)},
         federated_utc=federated_utc,
         aoi="dolgellau", crs="EPSG:4326",
+        notes=f"ran_at_utc basis: {ran_at_basis}" if ran_at_basis else "",
     )
 
     return SnapshotRecords(
@@ -166,23 +173,10 @@ def read_from_duckdb(con) -> tuple:
     return buildings, name_claims
 
 
-def resolve_source_ran_at(root: str) -> str:
-    """The source's OWN recorded run state: the town-dataset git HEAD commit
-    time (ISO-8601). Verify-not-recall — a real recorded fact about the source
-    checkout, never a manufactured build-time clock. Fail-loud if `root` is not
-    a git working tree (then the caller must pass an explicit --source-ran-at
-    from a source manifest)."""
-    try:
-        out = subprocess.run(
-            ["git", "-C", root, "log", "-1", "--format=%cI"],
-            capture_output=True, text=True, check=True,
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        raise ValueError(
-            f"cannot read source ran_at_utc from {root!r} git HEAD ({exc}); "
-            f"pass --source-ran-at from the source's run manifest instead"
-        ) from exc
-    stamp = out.stdout.strip()
-    if not stamp:
-        raise ValueError(f"empty git HEAD time for {root!r}")
-    return stamp
+# `resolve_ran_at` / `RanAt` are imported from craidd.ran_at at module top and
+# re-exported here for the CLI and existing callers — the resolution order
+# (run-manifest -> git-HEAD proxy -> fail-loud) is now shared across all sources.
+__all__ = [
+    "build_gazetteer", "read_from_duckdb", "resolve_ran_at", "RanAt",
+    "GWYNEDD_COUNTY_GSS",
+]
