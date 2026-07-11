@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/proposal-envelope.schema.json",
+  "title": "Proposal envelope",
+  "x-awen-rule-id": "SCH-ENVELOPE-001",
+  "x-awen-status": "reconciled 2026-07-04 — constitution/interface-layer moderation envelope (interface-contract §3), used by community mapping / Sail / Craffter. NOT an awen-weave craidd shape: the craidd-internal analogues are validate_proposal (claim proposals) and validate_entity_proposal (EP-... entity proposals). Kept as the shared outer envelope; instances MUST NOT fork it.",
+  "description": "The shared envelope by which any change enters the canonical store: a proposal that is moderated/accepted, never a direct write. Owned by the core; instances MUST NOT fork it (interface-contract §3). Used identically by community mapping (B' submissions), Sail, and Craffter advisory outputs (PRIN-003).",
+  "type": "object",
+  "required": ["id", "source", "attestor", "status", "submitted_at", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^P-[0-9]{8,}-[A-Za-z0-9-]+$", "description": "P-<ts>-<uuid>" },
+    "bundle_id": { "type": "string", "pattern": "^B-[0-9]{8,}-[A-Za-z0-9-]+$", "description": "Optional; links proposals submitted together." },
+    "source": {
+      "type": "string",
+      "description": "Who attested — role-based email, or named contact with consent."
+    },
+    "attestor": {
+      "type": "object",
+      "description": "Signature / consent record. For magic-link tools this carries the verified identity block.",
+      "required": ["auth_method"],
+      "additionalProperties": true,
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "tool": { "type": "string", "description": "Originating tool slug (e.g. community, cards, sail)." },
+        "auth_method": { "type": "string", "enum": ["magic-link", "consent-form", "role-email", "system"] },
+        "auth_verified_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "lineage": {
+      "type": "string",
+      "description": "Prior version reference if this is an update (forward-additive; supersede, do not delete)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "accepted", "rejected", "superseded"],
+      "description": "Lifecycle. Acceptance is a human/curator act (PRIN-002)."
+    },
+    "submitted_at": { "type": "string", "format": "date-time" },
+    "reviewed_at": { "type": "string", "format": "date-time" },
+    "next_review_due": { "type": "string", "format": "date" },
+    "payload": {
+      "type": "object",
+      "description": "Instance-specific content (community mapping: an Organisation/Service/Location record; Sail: a pack input; Town Dataset: a DEC correction). The core does not constrain payload shape beyond requiring it be present."
+    },
+    "notes": { "type": "string", "description": "Free text, bilingual where relevant." }
+  }
+}

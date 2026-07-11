@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/federation-stamp.schema.json",
+  "title": "Federation provenance stamp",
+  "x-awen-rule-id": "SCH-FEDERATION-001",
+  "x-awen-status": "reconciled 2026-07-04 against awen-weave 0.2.0 (SCHEMA_VERSION v0.1)",
+  "description": "The source-of-record stamp a federated read emits — the canonical shape Prawf logs and a Craffter audits (awen-weave craidd/federation.py::provenance_stamp, federation spec §4, v0.1-schema.md §10 item 8). Operationalises SOV-001 federated sovereignty and ADJ-RETURN-001: reference, don't copy. The claim-level fail-loud gate is only the two qualifiers federated_from + source_ran_at plus binding=federated (SCH-CLAIM-001 $defs.qualifiers); THIS is the full stamp that accompanies them. Fail-loud (invariants 2 & 3): source.instance, source.ran_at_utc and source.paths are all required.",
+  "type": "object",
+  "required": ["binding", "source_of_record", "consumer", "read"],
+  "additionalProperties": false,
+  "properties": {
+    "binding": {
+      "const": "federated",
+      "description": "A stamp is only emitted for federated reads."
+    },
+    "source_of_record": {
+      "type": "object",
+      "description": "Identity of the instance a datum is federated FROM (SourceOfRecord).",
+      "required": ["instance", "repo", "framework", "root", "paths", "ran_at_utc"],
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "type": "string", "minLength": 1, "description": "Source instance id (e.g. 'dolgellau-town-dataset'). Required (invariant 2)." },
+        "repo": { "type": "string", "description": "Source repo (e.g. 'arloesidolgellau/town-dataset')." },
+        "framework": { "type": "string", "description": "'awen-weave' | 'maes' | 'tref' | …" },
+        "root": { "type": "string", "description": "Resolved source root on disk." },
+        "paths": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Logical name -> path relative to root; the read-only source outputs referenced (invariant 1). Non-empty (invariant 2).",
+          "additionalProperties": { "type": "string" }
+        },
+        "ran_at_utc": { "type": "string", "minLength": 1, "description": "The SOURCE's own run-UTC, read from its stats/manifest — never re-derived by the consumer (invariant 3, verify-not-recall). Required." },
+        "release": { "type": ["string", "null"], "description": "Source release/tag (e.g. 'complete', '2026-05'), if any." }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "description": "The consuming instance and the graded link it created (invariant 4, grade-and-link).",
+      "additionalProperties": false,
+      "properties": {
+        "instance": { "type": "string", "description": "Consumer instance id." },
+        "craidd_node": { "type": ["string", "null"], "description": "Target node on the consumer's Craidd." },
+        "craidd_source": { "type": ["string", "null"], "description": "Source id in the consumer's Craidd." },
+        "grade": { "type": ["string", "null"], "description": "A | B | C — the graded link." }
+      }
+    },
+    "read": {
+      "type": "object",
+      "description": "The consumer's read metadata for this federated datum.",
+      "additionalProperties": false,
+      "properties": {
+        "federated_utc": { "type": "string", "description": "The consumer's read UTC (NOT the source run-UTC)." },
+        "licence": { "type": "string", "description": "e.g. 'OGL'." },
+        "crs": { "type": "string", "description": "e.g. 'EPSG:27700' | 'n/a'." },
+        "aoi": { "type": "string", "description": "Clip region | 'n/a'." },
+        "clipped": { "type": "boolean" },
+        "counts": {
+          "type": "object",
+          "description": "Logical name -> row count.",
+          "additionalProperties": { "type": "integer" }
+        }
+      }
+    },
+    "notes": { "type": "string", "description": "Free text." }
+  }
+}

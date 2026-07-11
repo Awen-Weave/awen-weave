@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/use-case-declaration.schema.json",
+  "title": "Use-case declaration",
+  "x-awen-rule-id": "SCH-USECASE-001",
+  "x-awen-status": "reconciled 2026-07-04 — constitution-layer SOV-002 transparency artefact; no awen-weave craidd validator (declaration, not a canonical-store write). Shape unchanged.",
+  "description": "A community's DECLARATION of how it uses its own data (SOV-002). This is a transparency + sharing artefact, NOT a permission request. There is no approved/denied state. Filed to the community-facing register and federated to a shared catalogue.",
+  "type": "object",
+  "required": ["id", "declarant", "instance", "purpose", "benefit_to_community", "status", "declared_at", "shareable"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^UC-[0-9]{8,}-[A-Za-z0-9-]+$", "description": "UC-<ts>-<uuid>" },
+    "declarant": {
+      "type": "object",
+      "description": "Who is declaring (verified attestor, as per the proposal envelope's attestor block).",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" }
+      }
+    },
+    "instance": { "type": "string", "description": "The community/instance whose data this concerns (e.g. dolgellau-town-dataset, gwynedd-community-mapping)." },
+    "data_scope": {
+      "type": "string",
+      "description": "High-level description of which data is used (entity/claim types, tier). Not a query; a human-readable scope statement for transparency."
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What the community is doing with the data and why."
+    },
+    "benefit_to_community": {
+      "type": "string",
+      "description": "How this benefits the community. If financial, how returns flow to the community (e.g. via the CIC/steward)."
+    },
+    "financial": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the use generates financial benefit. Financial is legitimate (SOV-002) — declared, not gated."
+    },
+    "shareable": {
+      "type": "boolean",
+      "description": "May this use case be shared to the central catalogue for other communities to learn from / reuse? (Sharing the idea, not the data.)"
+    },
+    "lessons": {
+      "type": "string",
+      "description": "Optional: what was learned, for the shared catalogue."
+    },
+    "outcome": {
+      "type": "object",
+      "description": "What the use case achieved. Drives the push mechanism (SOV-002).",
+      "additionalProperties": false,
+      "properties": {
+        "achieved": { "type": "boolean", "default": false },
+        "description": { "type": "string" },
+        "impact": { "type": "string", "enum": ["low", "moderate", "high"], "description": "Self-assessed; high + shareable triggers push consideration." },
+        "domain": { "type": "string", "description": "Domain for push matching, e.g. health, environment, youth." },
+        "push": { "type": "boolean", "default": false, "description": "If true and shareable, actively surfaced to matching communities rather than left to passive browse." }
+      }
+    },
+    "external_data": {
+      "type": "object",
+      "description": "Set when the use case relies on third-party / proprietary data accessed under a separate agreement (SOV-003). The transparency floor (SOV-004) applies: data_schema is ALWAYS recorded; only detail may be secured. There is no hidden tier.",
+      "required": ["uses_external", "agreement_kind", "data_schema"],
+      "additionalProperties": false,
+      "properties": {
+        "uses_external": { "type": "boolean", "default": false },
+        "agreement_kind": {
+          "type": "string",
+          "enum": ["constitutional", "transparency-floor"],
+          "description": "constitutional = struck via the Awen data-access instrument (shareable as a pattern); transparency-floor = holder accepts the SOV-004 floor (schema recorded, detail secured) but not full constitutional governance. A holder refusing even the floor is declined — no enum value, because such a use is not permitted (SOV-004)."
+        },
+        "data_schema": {
+          "type": "string",
+          "description": "REQUIRED (transparency floor, SOV-004): the schema/structure/kind of the external data in use — what it is, always recorded, even when detail is secured. Concealing this is not a permitted state."
+        },
+        "agreement_ref": { "type": "string", "description": "Reference to the agreement instrument/template used (the shareable route), NOT the data." },
+        "holder_shareable": { "type": "boolean", "default": false, "description": "Whether the data holder's identity may be named publicly. Detail-level; the schema is recorded regardless." },
+        "data_holder": { "type": "string", "description": "Named only if holder_shareable is true." },
+        "confidential_note": { "type": "string", "description": "Pointer that confidential DETAIL (values, terms, identity) exists and is held privately; never the detail itself, and never a substitute for data_schema." }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "active", "retired"],
+      "description": "Lifecycle ONLY. Deliberately no 'pending-approval' / 'approved' / 'denied' — this is declaration, not permissioning (SOV-002)."
+    },
+    "declared_at": { "type": "string", "format": "date-time" },
+    "retired_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "built_utc": "2026-07-11T00:00:00+00:00",
+  "constitution_pin_source": "porth",
+  "counts": {
+    "claims": 4,
+    "place_anchors": 3,
+    "stamps": 1
+  },
+  "pins": {
+    "awen_weave": "0.2.0",
+    "constitution_tag": "v0.1.2",
+    "constitution_version": "0.1.2"
+  },
+  "snapshot_id": "snapshot-20260711T000000Z",
+  "source_ran_at": {
+    "dolgellau-town-dataset": "2026-05-26T16:04:43+01:00"
+  }
+}
