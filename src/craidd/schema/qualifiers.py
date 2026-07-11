@@ -37,11 +37,21 @@ Phase 2.1 additions (2026-07-03) — the `federated` binding:
   `binding == "federated"` MUST carry both `federated_from` and
   `source_ran_at` (mirrors `co_signed_by` ⇒ `field_session_id`).
   See design/v0.1-schema.md §10 item 8 and craidd/federation.py.
+
+Constitution 0.1.3 addition (2026-07-11) — provenance-with-semantics:
+- `semantics_caveat` — a new OPEN-form key: a stated limit on what a claim's
+  value MEANS, so meaning travels with the datum and cannot be silently
+  over-claimed downstream. Free text, non-empty string (validation.py mirrors
+  cache_snapshot_id, not the ISO keys). Advisory cross-rule (SHOULD, not
+  enforced): SHOULD accompany binding ∈ {derived, federated} where a
+  meaning-limit exists. Amendment: awen-constitution
+  amendments/2026-07-11-SCH-CLAIM-001-semantics-caveat.md (SCH-CLAIM-001 14→15).
 """
 from __future__ import annotations
 
 # The qualifier keys that exist at all in v0.1.
-# 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 = 14 total.
+# 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 + 1 added by
+# constitution 0.1.3 = 15 total.
 QUALIFIER_KEYS: frozenset[str] = frozenset(
     {
         # Original v0.1 vocabulary.
@@ -62,6 +72,8 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         "binding",              # CLOSED domain (BINDINGS).
         "federated_from",       # open-form: source instance id.
         "source_ran_at",        # open-form: source's OWN run-UTC (ISO-8601).
+        # Constitution 0.1.3 — provenance-with-semantics.
+        "semantics_caveat",     # open-form: a stated limit on the value's meaning.
     }
 )
 

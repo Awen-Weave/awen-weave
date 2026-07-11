@@ -247,12 +247,14 @@ def validate_qualifiers(
             err = _validate_iso_date(value)
             if err is not None:
                 errors.append(f"qualifier '{key}' {err}")
-        # Non-empty strings: item-7 keys + federated_from (Phase 2.1).
+        # Non-empty strings: item-7 keys + federated_from (Phase 2.1) +
+        # semantics_caveat (constitution 0.1.3, free text — a meaning-limit).
         elif key in (
             "cache_snapshot_id",
             "field_session_id",
             "co_signed_by",
             "federated_from",
+            "semantics_caveat",
         ):
             if not isinstance(value, str) or _is_empty(value):
                 errors.append(
