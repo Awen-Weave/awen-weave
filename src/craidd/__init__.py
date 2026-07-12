@@ -30,5 +30,5 @@ SCHEMA_VERSION = "v0.1"
 # fails loud if the in-code model here drifts from the SCH-* at this tag.
 # Bump these together with the compatibility.md row when adopting a new
 # constitution release.
-CONSTITUTION_VERSION = "0.1.0"
-CONSTITUTION_TAG = "v0.1.0"
+CONSTITUTION_VERSION = "0.1.3"
+CONSTITUTION_TAG = "v0.1.3"
