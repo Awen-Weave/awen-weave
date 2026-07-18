@@ -1101,14 +1101,15 @@ _AREA_BACKFILL: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
-    PredicateDef("alc_grade", "text", "single", ("area",),
-                 "Agricultural Land Classification grade for a mapped area, verbatim from "
-                 "the source ('1', '2', '3a', '3b', '4', '5', 'NA'). PREDICTIVE: Welsh "
-                 "ALC Map 2 applies MAFF 1988 criteria on a 50 m grid — it is not a site "
-                 "survey and not a record of current or permitted land use.",
-                 description_cy=CY_PENDING,
-        finest_grain=Grain.AREA,
-    ),
+    # alc_grade WAS registered here by the 2026-07-27 backfill sweep, read off
+    # the published data, and task 8.6 gave that entry finest_grain=area from
+    # the catalogue's own spine declaration. It is SUPERSEDED by the _AREA entry
+    # below, which is the pinned AWE-004 read-contract definition (2026-07-18):
+    # same name, value_type, cardinality, entity type AND grain, plus the
+    # bilingual gloss and the two qualifiers the live emitter already sends
+    # (alc_predictive_wales.py: verification_method + semantics_caveat). A
+    # second entry under the same name would shadow silently, so it is removed
+    # rather than left beside it.
     PredicateDef("uprn_count", "int", "single", ("area",),
                  "Number of OS Open UPRNs falling within an area, derived by counting the "
                  "frozen UPRN spine against that area's boundary. A count of ADDRESSABLE "
@@ -1292,6 +1293,53 @@ _CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Area predicates — applies to entity_type 'area' (spatial regions, not places).
+# National-layer grammar added past the v0.1 Dolgellau town seed. `alc_grade` is
+# the FIRST such addition (AWE-004, 2026-07-18). It is not a NEW name by the
+# time it lands: the 2026-07-27 backfill sweep registered `alc_grade` off the
+# published data while this branch was open, so the entry here SUPERSEDES that
+# one (see _AREA_BACKFILL) rather than adding to it. The pinned agri read-contract
+# (SharedData/alc_grade-claim-schema-PINNED-2026-07-17) routes the Predictive ALC
+# Map 2 grade onto an `area` entity, grade VERBATIM in value_text (3a/3b intact),
+# worded classes (Non-agricultural/Urban/…) bilingual on value_en/cy.
+# ---------------------------------------------------------------------------
+_AREA: tuple[PredicateDef, ...] = (
+    PredicateDef(
+        name="alc_grade",
+        value_type="text",   # the grade label verbatim ("2","3a","3b","4","5","NA","U")
+        cardinality="single",
+        applies_to_types=("area",),
+        description_en=(
+            "Predictive Agricultural Land Classification (ALC) Map 2 grade for a "
+            "land-quality zone. The source grade label travels verbatim, including "
+            "the 3a/3b split (never re-bucketed); worded classes (e.g. "
+            "Non-agricultural, Urban) also carry bilingual labels. A predictive 50m "
+            "grid under MAFF 1988 criteria — not a site survey; a detailed ALC "
+            "survey supersedes it. Emitted binding=asserted; the semantics_caveat "
+            "carries the predictive limit."
+        ),
+        # description_cy: Anamaethyddol (the worded-class term) is coordinator-
+        # attested in the pin; this predicate gloss is provided here and FLAGGED
+        # pending the same tutor-attestation path the v0.1 set used
+        # (Awen-Weave/awen-cards) before it is treated as locked vocab.
+        description_cy=(
+            "gradd rhagfynegol Dosbarthiad Tir Amaethyddol (ALC Map 2) ar gyfer "
+            "parth ansawdd tir — label y radd yn cael ei gadw'n union (gan gynnwys "
+            "y rhaniad 3a/3b); grid rhagfynegol 50m yn ôl meini prawf MAFF 1988, "
+            "nid arolwg safle. [Cymraeg i'w gadarnhau gan diwtor]"
+        ),
+        required_qualifiers=("verification_method", "semantics_caveat"),
+        constraint_json=None,
+        # `area`, not `property`: awen-source-catalogue declares
+        # `"alc-predictive-wales": "gazetteer"` in spines.py — the place/GSS
+        # spine, never the UPRN spine. Read off the catalogue's own
+        # declaration (phase 8 task 8.6's method), not inferred from the name.
+        finest_grain=Grain.AREA,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -1328,7 +1376,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
-    + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP
+    + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1370,6 +1418,11 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # == len(PREDICATE_REGISTRY) == 143, and the group sums agree. The tally is KEPT rather than
 # replaced with a bare 143 — it is the file's provenance, and the invariant below is what actually
 # enforces the number.
+#
+# 12/09/2026, AWE-004: alc_grade MOVED out of _AREA_BACKFILL into its own
+# _AREA group, carrying the pinned read-contract definition and a declared
+# finest_grain. The name count is unchanged at 143 — one entry superseded by
+# one entry, not an addition — and _AREA_BACKFILL is now 3.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
 

@@ -11,11 +11,13 @@ Pins:
 """
 from __future__ import annotations
 
+from craidd.schema.grain import Grain
 from craidd.schema.predicates import (
     CARDINALITIES,
     PREDICATE_REGISTRY,
     SEED_PREDICATES,
     VALUE_TYPES,
+    undeclared_predicates,
 )
 from craidd.schema.validation import validate_seed_predicates
 
@@ -37,10 +39,28 @@ def test_seed_predicate_count_matches_v01_schema():
     Coal + strategic-road + 3 reachability + 2 open-access take it to 115, and
     the 4 area predicates backfilled on 2026-07-27 — flood_coverage,
     population_estimate, alc_grade, uprn_count, all four already in use by
-    published layers but never registered — bring it to 119. (Later: hydrology + the
+    published layers but never registered — bring it to 119. (alc_grade later MOVED
+    out of that backfill group into _AREA, carrying the pinned AWE-004 definition
+    and a declared finest_grain; the total is unchanged.) (Later: hydrology + the
     climate sweep took it to 139; the 2 ratified DESNZ energy predicates —
     off_gas_grid_properties + energy_efficiency_measures_installed, 09/08/2026 — make 141.)"""
     assert len(SEED_PREDICATES) == 143
+
+
+def test_alc_grade_predicate_registered():
+    """alc_grade (AWE-004): an `area` predicate, grade text carried verbatim,
+    single-cardinality, with the two travelling qualifiers the pinned agri
+    read-contract requires."""
+    p = PREDICATE_REGISTRY["alc_grade"]
+    assert p.value_type == "text"
+    assert p.cardinality == "single"
+    assert p.applies_to_types == ("area",)
+    assert set(p.required_qualifiers) == {"verification_method", "semantics_caveat"}
+    # the grain the catalogue declares for this layer: spines.py maps
+    # "alc-predictive-wales" -> "gazetteer" (the place/GSS spine), so the
+    # finest grain the source supports is `area`, never `property`.
+    assert p.finest_grain is Grain.AREA
+    assert "alc_grade" not in undeclared_predicates()
 
 
 def test_predicate_registry_matches_seed_set():
