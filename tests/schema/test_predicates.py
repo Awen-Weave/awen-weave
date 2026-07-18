@@ -30,8 +30,20 @@ def test_seed_predicate_count_matches_v01_schema():
     """v0.1-schema.md §3.5 enumerates 58 predicates across building +
     tenancy + event + research_question + source + town. §10 item 7
     adds two more (verified_building_toid, location_verification_status),
-    bringing the total to 60."""
-    assert len(SEED_PREDICATES) == 60
+    bringing the total to 60. AWE-004 adds alc_grade — the first
+    national-layer `area` predicate, added past the v0.1 town seed — for 61."""
+    assert len(SEED_PREDICATES) == 61
+
+
+def test_alc_grade_predicate_registered():
+    """alc_grade (AWE-004): an `area` predicate, grade text carried verbatim,
+    single-cardinality, with the two travelling qualifiers the pinned agri
+    read-contract requires."""
+    p = PREDICATE_REGISTRY["alc_grade"]
+    assert p.value_type == "text"
+    assert p.cardinality == "single"
+    assert p.applies_to_types == ("area",)
+    assert set(p.required_qualifiers) == {"verification_method", "semantics_caveat"}
 
 
 def test_predicate_registry_matches_seed_set():

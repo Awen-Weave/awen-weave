@@ -287,9 +287,49 @@ _TOWN: tuple[PredicateDef, ...] = (
 )
 
 
-# The complete v0.1 seed set, in schema-document order.
+# ---------------------------------------------------------------------------
+# Area predicates — applies to entity_type 'area' (spatial regions, not places).
+# National-layer grammar added past the v0.1 Dolgellau town seed. `alc_grade` is
+# the FIRST such addition (AWE-004, 2026-07-18): the pinned agri read-contract
+# (SharedData/alc_grade-claim-schema-PINNED-2026-07-17) routes the Predictive ALC
+# Map 2 grade onto an `area` entity, grade VERBATIM in value_text (3a/3b intact),
+# worded classes (Non-agricultural/Urban/…) bilingual on value_en/cy.
+# ---------------------------------------------------------------------------
+_AREA: tuple[PredicateDef, ...] = (
+    PredicateDef(
+        name="alc_grade",
+        value_type="text",   # the grade label verbatim ("2","3a","3b","4","5","NA","U")
+        cardinality="single",
+        applies_to_types=("area",),
+        description_en=(
+            "Predictive Agricultural Land Classification (ALC) Map 2 grade for a "
+            "land-quality zone. The source grade label travels verbatim, including "
+            "the 3a/3b split (never re-bucketed); worded classes (e.g. "
+            "Non-agricultural, Urban) also carry bilingual labels. A predictive 50m "
+            "grid under MAFF 1988 criteria — not a site survey; a detailed ALC "
+            "survey supersedes it. Emitted binding=asserted; the semantics_caveat "
+            "carries the predictive limit."
+        ),
+        # description_cy: Anamaethyddol (the worded-class term) is coordinator-
+        # attested in the pin; this predicate gloss is provided here and FLAGGED
+        # pending the same tutor-attestation path the v0.1 set used
+        # (Awen-Weave/awen-cards) before it is treated as locked vocab.
+        description_cy=(
+            "gradd rhagfynegol Dosbarthiad Tir Amaethyddol (ALC Map 2) ar gyfer "
+            "parth ansawdd tir — label y radd yn cael ei gadw'n union (gan gynnwys "
+            "y rhaniad 3a/3b); grid rhagfynegol 50m yn ôl meini prawf MAFF 1988, "
+            "nid arolwg safle. [Cymraeg i'w gadarnhau gan diwtor]"
+        ),
+        required_qualifiers=("verification_method", "semantics_caveat"),
+        constraint_json=None,
+    ),
+)
+
+
+# The complete seed set. v0.1 town-dataset predicates + the national-layer area
+# predicates added past bootstrap (a deliberate, Prawf-logged act — module header).
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
-    _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
+    _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN + _AREA
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -298,8 +338,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 60 distinct names expected as of §10 item 7
-# (was 58 pre-item-7; +2 for verified_building_toid and
-# location_verification_status).
+# in PREDICATE_REGISTRY. 61 distinct names expected: 60 as of §10 item 7
+# (58 pre-item-7 + verified_building_toid + location_verification_status),
+# plus alc_grade (AWE-004, the first national-layer area predicate).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
