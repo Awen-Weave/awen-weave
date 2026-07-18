@@ -44,7 +44,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # 60 v0.1 seed + 4 Egni demand + 34 ratified 2026-07-22 (17 EPC, 15 planning,
     # 2 BGS searches) + heritage searches/enrichment + coal + strategic-road = 110,
     # + 3 reachability predicates (constitution 0.1.4, 2026-07-26) = 113,
-    # + 2 open-access (A5) = 115, + 4 backfilled area predicates (2026-07-27) = 119.
+    # + 2 open-access (A5) = 115, + 4 backfilled area predicates (2026-07-27) = 119
+    # (alc_grade since MOVED from that group into _AREA — same name, same count).
     # (+ hydrology + climate sweep = 139; + 2 DESNZ energy predicates 09/08 = 141.)
     # Same count the schema-layer test pins. The CLI must agree with the registry.
     assert count == 143
