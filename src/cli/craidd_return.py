@@ -143,7 +143,7 @@ def main(argv=None) -> int:
     dol.add_argument("--source-manifest", default=None)
     dol.add_argument("--built-utc", default=None,
                      help="ISO build time (default now); set for a reproducible build")
-    dol.add_argument("--awen-weave-version", default="0.2.1",
+    dol.add_argument("--awen-weave-version", default="0.2.2",
                      help="version pinned into the manifest (this exporter needs >=0.2.1)")
     dol.add_argument("--porth-url", default=DEFAULT_PORTH_URL)
     dol.add_argument("--offline", action="store_true",
