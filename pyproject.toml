@@ -48,6 +48,7 @@ Issues = "https://github.com/Awen-Weave/awen-weave/issues"
 craidd-init = "cli.craidd_init:main"
 craidd-propose = "cli.craidd_propose:main"
 craidd-snapshot = "cli.craidd_snapshot:main"
+craidd-return = "cli.craidd_return:main"
 lleolydd-cache = "cli.lleolydd_cache:main"
 
 [tool.hatch.build.targets.wheel]
