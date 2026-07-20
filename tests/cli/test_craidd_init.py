@@ -42,10 +42,11 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     finally:
         conn.close()
     # v0.1-schema.md §3.5 enumerates 58 predicates plus §10 item 7's two
-    # additions (verified_building_toid, location_verification_status) =
-    # 60 total. Same count the schema-layer test pins. The CLI must agree
-    # with the registry.
-    assert count == 60
+    # additions (verified_building_toid, location_verification_status) = 60,
+    # plus the 4 Egni demand predicates (post-bootstrap, 2026-07-20) = 64
+    # total. Same count the schema-layer test pins. The CLI must agree with
+    # the registry.
+    assert count == 64
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

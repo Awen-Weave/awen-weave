@@ -30,8 +30,9 @@ def test_seed_predicate_count_matches_v01_schema():
     """v0.1-schema.md §3.5 enumerates 58 predicates across building +
     tenancy + event + research_question + source + town. §10 item 7
     adds two more (verified_building_toid, location_verification_status),
-    bringing the total to 60."""
-    assert len(SEED_PREDICATES) == 60
+    bringing the total to 60. The 4 Egni demand predicates (post-bootstrap,
+    2026-07-20) bring it to 64."""
+    assert len(SEED_PREDICATES) == 64
 
 
 def test_predicate_registry_matches_seed_set():
@@ -134,6 +135,40 @@ def test_item_7_predicates_pass_validate_predicate_def():
     every seed predicate gets at craidd-init bootstrap."""
     from craidd.schema.validation import validate_predicate_def
     for name in ("verified_building_toid", "location_verification_status"):
+        pred = PREDICATE_REGISTRY[name]
+        assert validate_predicate_def(pred) == [], (
+            f"{name} should pass validate_predicate_def cleanly"
+        )
+
+
+# --- Egni demand predicates (post-bootstrap, 2026-07-20) ----------------------
+
+def test_egni_demand_predicate_shapes():
+    """The four Egni M2 demand predicates, per the ratified decision note
+    §2a. All apply to the existing area/building kinds — no new entity kind."""
+    expected = {
+        "electricity_consumption_kwh": ("real", "single", "area"),
+        "gas_consumption_kwh": ("real", "single", "area"),
+        # multi — one claim per main-fuel class in the small area (TS046).
+        "heating_fuel_share": ("real", "multi", "area"),
+        "main_fuel": ("text", "single", "building"),
+    }
+    for name, (vt, card, applies) in expected.items():
+        pred = PREDICATE_REGISTRY[name]
+        assert pred.value_type == vt, f"{name} value_type"
+        assert pred.cardinality == card, f"{name} cardinality"
+        assert pred.applies_to_types == (applies,), f"{name} applies_to"
+
+
+def test_egni_demand_predicates_pass_validate_predicate_def():
+    """Each demand predicate must pass the same self-consistency check
+    craidd-init runs at bootstrap (valid value_type/cardinality, applies_to
+    an existing entity type, non-empty descriptions)."""
+    from craidd.schema.validation import validate_predicate_def
+    for name in (
+        "electricity_consumption_kwh", "gas_consumption_kwh",
+        "heating_fuel_share", "main_fuel",
+    ):
         pred = PREDICATE_REGISTRY[name]
         assert validate_predicate_def(pred) == [], (
             f"{name} should pass validate_predicate_def cleanly"

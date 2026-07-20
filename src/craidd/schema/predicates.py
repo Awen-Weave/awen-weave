@@ -13,6 +13,16 @@ plus the two §10 item 7 additions (verified_building_toid,
 location_verification_status), bringing the total to 60. The "52" figure
 should be corrected in the doc.
 
+NOTE — post-bootstrap additions: the four Egni demand predicates
+(_ENERGY_DEMAND, 2026-07-20) take the total to 64. Registering them is a
+deliberate, Prawf-logged post-bootstrap act, per the ratified Egni
+decision note (egni/design/entity-kind-and-predicates-decision-note.md
+§2a). They apply only to the existing `area`/`building` kinds — the
+demand baseline (Egni M2) needs no new entity kind. The `site` kind the
+same note proposes is an M3 concern AND a constitution machine-layer
+change (SCH-ENTITY-001 enumerates a closed nine at the pinned v0.1.3), so
+it is deliberately NOT added here — see the hand-off report.
+
 NOTE — Welsh descriptions: the predicate table requires description_cy
 NOT NULL, but §3.5 supplies English meanings only. Every description_cy
 below is the tutor-attested form from the 2026-05-19 Catrin Stephens
@@ -287,9 +297,39 @@ _TOWN: tuple[PredicateDef, ...] = (
 )
 
 
-# The complete v0.1 seed set, in schema-document order.
+# ---------------------------------------------------------------------------
+# Energy-demand predicates (Egni M2) — applies to the existing 'area' and
+# 'building' kinds. Registered per the ratified Egni decision note §2a as a
+# deliberate, Prawf-logged post-bootstrap addition. description_cy=CY_PENDING
+# until the Welsh forms are attested via the vocabulary harvest (identifiers
+# stay English, descriptions are Welsh — never fabricated here).
+# ---------------------------------------------------------------------------
+_ENERGY_DEMAND: tuple[PredicateDef, ...] = (
+    PredicateDef("electricity_consumption_kwh", "real", "single", ("area",),
+                 "Annual electricity consumption for the small area, kWh "
+                 "(DESNZ sub-national).", description_cy=CY_PENDING),
+    PredicateDef("gas_consumption_kwh", "real", "single", ("area",),
+                 "Annual gas consumption for the small area, kWh (DESNZ "
+                 "sub-national) — settles where the gas grid actually reaches.",
+                 description_cy=CY_PENDING),
+    # multi: one claim per main-fuel class in the small area (Census TS046) —
+    # the fuel label rides in value_en/value_cy, the percentage in value_real.
+    # A single-cardinality predicate could hold only one fuel's share per area.
+    PredicateDef("heating_fuel_share", "real", "multi", ("area",),
+                 "Share of households by main heating fuel, per cent "
+                 "(Census 2021 TS046); fuel carried in value_en/cy.",
+                 description_cy=CY_PENDING),
+    PredicateDef("main_fuel", "text", "single", ("building",),
+                 "Main heating fuel of the dwelling, verbatim from EPC.",
+                 description_cy=CY_PENDING),
+)
+
+
+# The complete seed set, in schema-document order; the Egni demand predicates
+# (post-bootstrap, 2026-07-20) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
+    + _ENERGY_DEMAND
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -298,8 +338,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 60 distinct names expected as of §10 item 7
-# (was 58 pre-item-7; +2 for verified_building_toid and
-# location_verification_status).
+# in PREDICATE_REGISTRY. 64 distinct names expected: 60 v0.1 seed (58 +
+# §10 item 7's verified_building_toid + location_verification_status) plus
+# the 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
