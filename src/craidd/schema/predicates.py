@@ -14,14 +14,19 @@ location_verification_status), bringing the total to 60. The "52" figure
 should be corrected in the doc.
 
 NOTE — post-bootstrap additions: the four Egni demand predicates
-(_ENERGY_DEMAND, 2026-07-20) take the total to 64. Registering them is a
+(_ENERGY_DEMAND, 2026-07-20) take the total to 64, then the 34 ratified
+2026-07-22 additions — 17 EPC (_EPC), 15 planning-lifecycle (_PLANNING),
+2 BGS searches (_BGS_SEARCHES) — take it to 98. Registering them is a
 deliberate, Prawf-logged post-bootstrap act, per the ratified Egni
 decision note (egni/design/entity-kind-and-predicates-decision-note.md
-§2a). They apply only to the existing `area`/`building` kinds — the
-demand baseline (Egni M2) needs no new entity kind. The `site` kind the
-same note proposes is an M3 concern AND a constitution machine-layer
-change (SCH-ENTITY-001 enumerates a closed nine at the pinned v0.1.3), so
-it is deliberately NOT added here — see the hand-off report.
+§2a) and the three catalogue predicate-registration decision notes
+(awen-source-catalogue/design/*-predicate-registration-decision-note.md,
+ratified 2026-07-22). They all apply only to the existing
+`area`/`building`/`event` kinds — no new entity kind, no constitution
+change. The `site` kind the Egni note proposes is an M3 concern AND a
+constitution machine-layer change (SCH-ENTITY-001 enumerates a closed
+nine at the pinned v0.1.3), so it is deliberately NOT added here — see
+the hand-off report.
 
 NOTE — Welsh descriptions: the predicate table requires description_cy
 NOT NULL, but §3.5 supplies English meanings only. Every description_cy
@@ -325,11 +330,161 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# EPC domestic predicates (IDR-006 EPC national layer) — per-certificate on the
+# existing 'building' kind + one per-authority 'area' aggregate. Additive, no
+# constitution change (EPC predicate-registration decision note, ratified
+# 2026-07-22). Verbatim EPC classes, never re-bucketed; 'uprn'/'main_fuel'
+# already registered (not re-added). description_cy=CY_PENDING (harvest).
+# ---------------------------------------------------------------------------
+_EPC: tuple[PredicateDef, ...] = (
+    PredicateDef("epc_location", "geom", "single", ("building",),
+                 "Point location of the assessed dwelling — the UPRN spine's "
+                 "coordinate (EPSG:4326), never a Royal Mail address.",
+                 description_cy=CY_PENDING),
+    PredicateDef("current_energy_rating", "text", "single", ("building",),
+                 "Current energy-efficiency band (A–G), verbatim from the EPC.",
+                 description_cy=CY_PENDING),
+    PredicateDef("potential_energy_rating", "text", "single", ("building",),
+                 "Potential energy-efficiency band after recommended "
+                 "improvements, verbatim.", description_cy=CY_PENDING),
+    PredicateDef("current_energy_efficiency", "int", "single", ("building",),
+                 "Current energy-efficiency score (SAP points, 1–100).",
+                 description_cy=CY_PENDING),
+    PredicateDef("potential_energy_efficiency", "int", "single", ("building",),
+                 "Potential energy-efficiency score after improvements.",
+                 description_cy=CY_PENDING),
+    PredicateDef("environment_impact_current", "int", "single", ("building",),
+                 "Current environmental-impact (CO₂) score.",
+                 description_cy=CY_PENDING),
+    PredicateDef("environment_impact_potential", "int", "single", ("building",),
+                 "Potential environmental-impact score after improvements.",
+                 description_cy=CY_PENDING),
+    PredicateDef("co2_emissions_current", "real", "single", ("building",),
+                 "Current CO₂ emissions, per the EPC (tonnes/yr or "
+                 "per-floor-area as sourced).", description_cy=CY_PENDING),
+    PredicateDef("total_floor_area", "real", "single", ("building",),
+                 "Total floor area (m²), verbatim from the EPC (distinct from "
+                 "the survey 'floor_area_m2').", description_cy=CY_PENDING),
+    PredicateDef("property_type", "text", "single", ("building",),
+                 "Dwelling type (House/Flat/Bungalow/Maisonette), verbatim.",
+                 description_cy=CY_PENDING),
+    PredicateDef("built_form", "text", "single", ("building",),
+                 "Built form (Detached/Semi/Terrace/…), verbatim.",
+                 description_cy=CY_PENDING),
+    PredicateDef("tenure", "text", "single", ("building",),
+                 "Tenure at assessment (owner-occupied / rented …), verbatim.",
+                 description_cy=CY_PENDING),
+    PredicateDef("mainheat_description", "text", "single", ("building",),
+                 "Main heating system descriptor, verbatim.",
+                 description_cy=CY_PENDING),
+    PredicateDef("inspection_date", "date", "single", ("building",),
+                 "Date the assessment was carried out.",
+                 description_cy=CY_PENDING),
+    PredicateDef("lodgement_date", "date", "single", ("building",),
+                 "Date the certificate was lodged on the register.",
+                 description_cy=CY_PENDING),
+    PredicateDef("epc_recommendation", "text", "multi", ("building",),
+                 "An improvement measure recommended on the certificate (one "
+                 "claim per measure).", description_cy=CY_PENDING),
+    PredicateDef("epc_certificate_count", "int", "single", ("area",),
+                 "Count of addressless domestic EPC certificates joined to the "
+                 "UPRN spine in the authority (derived aggregate; the full "
+                 "per-certificate set is the box full-store).",
+                 description_cy=CY_PENDING),
+)
+
+
+# ---------------------------------------------------------------------------
+# Planning-lifecycle predicates (AWE-006 Tref) — on the existing 'event' kind,
+# bound to a 'building' via the already-registered 'affects_entity'. Names/enums
+# mirror the MHCLG national planning-decision spec (adopt, don't invent).
+# Additive, no constitution change (planning predicate-registration decision
+# note, ratified 2026-07-22). description_cy=CY_PENDING (harvest).
+# ---------------------------------------------------------------------------
+_PLANNING: tuple[PredicateDef, ...] = (
+    PredicateDef("application_reference", "text", "single", ("event",),
+                 "The planning application reference, verbatim from the "
+                 "authority (the PK; authority is the record of truth).",
+                 description_cy=CY_PENDING),
+    PredicateDef("lpa", "text", "single", ("event",),
+                 "Local planning authority name (GSS where an LA; NPAs resolve "
+                 "via boundary).", description_cy=CY_PENDING),
+    PredicateDef("application_type", "text", "single", ("event",),
+                 "Application type, verbatim (Full / Outline / Tree works / …).",
+                 description_cy=CY_PENDING),
+    PredicateDef("application_status", "text", "single", ("event",),
+                 "Application status, verbatim from the authority portal.",
+                 description_cy=CY_PENDING),
+    PredicateDef("received_date", "date", "single", ("event",),
+                 "Date the LPA first received the application (the "
+                 "timeliness/deadline basis).", description_cy=CY_PENDING),
+    PredicateDef("valid_date", "date", "single", ("event",),
+                 "Date the application was made valid.",
+                 description_cy=CY_PENDING),
+    PredicateDef("decision_outcome", "text", "single", ("event",),
+                 "Decision outcome mapped to the MHCLG enum "
+                 "(granted/refused/split/withdrawn); raw text kept, never "
+                 "re-bucketed away.", description_cy=CY_PENDING),
+    PredicateDef("decided_by", "text", "single", ("event",),
+                 "WHO decided — officer / committee / inspectorate (the MHCLG "
+                 "first-class provenance field; None when the source doesn't "
+                 "state it — recorded honestly, never guessed).",
+                 description_cy=CY_PENDING),
+    PredicateDef("decision_date", "date", "single", ("event",),
+                 "Date of the decision notice.", description_cy=CY_PENDING),
+    PredicateDef("condition_discharge_status", "text", "single", ("event",),
+                 "A condition's discharge status "
+                 "(imposed/discharged/not_discharged/unknown) — the line of "
+                 "sight from imposition → discharge → works.",
+                 description_cy=CY_PENDING),
+    PredicateDef("appeal_outcome", "text", "single", ("event",),
+                 "PINS appeal outcome (allowed/dismissed/split) — from Open "
+                 "Evidence appeals_corpus (v0.2).", description_cy=CY_PENDING),
+    PredicateDef("works_evidence", "text", "single", ("event",),
+                 "Did-it-happen confidence (confirmed/likely/unknown) — "
+                 "permission granted is NOT evidence of works; the kind + basis "
+                 "ride in the semantics_caveat.", description_cy=CY_PENDING),
+    PredicateDef("site_toid", "text", "single", ("event",),
+                 "The bound building's OS TOID — from OS Open Linked "
+                 "Identifiers (OGL) via the UPRN spine, NOT MasterMap; part of "
+                 "the returnable UPRN/TOID bind.", description_cy=CY_PENDING),
+    PredicateDef("source_url", "text", "single", ("event",),
+                 "The authoritative authority record URL (per-application "
+                 "provenance; the record of truth).", description_cy=CY_PENDING),
+    PredicateDef("fetch_hash", "text", "single", ("event",),
+                 "Content hash of the fetched source record (verify-not-recall "
+                 "audit).", description_cy=CY_PENDING),
+)
+
+
+# ---------------------------------------------------------------------------
+# BGS searches predicates (Sail-Sale, for Evan) — per-UPRN indicative class on
+# the existing 'building' kind, binding: asserted. Verbatim BGS class; the
+# meaning-limit rides in semantics_caveat. Additive, no constitution change
+# (BGS-searches predicate-registration decision note, ratified 2026-07-22).
+# ---------------------------------------------------------------------------
+_BGS_SEARCHES: tuple[PredicateDef, ...] = (
+    PredicateDef("mining_hazard", "text", "single", ("building",),
+                 "BGS non-coal mining-hazard indicative class covering the "
+                 "property (NA / Low / Moderate / Significant), verbatim from "
+                 "the BGS 1 km hex. Indicative likelihood, not a site "
+                 "investigation; coal is a separate regime (Mining Remediation "
+                 "Authority).", description_cy=CY_PENDING),
+    PredicateDef("radon_potential", "int", "single", ("building",),
+                 "UKHSA/BGS radon potential class 1–6 for the property's "
+                 "location (estimated % of homes above the radon action level; "
+                 "1 = lowest <1%, 6 = highest ≥30%). An area indication, not a "
+                 "measured dwelling radon level.", description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
-# (post-bootstrap, 2026-07-20) follow the v0.1 seed groups.
+# (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
+# groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
-    + _ENERGY_DEMAND
+    + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -338,8 +493,10 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 64 distinct names expected: 60 v0.1 seed (58 +
-# §10 item 7's verified_building_toid + location_verification_status) plus
-# the 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20).
+# in PREDICATE_REGISTRY. 98 distinct names expected: 60 v0.1 seed (58 +
+# §10 item 7's verified_building_toid + location_verification_status), the
+# 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), and the 34 ratified
+# 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
+# searches (_BGS_SEARCHES).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

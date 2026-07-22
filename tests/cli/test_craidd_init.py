@@ -46,7 +46,7 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # plus the 4 Egni demand predicates (post-bootstrap, 2026-07-20) = 64
     # total. Same count the schema-layer test pins. The CLI must agree with
     # the registry.
-    assert count == 64
+    assert count == 98
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

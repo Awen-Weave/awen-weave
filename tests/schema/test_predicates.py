@@ -32,7 +32,7 @@ def test_seed_predicate_count_matches_v01_schema():
     adds two more (verified_building_toid, location_verification_status),
     bringing the total to 60. The 4 Egni demand predicates (post-bootstrap,
     2026-07-20) bring it to 64."""
-    assert len(SEED_PREDICATES) == 64
+    assert len(SEED_PREDICATES) == 98
 
 
 def test_predicate_registry_matches_seed_set():
