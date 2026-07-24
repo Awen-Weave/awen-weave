@@ -497,9 +497,18 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "The OGL designation fact; descriptive text held VERIFY.",
                  description_cy=CY_PENDING),
     PredicateDef("near_scheduled_monument_250m", "text", "multi", ("building",),
-                 "Scheduled monument(s) within 250 m of the property — verbatim "
-                 "list-entry reference. Proximity indication for a search, not a "
-                 "statement the property is designated.", description_cy=CY_PENDING),
+                 "DEPRECATED (2026-07-24, superseded by `near_scheduled_monument` "
+                 "with a setting-scale-derived radius; not emitted). Kept for additive "
+                 "discipline — a fixed 250 m is a poor proxy for a monument's setting. "
+                 "Scheduled monument(s) within 250 m of the property.",
+                 description_cy=CY_PENDING),
+    PredicateDef("near_scheduled_monument", "text", "multi", ("building",),
+                 "Scheduled monument(s) near the property (within the monument's "
+                 "setting-scale-derived radius) — verbatim list-entry reference. A "
+                 "proximity indication for a search, NOT a statement the property is "
+                 "designated. The applied radius scales with the monument's designated "
+                 "area (see `setting_scale` / `designated_area_ha`).",
+                 description_cy=CY_PENDING),
     PredicateDef("in_registered_park_garden", "text", "multi", ("building",),
                  "Registered park or garden of special historic interest "
                  "containing the property — verbatim list-entry reference "
@@ -511,12 +520,46 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Heritage-designation ENRICHMENT predicates (Sail-Sale A1). The designated asset
+# itself becomes an `area` entity (keyed by its list-entry reference), carrying what
+# the authority publishes about it — so the dataset says WHAT the asset is, not just
+# that it's near. heritage_class / heritage_site_type / heritage_period /
+# designated_area_ha are ASSERTED (verbatim: Cadw BroadClass/SiteType/Period; the
+# polygon area). `setting_scale` is DERIVED (binding: derived on the claim) — Awen's
+# curated tier inferred from the area, kept distinct from the authority's facts.
+# Welsh: CY_PENDING (VH-FUT-064..068 on Catrin's worklist).
+# ---------------------------------------------------------------------------
+_HERITAGE_ENRICHMENT: tuple[PredicateDef, ...] = (
+    PredicateDef("heritage_class", "text", "single", ("area",),
+                 "Broad class of a designated heritage asset, verbatim from the "
+                 "authority (e.g. Cadw BroadClass 'Religious, Ritual and Funerary').",
+                 description_cy=CY_PENDING),
+    PredicateDef("heritage_site_type", "text", "single", ("area",),
+                 "Site type of a designated heritage asset, verbatim (Cadw SiteType).",
+                 description_cy=CY_PENDING),
+    PredicateDef("heritage_period", "text", "single", ("area",),
+                 "Historic period of a designated heritage asset, verbatim (Cadw Period).",
+                 description_cy=CY_PENDING),
+    PredicateDef("designated_area_ha", "real", "single", ("area",),
+                 "Designated area of a heritage asset in hectares (the polygon area) — "
+                 "the objective scale signal for its setting.", description_cy=CY_PENDING),
+    PredicateDef("setting_scale", "text", "single", ("area",),
+                 "DERIVED curated setting-scale tier (immediate | local | landscape) "
+                 "inferred from designated_area_ha — Awen's judgment, emitted "
+                 "binding=derived, NOT the authority's statement.",
+                 description_cy=CY_PENDING,
+                 constraint_json='{"enum": ["immediate", "local", "landscape"]}'),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
+    + _HERITAGE_ENRICHMENT
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -525,11 +568,13 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 102 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 108 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
-# searches (_BGS_SEARCHES) — and the 4 heritage-designation search
-# predicates (_HERITAGE_SEARCHES, Sail-Sale Tier-A A1, 2026-07-24).
+# searches (_BGS_SEARCHES) — the 4 heritage-designation search predicates
+# (_HERITAGE_SEARCHES, 2026-07-24), + `near_scheduled_monument` (variable-radius,
+# 2026-07-24; the fixed `_250m` deprecated-but-retained), + 5 heritage
+# ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
