@@ -479,12 +479,44 @@ _BGS_SEARCHES: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Heritage-designation search predicates (Sail-Sale Tier-A A1, LLC1) — per-UPRN
+# on the existing 'building' kind, binding: asserted. OGL (Historic England NHLE
+# + Cadw). Value = the designation's verbatim list-entry reference (factual core;
+# rich descriptive text stays VERIFY). LISTED BUILDINGS reuse the existing
+# `listed_grade` + `listed_id`; CONSERVATION AREAS reuse `conservation_area` — so
+# only scheduled monuments, registered parks/gardens and battlefields are new here.
+# Additive, no constitution change (mirrors the ratified BGS-searches pattern).
+# Welsh: CY_PENDING — the four description_cy forms are on Catrin's harvest worklist
+# (VH-FUT-060..063); Cadw publishes official Welsh designation terms (select-and-attest).
+# ---------------------------------------------------------------------------
+_HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
+    PredicateDef("within_scheduled_monument", "text", "multi", ("building",),
+                 "Scheduled monument whose designated area contains the property "
+                 "— verbatim list-entry reference (Historic England NHLE / Cadw). "
+                 "The OGL designation fact; descriptive text held VERIFY.",
+                 description_cy=CY_PENDING),
+    PredicateDef("near_scheduled_monument_250m", "text", "multi", ("building",),
+                 "Scheduled monument(s) within 250 m of the property — verbatim "
+                 "list-entry reference. Proximity indication for a search, not a "
+                 "statement the property is designated.", description_cy=CY_PENDING),
+    PredicateDef("in_registered_park_garden", "text", "multi", ("building",),
+                 "Registered park or garden of special historic interest "
+                 "containing the property — verbatim list-entry reference "
+                 "(NHLE / Cadw).", description_cy=CY_PENDING),
+    PredicateDef("in_registered_battlefield", "text", "single", ("building",),
+                 "Registered battlefield containing the property — verbatim "
+                 "list-entry reference (NHLE; England only).",
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
-    + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES
+    + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -493,10 +525,11 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 98 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 102 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
-# 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), and the 34 ratified
+# 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
-# searches (_BGS_SEARCHES).
+# searches (_BGS_SEARCHES) — and the 4 heritage-designation search
+# predicates (_HERITAGE_SEARCHES, Sail-Sale Tier-A A1, 2026-07-24).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

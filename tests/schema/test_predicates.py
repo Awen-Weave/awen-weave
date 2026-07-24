@@ -31,8 +31,10 @@ def test_seed_predicate_count_matches_v01_schema():
     tenancy + event + research_question + source + town. §10 item 7
     adds two more (verified_building_toid, location_verification_status),
     bringing the total to 60. The 4 Egni demand predicates (post-bootstrap,
-    2026-07-20) bring it to 64."""
-    assert len(SEED_PREDICATES) == 98
+    2026-07-20) bring it to 64. The 34 ratified 2026-07-22 additions (17 EPC,
+    15 planning, 2 BGS searches) bring it to 98, and the 4 heritage-designation
+    search predicates (Sail-Sale Tier-A A1, 2026-07-24) bring it to 102."""
+    assert len(SEED_PREDICATES) == 102
 
 
 def test_predicate_registry_matches_seed_set():
