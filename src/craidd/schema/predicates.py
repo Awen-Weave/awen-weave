@@ -553,13 +553,39 @@ _HERITAGE_ENRICHMENT: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Coal-mining search predicate (Sail-Sale Tier-A A3, CON29R) — per-UPRN on the
+# existing 'building' kind, binding: asserted. OGL (Mining Remediation Authority,
+# formerly the Coal Authority). A pure WITHIN flag: the source's Development High
+# Risk Area is a dissolved composite (40,186 polygons sharing ONE constant
+# FEATURE_TY label), so there is no per-asset identity to enrich — the claim's
+# existence is the information, and the source's own "Subject to Change" wording
+# travels as the value. COAL IS A SEPARATE REGIME from the BGS non-coal
+# `mining_hazard` predicate. Additive, no constitution change.
+# Welsh: CY_PENDING — on Catrin's worklist (VH-FUT-070).
+# ---------------------------------------------------------------------------
+_COAL_SEARCH: tuple[PredicateDef, ...] = (
+    PredicateDef("in_coal_high_risk_area", "text", "single", ("building",),
+                 "The property lies within the Mining Remediation Authority "
+                 "Development High Risk Area — the part of the coal mining reporting "
+                 "area containing recorded coal features at surface or shallow depth "
+                 "(mine entries, shallow workings, mine gas sites, fissures, former "
+                 "surface mining) that pose a potential risk to surface stability. "
+                 "Value is the source's verbatim area label. ABSENCE is NOT 'no coal "
+                 "mining': a property may be inside the coal reporting area but not "
+                 "high-risk, or outside the coalfield entirely — this layer only "
+                 "distinguishes the high-risk area. The detailed Coal Mining Report "
+                 "is a separate (licensed) product.", description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
-    + _HERITAGE_ENRICHMENT
+    + _HERITAGE_ENRICHMENT + _COAL_SEARCH
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -568,13 +594,14 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 108 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 109 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
 # searches (_BGS_SEARCHES) — the 4 heritage-designation search predicates
 # (_HERITAGE_SEARCHES, 2026-07-24), + `near_scheduled_monument` (variable-radius,
 # 2026-07-24; the fixed `_250m` deprecated-but-retained), + 5 heritage
-# ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24).
+# ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24), + the coal
+# Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
