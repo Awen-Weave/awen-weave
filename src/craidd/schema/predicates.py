@@ -579,13 +579,43 @@ _COAL_SEARCH: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Strategic-road proximity predicate (Sail-Sale Tier-A A4, CON29R) — per-UPRN on
+# the existing 'building' kind, binding: asserted. Source: OS OPEN ROADS
+# (OS OpenData / OGL) — NOT the National Highways SRN Network Model, which is
+# derived from OS Highways (premium) and therefore not commons-releasable
+# (DECISION A4, Decision Console 26/07).
+#
+# Value = the VERBATIM OS `roadClassification` of the nearby road ("Motorway",
+# "A Road", …), multi-cardinality so a property can be near more than one class.
+# Carrying the CLASS rather than a road number is deliberate: the inclusion rule is
+# expressed in classes (A4 = Motorway + A Road; B roads excluded per Huw), so
+# widening it later — e.g. B roads for Uniad Bro — is a CONFIG FLIP on the same
+# predicate rather than a new one or a re-fetch. (The specific road number is a
+# known, deliberate omission; a future enrichment if a consumer asks.)
+# Welsh: CY_PENDING — VH-FUT-071.
+# ---------------------------------------------------------------------------
+_ROAD_PROXIMITY: tuple[PredicateDef, ...] = (
+    PredicateDef("near_strategic_road_network", "text", "multi", ("building",),
+                 "A road of this OS Open Roads classification lies within the "
+                 "search radius (250 m) of the property — value is the verbatim OS "
+                 "`roadClassification` ('Motorway', 'A Road', …). A PROXIMITY "
+                 "indication for a search (noise, access, severance), NOT a "
+                 "statement about any proposed scheme: OS Open Roads describes the "
+                 "road network AS BUILT. Published road/rail PROPOSALS are a "
+                 "separate question with no OGL national dataset — held. Absence "
+                 "means no road of an included class within the radius, nothing more.",
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
-    + _HERITAGE_ENRICHMENT + _COAL_SEARCH
+    + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -594,7 +624,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 109 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 110 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
@@ -602,6 +632,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # (_HERITAGE_SEARCHES, 2026-07-24), + `near_scheduled_monument` (variable-radius,
 # 2026-07-24; the fixed `_250m` deprecated-but-retained), + 5 heritage
 # ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24), + the coal
-# Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25).
+# Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25), + the
+# strategic-road proximity predicate (_ROAD_PROXIMITY, 2026-07-26).
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
