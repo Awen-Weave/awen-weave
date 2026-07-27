@@ -45,7 +45,7 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # 2 BGS searches) + heritage searches/enrichment + coal + strategic-road = 110,
     # + 3 reachability predicates (constitution 0.1.4, 2026-07-26) = 113. Same count
     # the schema-layer test pins. The CLI must agree with the registry.
-    assert count == 113
+    assert count == 115
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

@@ -658,6 +658,45 @@ _REACHABILITY: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Open access (Sail-Sale Tier-A A5, 2026-07-27) — Natural England, OGL v3.
+# The ADJACENT open baseline, deliberately NOT the PRoW network: no consolidated
+# open rights-of-way dataset exists (per-surveying-authority, mixed licence), so
+# claiming these as "public access" in general would overstate what we hold.
+#
+# ENGLAND ONLY. Natural England's remit stops at the border and the coast path is
+# English by definition, where every other Tier-A layer is E+W. Wales has
+# equivalent open-access land published by NRW; its absence here is a real gap,
+# not a coverage statement.
+# ---------------------------------------------------------------------------
+_OPEN_ACCESS: tuple[PredicateDef, ...] = (
+    PredicateDef("in_open_access_land", "text", "multi", ("building", "site", "area"),
+                 "The property lies within land mapped as open access land under the "
+                 "Countryside and Rights of Way Act 2000 (England). Value is the "
+                 "VERBATIM statutory category the mapping records — Open Country, "
+                 "Registered Common Land, or Section 16 Dedicated Land — one claim per "
+                 "category, because a parcel can qualify under more than one and "
+                 "collapsing them into a single invented label would lose which statute "
+                 "grants the right. A right of access on foot, NOT a right of way, and "
+                 "not a statement about vehicular or equestrian access. Excepted land "
+                 "(MoD byelaw, s.28 exclusions, racecourses, aerodromes) is already "
+                 "removed by the source; the coastal margin is deliberately excluded "
+                 "from it and carried separately.",
+                 description_cy=CY_PENDING),
+    PredicateDef("near_england_coast_path", "text", "multi", ("building", "site", "area"),
+                 "An approved stretch of the King Charles III England Coast Path lies "
+                 "within the stated radius of the property. Value is the source's "
+                 "VERBATIM route status — 'Public footpath', 'Other existing walked "
+                 "route', 'Not an existing walked route', and so on — because approval "
+                 "is not the same as a path being physically there: roughly 900 of "
+                 "16,667 approved segments are recorded as NOT an existing walked route, "
+                 "and reporting those as a walkable amenity would over-claim. A "
+                 "proximity indication for a search, not a designation and not a "
+                 "guarantee of access at the property boundary.",
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -665,6 +704,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
+    + _OPEN_ACCESS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -673,7 +713,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 113 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 115 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
@@ -683,6 +723,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24), + the coal
 # Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25), + the
 # strategic-road proximity predicate (_ROAD_PROXIMITY, 2026-07-26), + the 3
-# reachability predicates (_REACHABILITY, 2026-07-26, constitution 0.1.4) = 113.
+# reachability predicates (_REACHABILITY, 2026-07-26, constitution 0.1.4) = 113, + the
+# 2 open-access predicates (_OPEN_ACCESS, Tier-A A5, 2026-07-27) = 115.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
