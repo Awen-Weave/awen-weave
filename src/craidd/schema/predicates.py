@@ -495,28 +495,28 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "Scheduled monument whose designated area contains the property "
                  "— verbatim list-entry reference (Historic England NHLE / Cadw). "
                  "The OGL designation fact; descriptive text held VERIFY.",
-                 description_cy=CY_PENDING),
+                 description_cy="o fewn heneb gofrestredig"),
     PredicateDef("near_scheduled_monument_250m", "text", "multi", ("building",),
                  "DEPRECATED (2026-07-24, superseded by `near_scheduled_monument` "
                  "with a setting-scale-derived radius; not emitted). Kept for additive "
                  "discipline — a fixed 250 m is a poor proxy for a monument's setting. "
                  "Scheduled monument(s) within 250 m of the property.",
-                 description_cy=CY_PENDING),
+                 description_cy="o fewn 250 m i heneb gofrestredig"),
     PredicateDef("near_scheduled_monument", "text", "multi", ("building",),
                  "Scheduled monument(s) near the property (within the monument's "
                  "setting-scale-derived radius) — verbatim list-entry reference. A "
                  "proximity indication for a search, NOT a statement the property is "
                  "designated. The applied radius scales with the monument's designated "
                  "area (see `setting_scale` / `designated_area_ha`).",
-                 description_cy=CY_PENDING),
+                 description_cy="yn agos at heneb gofrestredig (o fewn dalgylch ei gosodiad)"),
     PredicateDef("in_registered_park_garden", "text", "multi", ("building",),
                  "Registered park or garden of special historic interest "
                  "containing the property — verbatim list-entry reference "
-                 "(NHLE / Cadw).", description_cy=CY_PENDING),
+                 "(NHLE / Cadw).", description_cy="o fewn parc a gardd hanesyddol gofrestredig"),
     PredicateDef("in_registered_battlefield", "text", "single", ("building",),
                  "Registered battlefield containing the property — verbatim "
                  "list-entry reference (NHLE; England only).",
-                 description_cy=CY_PENDING),
+                 description_cy="o fewn maes brwydr cofrestredig"),
 )
 
 
@@ -534,21 +534,21 @@ _HERITAGE_ENRICHMENT: tuple[PredicateDef, ...] = (
     PredicateDef("heritage_class", "text", "single", ("area",),
                  "Broad class of a designated heritage asset, verbatim from the "
                  "authority (e.g. Cadw BroadClass 'Religious, Ritual and Funerary').",
-                 description_cy=CY_PENDING),
+                 description_cy="dosbarth treftadaeth"),
     PredicateDef("heritage_site_type", "text", "single", ("area",),
                  "Site type of a designated heritage asset, verbatim (Cadw SiteType).",
-                 description_cy=CY_PENDING),
+                 description_cy="math o safle treftadaeth"),
     PredicateDef("heritage_period", "text", "single", ("area",),
                  "Historic period of a designated heritage asset, verbatim (Cadw Period).",
-                 description_cy=CY_PENDING),
+                 description_cy="cyfnod hanesyddol"),
     PredicateDef("designated_area_ha", "real", "single", ("area",),
                  "Designated area of a heritage asset in hectares (the polygon area) — "
-                 "the objective scale signal for its setting.", description_cy=CY_PENDING),
+                 "the objective scale signal for its setting.", description_cy="arwynebedd dynodedig (hectarau)"),
     PredicateDef("setting_scale", "text", "single", ("area",),
                  "DERIVED curated setting-scale tier (immediate | local | landscape) "
                  "inferred from designated_area_ha — Awen's judgment, emitted "
                  "binding=derived, NOT the authority's statement.",
-                 description_cy=CY_PENDING,
+                 description_cy="graddfa gosodiad",
                  constraint_json='{"enum": ["immediate", "local", "landscape"]}'),
 )
 
@@ -575,7 +575,7 @@ _COAL_SEARCH: tuple[PredicateDef, ...] = (
                  "mining': a property may be inside the coal reporting area but not "
                  "high-risk, or outside the coalfield entirely — this layer only "
                  "distinguishes the high-risk area. The detailed Coal Mining Report "
-                 "is a separate (licensed) product.", description_cy=CY_PENDING),
+                 "is a separate (licensed) product.", description_cy="o fewn ardal risg uchel oherwydd datblygiad (glo)"),
 )
 
 
@@ -605,7 +605,7 @@ _ROAD_PROXIMITY: tuple[PredicateDef, ...] = (
                  "road network AS BUILT. Published road/rail PROPOSALS are a "
                  "separate question with no OGL national dataset — held. Absence "
                  "means no road of an included class within the radius, nothing more.",
-                 description_cy=CY_PENDING),
+                 description_cy="yn agos at rwydwaith ffyrdd strategol"),
 )
 
 
