@@ -609,13 +609,62 @@ _ROAD_PROXIMITY: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Reachability — the shared Valhalla/OSM routing capability (Decision Console
+# VALHALLA, 26/07/2026). Three predicates cover it, because the travel mode rides in
+# the `travel_mode` qualifier (constitution 0.1.4) rather than in the predicate name:
+# mode is metadata ABOUT a claim, not a different kind of fact, and encoding it in
+# names would multiply this block by the number of modes forever.
+#
+# Each requires BOTH `source_ran_at` (the routing-graph vintage — a travel time
+# describes the network on a DATE, and a claim stamped with a guessed date is wrong
+# invisibly) and `travel_mode` (a duration without its mode is meaningless). The
+# grammar therefore refuses an unqualified routing claim; no layer has to remember.
+#
+# All are binding=derived at emit: routing is OUR computation, never an authority's
+# fact. Over OSM the licence is ODbL (ruling 26/07 — permitted framework-wide with
+# attribution + share-alike carried; ODbL-derived commons layers labelled ODbL, never
+# relabelled OGL), carried once on the source citation rather than per claim.
+# ---------------------------------------------------------------------------
+_REACHABILITY: tuple[PredicateDef, ...] = (
+    PredicateDef("travel_time_to_nearest", "real", "multi", ("building", "site", "area"),
+                 "Travel time in MINUTES to the nearest feature of a named set, by the "
+                 "qualified travel mode. `value_real` is the duration; `value_text` names the "
+                 "destination reached (layer:id), so one predicate answers the question for "
+                 "any destination set rather than needing one per amenity kind. Computed over "
+                 "the routing graph at the stated `source_ran_at` vintage — a modelled "
+                 "duration, not a guaranteed journey. Absence means no route was found under "
+                 "that mode, which is NOT the same as no physical connection existing.",
+                 required_qualifiers=("source_ran_at", "travel_mode"),
+                 description_cy=CY_PENDING),
+    PredicateDef("network_distance_to_nearest", "real", "multi", ("building", "site", "area"),
+                 "Distance in METRES along the network to the nearest feature of a named set, "
+                 "by the qualified travel mode. `value_real` is the distance; `value_text` "
+                 "names the destination reached (layer:id). Distinct from travel time and NOT "
+                 "a proxy for it: this is the predicate an OGL-only routing base can honestly "
+                 "populate, because OS Open Roads carries topology and length but no speed "
+                 "limits, one-ways or turn restrictions (confirmed against the shipped "
+                 "GeoPackage 26/07). Never present a network distance as a drive time.",
+                 required_qualifiers=("source_ran_at", "travel_mode"),
+                 description_cy=CY_PENDING),
+    PredicateDef("reachable_area", "geom", "multi", ("building", "site", "area"),
+                 "The isochrone polygon reachable from the subject within a stated duration by "
+                 "the qualified travel mode — the catchment itself, for publishing or "
+                 "intersecting with other layers. The duration it represents belongs in the "
+                 "claim id and the emitting layer's documentation; the geometry is the value. "
+                 "Modelled from the routing graph at the stated vintage.",
+                 required_qualifiers=("source_ran_at", "travel_mode"),
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
-    + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY
+    + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -624,7 +673,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 110 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 113 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
@@ -633,6 +682,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # 2026-07-24; the fixed `_250m` deprecated-but-retained), + 5 heritage
 # ENRICHMENT predicates (_HERITAGE_ENRICHMENT, 2026-07-24), + the coal
 # Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25), + the
-# strategic-road proximity predicate (_ROAD_PROXIMITY, 2026-07-26).
+# strategic-road proximity predicate (_ROAD_PROXIMITY, 2026-07-26), + the 3
+# reachability predicates (_REACHABILITY, 2026-07-26, constitution 0.1.4) = 113.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

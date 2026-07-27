@@ -74,8 +74,20 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         "source_ran_at",        # open-form: source's OWN run-UTC (ISO-8601).
         # Constitution 0.1.3 — provenance-with-semantics.
         "semantics_caveat",     # open-form: a stated limit on the value's meaning.
+        # Constitution 0.1.4 — reachability. CLOSED domain (TRAVEL_MODES).
+        "travel_mode",
     }
 )
+
+# --- travel_mode: CLOSED domain (constitution 0.1.4, SCH-CLAIM-001) ---
+# The travel profile a routing-derived claim was computed under. Required on the reachability
+# predicates: a duration or distance is meaningless without its mode, so the mode travels with
+# the claim rather than being encoded in the predicate name — three predicates cover
+# reachability instead of nine, and a future mode costs nothing.
+#
+# `transit` is deliberately ABSENT until GTFS feeds exist. An unavailable mode must be rejected,
+# never silently served as a driving time: that error is invisible to the consumer.
+TRAVEL_MODES: frozenset[str] = frozenset({"auto", "pedestrian", "bicycle"})
 
 # --- dialect: OPEN domain. Default for Dolgellau is north-Wales register. ---
 DEFAULT_DIALECT = "cy-GB-north"
@@ -153,6 +165,7 @@ CLOSED_QUALIFIER_DOMAINS: dict[str, frozenset[str]] = {
     "temporal_status": TEMPORAL_STATUSES,
     "geometry_basis": GEOMETRY_BASES,
     "binding": BINDINGS,
+    "travel_mode": TRAVEL_MODES,
 }
 
 # Open domains: the listed values are recognised, but a value outside the
