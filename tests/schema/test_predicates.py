@@ -38,7 +38,7 @@ def test_seed_predicate_count_matches_v01_schema():
     the 4 area predicates backfilled on 2026-07-27 — flood_coverage,
     population_estimate, alc_grade, uprn_count, all four already in use by
     published layers but never registered — bring it to 119."""
-    assert len(SEED_PREDICATES) == 119
+    assert len(SEED_PREDICATES) == 126
 
 
 def test_predicate_registry_matches_seed_set():

@@ -760,6 +760,63 @@ _AREA_BACKFILL: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Backfill, second sweep (2026-07-27) — seven MORE predicates that published
+# layers emit with no registry entry, found by scanning every module rather than
+# by waiting for the next test to fail.
+#
+# The first sweep above caught four because they appeared in committed
+# claims.json files. These seven do not: the UPRN spine's per-property emit and
+# the GP and gazetteer layers keep their bulk off the committed artefacts, so
+# reading the published snapshots was not enough. A source scan found them.
+#
+# BOTH FROZEN JOIN SPINES are affected. `os_toid` and `street_usrn` are the UPRN
+# spine's own cross-identifier claims — the join keys the whole estate is built
+# on — and `settlement_rank` is the gazetteer's OS size class. Neither spine
+# could have re-materialised once the gate started checking the grammar.
+#
+# Every one is a fact about the world, not about a source or our fetch of it,
+# which is precisely why these are REGISTERED where pub_date / method /
+# granularity were moved into the citation instead. Value types are read off the
+# emitters; entity types off the entities the modules actually create (GP
+# practices are `building`, gazetteer settlements are `town`).
+# ---------------------------------------------------------------------------
+_SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
+    PredicateDef("os_toid", "text", "single", ("building",),
+                 "OS TOID for the building a UPRN sits in, from OS Open Linked Identifiers. "
+                 "TEXT because a TOID is an identifier with a significant 'osgb' prefix, not "
+                 "a quantity — the same reasoning that corrected `uprn` from int to text.",
+                 description_cy=CY_PENDING),
+    PredicateDef("street_usrn", "text", "single", ("building",),
+                 "USRN of the street a UPRN is associated with, from OS Open Linked "
+                 "Identifiers. An identifier, hence text.",
+                 description_cy=CY_PENDING),
+    PredicateDef("settlement_rank", "text", "single", ("town",),
+                 "The source's own settlement size class for a populated place, VERBATIM from "
+                 "OS Open Names (e.g. 'City', 'Town', 'Village', 'Hamlet'). OS's "
+                 "classification, not ours, and not a population figure.",
+                 description_cy=CY_PENDING),
+    PredicateDef("ods_code", "text", "single", ("building",),
+                 "NHS Organisation Data Service code for a practice. An identifier.",
+                 description_cy=CY_PENDING),
+    PredicateDef("gp_location", "geom", "single", ("building",),
+                 "Point location of a GP practice. DERIVED from the practice postcode via an "
+                 "ONS postcode centroid, so it locates the POSTCODE UNIT, not the surgery "
+                 "door — adequate for a search, not for a site plan.",
+                 description_cy=CY_PENDING),
+    PredicateDef("operational_status", "text", "single", ("building",),
+                 "Whether a practice is currently operational, verbatim from the source's own "
+                 "status vocabulary. A record status, not a statement about whether the "
+                 "premises are open today.",
+                 description_cy=CY_PENDING),
+    PredicateDef("list_size", "int", "single", ("building",),
+                 "Registered patient list size for a practice. A COUNT OF REGISTRATIONS at "
+                 "the stated extract month, not of people resident in the area, and lists "
+                 "overlap between neighbouring practices.",
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -767,7 +824,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
-    + _OPEN_ACCESS + _AREA_BACKFILL
+    + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -789,6 +846,9 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # reachability predicates (_REACHABILITY, 2026-07-26, constitution 0.1.4) = 113, + the
 # 2 open-access predicates (_OPEN_ACCESS, Tier-A A5, 2026-07-27) = 115, + the 4
 # area predicates four published layers were already using unregistered
-# (_AREA_BACKFILL, 2026-07-27) = 119.
+# (_AREA_BACKFILL, 2026-07-27) = 119, + the 7 found by scanning every module
+# rather than only the committed snapshots — 2 UPRN-spine join identifiers,
+# the gazetteer settlement rank, and 4 GP-layer predicates
+# (_SPINE_AND_GP_BACKFILL, 2026-07-27) = 126.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
