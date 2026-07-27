@@ -23,6 +23,11 @@ ENTITY_TYPES: dict[str, str] = {
     "research_question": "A known-unknown the dataset is actively tracking.",
     "source": "A citation. Carries a visibility setting.",
     "person": "A named individual relevant to a building's history.",
+    # 0.1.4 (Llys ratified 25/07/2026): a bounded parcel or development site as a subject in
+    # its own right — what a planning application, allocation or opportunity assessment is
+    # ABOUT. Distinct from `area` (a designated/administrative boundary, which exists
+    # independently of any proposal) and from `building` (a site may hold none, or several).
+    "site": "A bounded parcel or development site considered as a subject in its own right.",
 }
 
 # The set used for fast membership checks and by the validation contract.
@@ -30,5 +35,5 @@ VALID_ENTITY_TYPES: frozenset[str] = frozenset(ENTITY_TYPES)
 
 
 def is_valid_entity_type(entity_type: str) -> bool:
-    """True if entity_type is one of the nine v0.1 controlled types."""
+    """True if entity_type is one of the ten v0.1 controlled types (`site` added 0.1.4)."""
     return entity_type in VALID_ENTITY_TYPES

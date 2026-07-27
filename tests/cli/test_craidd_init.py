@@ -41,11 +41,11 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
         count = conn.execute("SELECT COUNT(*) FROM predicate").fetchone()[0]
     finally:
         conn.close()
-    # 60 v0.1 seed + 4 Egni demand + 34 ratified 2026-07-22 (17 EPC, 15
-    # planning, 2 BGS searches) = 98, + 4 heritage-designation search
-    # predicates (Sail-Sale Tier-A A1, 2026-07-24) = 102. Same count the
-    # schema-layer test pins. The CLI must agree with the registry.
-    assert count == 110
+    # 60 v0.1 seed + 4 Egni demand + 34 ratified 2026-07-22 (17 EPC, 15 planning,
+    # 2 BGS searches) + heritage searches/enrichment + coal + strategic-road = 110,
+    # + 3 reachability predicates (constitution 0.1.4, 2026-07-26) = 113. Same count
+    # the schema-layer test pins. The CLI must agree with the registry.
+    assert count == 113
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
