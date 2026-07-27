@@ -89,7 +89,15 @@ _BUILDING: tuple[PredicateDef, ...] = (
                  "Postal address.", description_cy="cyfeiriad post"),
     PredicateDef("geometry", "geom", "single", ("building",),
                  "Building footprint or point.", description_cy="geometreg yr adeilad - ôl troed yr adeilad"),
-    PredicateDef("uprn", "int", "single", ("building",),
+    # `text`, not `int`: a UPRN is an IDENTIFIER, never a quantity. Nothing adds
+    # or averages one, its 12-digit width is significant, and every other part
+    # of the estate already treats it as a string — place-anchor.schema.json
+    # types it ["string","null"], the external-ref pattern is ^\d{12}$,
+    # gazetteer.py str()s it, and returns.py emits it in value_text. It was
+    # declared `int` here alone, which made every returnable UPRN claim
+    # grammar-invalid the moment the build gate started checking the grammar
+    # (27/07). Sibling identifier `listed_id` was already `text`.
+    PredicateDef("uprn", "text", "single", ("building",),
                  "OS Unique Property Reference Number.", description_cy="Rhif Cyfeirnod Unigryw Eiddo (UPRN) yr OS"),
     PredicateDef("building_type", "text", "single", ("building",),
                  "Building type. v0.1-schema.md §3.5 marks this a controlled "
@@ -697,6 +705,61 @@ _OPEN_ACCESS: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Backfill (2026-07-27) — four AREA predicates that four PUBLISHED national
+# layers have been emitting since July with no registry entry at all.
+#
+# Found by giving the build gate its grammar teeth: validation_gate validated
+# only the JSON shape, never predicate-registry membership, so flood-coverage,
+# elderly-demand, alc-predictive-wales and uprn-spine each shipped claims naming
+# a predicate the grammar did not know. 1,608 committed claims across the four.
+#
+# The names, value types and cardinalities here are READ OFF the published data,
+# not chosen: renaming would break consumers of already-registered layers, and
+# the cardinalities were counted inside a single snapshot (flood_coverage 2 per
+# LA — Flood Zone 2 and 3; population_estimate 2 per area — Aged 65+ and 85+;
+# alc_grade and uprn_count 1 per area). required_qualifiers is empty to match
+# convention: 103 of the existing predicates require none, and `binding` /
+# `verification_method`, though present on all of these, are never required.
+#
+# NOTE for a consumer: flood_coverage and population_estimate carry their
+# DIMENSION in the bilingual label (value_en 'Flood Zone 2' / 'Aged 65+') rather
+# than in a qualifier, so telling the two claims on a subject apart means reading
+# that label. That is how the layers were built and is recorded here rather than
+# silently changed.
+# ---------------------------------------------------------------------------
+_AREA_BACKFILL: tuple[PredicateDef, ...] = (
+    PredicateDef("flood_coverage", "real", "multi", ("area",),
+                 "Share of a local authority's area falling within a named Environment "
+                 "Agency / NRW flood zone, as a fraction 0-1. One claim per zone; the "
+                 "zone is named in value_en / value_cy. An AREA-SHARE of the whole "
+                 "authority, never a site assessment — a low share can still contain "
+                 "highly flood-prone sites, and a specific site must be assessed "
+                 "directly. Note FZ2 by definition contains FZ3, so the two shares "
+                 "overlap and must not be summed.",
+                 description_cy=CY_PENDING),
+    PredicateDef("population_estimate", "int", "multi", ("area",),
+                 "ONS mid-year population estimate for an area, for the age band named "
+                 "in value_en / value_cy. An ABSOLUTE count (market size), NOT a "
+                 "per-capita or age-standardised rate — a populous area scores high "
+                 "simply by being large, so comparing areas on this alone measures size "
+                 "rather than concentration.",
+                 description_cy=CY_PENDING),
+    PredicateDef("alc_grade", "text", "single", ("area",),
+                 "Agricultural Land Classification grade for a mapped area, verbatim from "
+                 "the source ('1', '2', '3a', '3b', '4', '5', 'NA'). PREDICTIVE: Welsh "
+                 "ALC Map 2 applies MAFF 1988 criteria on a 50 m grid — it is not a site "
+                 "survey and not a record of current or permitted land use.",
+                 description_cy=CY_PENDING),
+    PredicateDef("uprn_count", "int", "single", ("area",),
+                 "Number of OS Open UPRNs falling within an area, derived by counting the "
+                 "frozen UPRN spine against that area's boundary. A count of ADDRESSABLE "
+                 "LOCATIONS, not of dwellings or of households — a UPRN can be a garage, "
+                 "a mast or a subdivided flat.",
+                 description_cy=CY_PENDING),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -704,7 +767,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
-    + _OPEN_ACCESS
+    + _OPEN_ACCESS + _AREA_BACKFILL
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -724,6 +787,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # Development-High-Risk-Area search predicate (_COAL_SEARCH, 2026-07-25), + the
 # strategic-road proximity predicate (_ROAD_PROXIMITY, 2026-07-26), + the 3
 # reachability predicates (_REACHABILITY, 2026-07-26, constitution 0.1.4) = 113, + the
-# 2 open-access predicates (_OPEN_ACCESS, Tier-A A5, 2026-07-27) = 115.
+# 2 open-access predicates (_OPEN_ACCESS, Tier-A A5, 2026-07-27) = 115, + the 4
+# area predicates four published layers were already using unregistered
+# (_AREA_BACKFILL, 2026-07-27) = 119.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

@@ -73,12 +73,19 @@ class ValidationGateError(RuntimeError):
 @dataclass(frozen=True)
 class ValidationResult:
     """The uniform answer both gates return. `valid` is the whole verdict;
-    `violations` are human-readable strings (empty iff valid)."""
+    `violations` are human-readable strings (empty iff valid).
+
+    `unchecked` names rules this gate could NOT decide for this document — today
+    only `applies_to`, when the caller could not resolve the subject entity's
+    type. A clean result with a non-empty `unchecked` is honest but weaker than
+    a clean result with an empty one, so builders surface it rather than let it
+    read as full enforcement."""
 
     kind: str
     valid: bool
     violations: list
     constitution_version: Optional[str] = None
+    unchecked: tuple = ()
 
     def to_dict(self) -> dict:
         return {
@@ -86,6 +93,7 @@ class ValidationResult:
             "valid": self.valid,
             "violations": list(self.violations),
             "constitution_version": self.constitution_version,
+            "unchecked": list(self.unchecked),
         }
 
 
@@ -136,6 +144,52 @@ def vendored_pin() -> ConstitutionPin:
     )
 
 
+# --- the grammar layer (shared by BOTH gates) --------------------------------
+#
+# The Tier-1 JSON Schemas describe a claim's SHAPE. They cannot express the
+# grammar: that `predicate` names a registered predicate, that the predicate
+# applies to the subject's entity type, that its required qualifiers are
+# present, that the value sits in the column its value_type demands, that
+# qualifier keys and closed-domain values are in vocabulary. Those rules live in
+# craidd.schema.validation.
+#
+# For the first year of builds this module validated only the schema, so every
+# snapshot ever built could carry an invented predicate or a predicate missing
+# its required qualifier and pass clean — proven 27/07 with a claim naming
+# `this_predicate_does_not_exist_at_all` (gate said valid) and a `build_period`
+# claim with no `date_precision` (gate said valid). The gap was recorded in
+# awen_signals.jsonl on 05/07/2026 and never actioned.
+#
+# It is applied HERE, inside both backends, rather than offered as a wrapper a
+# caller must remember to apply. A guard a runner can forget to ask for is
+# worth nothing — that is the standing lesson from the A4 roads miss, and the
+# reason there is no `GrammarGate(...)` for a builder to omit.
+
+# The rules the grammar layer adds, per kind. Kinds not listed get schema-only
+# validation because the constitution schema is the whole contract for them.
+_GRAMMAR_KINDS = ("claim",)
+
+
+def grammar_violations(
+    kind: str, document: Any, subject_entity_type: Optional[str] = None,
+) -> tuple[list, tuple]:
+    """Grammar checks the JSON Schema cannot express → (violations, unchecked).
+
+    `subject_entity_type` is the entity_type of the claim's subject when the
+    caller knows it. A snapshot builder usually does not: the subject entity of
+    a search-layer claim is a UPRN in the frozen spine, not a record in this
+    record set. In that case applies_to is reported as unchecked rather than
+    quietly passed."""
+    canonical = resolve_kind(kind)
+    if canonical not in _GRAMMAR_KINDS or not isinstance(document, dict):
+        return [], ()
+    from .schema.validation import validate_claim
+
+    violations = validate_claim(document, subject_entity_type=subject_entity_type)
+    unchecked = () if subject_entity_type is not None else ("applies_to",)
+    return violations, unchecked
+
+
 # --- offline gate ------------------------------------------------------------
 
 @lru_cache(maxsize=1)
@@ -167,8 +221,9 @@ class SchemaValidator:
 
     backend = "vendored"
 
-    def __init__(self):
+    def __init__(self, subject_entity_type: Optional[str] = None):
         self._pin = vendored_pin()
+        self.subject_entity_type = subject_entity_type
 
     def pin(self) -> ConstitutionPin:
         return self._pin
@@ -188,9 +243,15 @@ class SchemaValidator:
             f"{'/'.join(str(p) for p in e.absolute_path) or '<root>'}: {e.message}"
             for e in errors
         ]
+        # Grammar on top of shape — see the grammar-layer note above. Run even
+        # when the shape is dirty: one report of everything wrong beats two
+        # rounds of build-fail.
+        grammar, unchecked = grammar_violations(
+            canonical, document, self.subject_entity_type)
+        violations.extend(grammar)
         return ValidationResult(
             canonical, not violations, violations,
-            self._pin.constitution_version,
+            self._pin.constitution_version, unchecked,
         )
 
 
@@ -211,9 +272,11 @@ class PorthValidator:
 
     backend = "porth"
 
-    def __init__(self, url: str = DEFAULT_PORTH_URL, timeout: float = 15.0):
+    def __init__(self, url: str = DEFAULT_PORTH_URL, timeout: float = 15.0,
+                 subject_entity_type: Optional[str] = None):
         self.url = url
         self.timeout = timeout
+        self.subject_entity_type = subject_entity_type
         self._session = None  # requests.Session, lazily opened
         self._sid = None
 
@@ -311,11 +374,18 @@ class PorthValidator:
             else f"{v.get('path', '<root>')}: {v.get('message', v)}"
             for v in raw
         ]
+        # porth validates the constitution SCHEMA; the grammar is craidd's own
+        # layer, so it is applied here too. Both backends must answer the same
+        # question or "same records, either gate" stops being true.
+        grammar, unchecked = grammar_violations(
+            canonical, document, self.subject_entity_type)
+        violations.extend(grammar)
         return ValidationResult(
             out.get("kind", canonical),
-            bool(out.get("valid", False)),
+            bool(out.get("valid", False)) and not grammar,
             violations,
             out.get("constitution_version"),
+            unchecked,
         )
 
     def pin(self) -> ConstitutionPin:
@@ -338,13 +408,14 @@ class PorthValidator:
 
 # --- selector ----------------------------------------------------------------
 
-def default_gate(porth_url: str = DEFAULT_PORTH_URL, prefer_porth: bool = True):
+def default_gate(porth_url: str = DEFAULT_PORTH_URL, prefer_porth: bool = True,
+                 subject_entity_type: Optional[str] = None):
     """Return the gate the build should use: the live porth gate when it is
     reachable, else the offline vendored gate. The real craidd build gets porth;
     a dev Mac / CI run off-tailnet gets the vendored schemas. Both validate the
     same records against the same pinned constitution machine layer."""
     if prefer_porth:
-        candidate = PorthValidator(porth_url)
+        candidate = PorthValidator(porth_url, subject_entity_type=subject_entity_type)
         if candidate.reachable():
             return candidate
-    return SchemaValidator()
+    return SchemaValidator(subject_entity_type)

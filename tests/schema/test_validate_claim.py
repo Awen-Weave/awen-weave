@@ -147,11 +147,14 @@ def test_name_claim_with_valid_name_type_accepted():
 
 
 def test_int_predicate_rejects_text_value():
-    """`uprn` is int-typed; populating value_text instead is a mismatch."""
+    """`build_year` is int-typed; populating value_text instead is a mismatch.
+
+    Was `uprn` until 2026-07-27, when uprn was corrected to `text` — a UPRN is an
+    identifier, not a quantity. `build_year` is genuinely numeric."""
     claim = {
         "subject_id": "TDS-DOL-B-00001",
-        "predicate": "uprn",
-        "value_text": "not-a-uprn",
+        "predicate": "build_year",
+        "value_text": "eighteen eighty-five",
         "source_id": "TDS-DOL-SRC-LOCAL",
         "recorded_by": "huw@arloesidolgellau.com",
         "confidence": "high",
