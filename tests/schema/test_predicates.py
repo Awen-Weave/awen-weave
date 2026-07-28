@@ -33,8 +33,12 @@ def test_seed_predicate_count_matches_v01_schema():
     bringing the total to 60. The 4 Egni demand predicates (post-bootstrap,
     2026-07-20) bring it to 64. The 34 ratified 2026-07-22 additions (17 EPC,
     15 planning, 2 BGS searches) bring it to 98, and the 4 heritage-designation
-    search predicates (Sail-Sale Tier-A A1, 2026-07-24) bring it to 102."""
-    assert len(SEED_PREDICATES) == 115
+    search predicates (Sail-Sale Tier-A A1, 2026-07-24) bring it to 102.
+    Coal + strategic-road + 3 reachability + 2 open-access take it to 115, and
+    the 4 area predicates backfilled on 2026-07-27 — flood_coverage,
+    population_estimate, alc_grade, uprn_count, all four already in use by
+    published layers but never registered — bring it to 119."""
+    assert len(SEED_PREDICATES) == 126
 
 
 def test_predicate_registry_matches_seed_set():
@@ -75,7 +79,9 @@ def test_well_known_predicates_resolve():
     expected = {
         "address": ("bilingual", "single", "building"),
         "geometry": ("geom", "single", "building"),
-        "uprn": ("int", "single", "building"),
+        # `text`, not `int`: a UPRN is an identifier, not a quantity — see the
+        # note in predicates.py. It was the one place in the estate typing it int.
+        "uprn": ("text", "single", "building"),
         "name_cy": ("text", "multi", "building"),
         "name_en": ("text", "multi", "building"),
         "build_year": ("int", "single", "building"),

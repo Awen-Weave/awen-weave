@@ -21,11 +21,22 @@ def test_text_value_extracted_from_value_text():
 
 
 def test_int_value_extracted_from_value_int():
-    pred = PREDICATE_REGISTRY["uprn"]  # int/single
-    claim = {"value_int": 200003184697}
+    pred = PREDICATE_REGISTRY["build_year"]  # int/single
+    claim = {"value_int": 1885}
     value, errors = value_from_claim_columns(claim, pred)
     assert errors == []
-    assert value == 200003184697
+    assert value == 1885
+
+
+def test_uprn_is_text_and_reads_from_value_text():
+    """A UPRN is an IDENTIFIER — 12 significant digits, never arithmetic. It was
+    declared `int` here alone while the place-anchor schema, the ^\\d{12}$ pattern,
+    gazetteer.py and returns.py all treated it as a string; the returns snapshot
+    was invalid the moment the build gate started checking value placement."""
+    pred = PREDICATE_REGISTRY["uprn"]  # text/single
+    value, errors = value_from_claim_columns({"value_text": "200003184697"}, pred)
+    assert errors == []
+    assert value == "200003184697"
 
 
 def test_real_value_extracted_from_value_real():
@@ -67,10 +78,10 @@ def test_bilingual_value_empty_returns_error():
 
 
 def test_int_predicate_with_text_column_flags_stray():
-    """A `uprn` claim with value_text populated (and no value_int) is a
+    """A `build_year` claim with value_text populated (and no value_int) is a
     column-mismatch the helper catches."""
-    pred = PREDICATE_REGISTRY["uprn"]  # int
-    claim = {"value_text": "not-a-uprn"}
+    pred = PREDICATE_REGISTRY["build_year"]  # int
+    claim = {"value_text": "eighteen eighty-five"}
     _, errors = value_from_claim_columns(claim, pred)
     assert errors
     assert any("value_text" in e for e in errors)

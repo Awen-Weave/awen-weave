@@ -297,7 +297,7 @@ def validate_qualifiers(
 def validate_claim(
     claim: Mapping[str, Any],
     *,
-    subject_entity_type: str,
+    subject_entity_type: str | None,
     predicate_registry: Mapping[str, PredicateDef] = PREDICATE_REGISTRY,
     deprecated_predicates: Collection[str] = (),
     existing_active_predicates: Collection[str] = (),
@@ -308,7 +308,15 @@ def validate_claim(
     Pure function. The caller (the Write API) supplies everything needed:
 
       subject_entity_type         entity_type of the claim's subject, so
-                                  the predicate's applies_to can be checked
+                                  the predicate's applies_to can be checked.
+                                  `None` means the caller genuinely cannot
+                                  resolve it — a build-time snapshot gate sees
+                                  claims whose subject entity lives in another
+                                  layer's store — and applies_to is then the
+                                  ONE check skipped. Passing None is explicit
+                                  precisely so it cannot happen by accident;
+                                  the gate reports the skip (see
+                                  validation_gate.ValidationResult.unchecked)
       predicate_registry          name -> PredicateDef. Defaults to the
                                   seed registry; the live Write API passes
                                   the registry loaded from the DB
@@ -362,7 +370,9 @@ def validate_claim(
         )
 
     # --- applies_to ------------------------------------------------------
-    if subject_entity_type not in pred.applies_to_types:
+    # Skipped only when the caller passed None, i.e. it cannot resolve the
+    # subject's entity type at all. Every other check below still runs.
+    if subject_entity_type is not None and subject_entity_type not in pred.applies_to_types:
         errors.append(
             f"predicate '{predicate_name}' does not apply to entity type "
             f"'{subject_entity_type}' (applies to: "
