@@ -44,6 +44,24 @@ from craidd.snapshot import SnapshotRecords
 # (category 3) is intentionally absent from v1 — see module docstring.
 RETURNABLE_PREDICATES: tuple[str, ...] = ("uprn", "toid", "listed_id")
 
+# geometry is OWED AND DEFERRED, not excluded — recorded as data, not prose, so a technical
+# deferral cannot harden into a silent exclusion (which is how default-return inverts, ruled
+# 02/08). The value is the condition that must be met before it joins RETURNABLE_PREDICATES.
+DEFERRED_PREDICATES: dict[str, str] = {
+    "geometry": "needs value_geom → WKT serialisation with an explicit CRS stamp "
+                "(EPSG:27700 for the Town Dataset); place-anchors follow. Flip into "
+                "RETURNABLE_PREDICATES once the serialisation + CRS stamp are agreed.",
+}
+
+# The caveat every federated return claim carries so the consumer sees WHAT it is reading: an
+# open-identifier linkage asserted by another instance and read reference-don't-copy, not
+# re-verified here. Ruled: a returned claim carries its binding visibly, and a federated one
+# carries a semantics_caveat.
+RETURN_SEMANTICS_CAVEAT = (
+    "federated open-identifier linkage: as asserted by the source instance at its own vintage, "
+    "read reference-don't-copy (ADJ-RETURN-001); not re-verified by the consumer"
+)
+
 
 def _value_of(row: dict) -> Optional[str]:
     """The claim's value as text, from whichever value_* column is populated.
@@ -82,6 +100,11 @@ def federated_return_claim(
     that call) if the source lacks identity or run-UTC.
     """
     qualifiers = federation_qualifiers(FederatedResult(source=source))
+    # binding is already visible (=federated) via federation_qualifiers; a federated claim also
+    # carries a semantics_caveat so the consumer sees it is reading an unverified federated
+    # linkage, not a locally-established fact (ruling condition, 02/08). Never overwrite a caveat
+    # the source already set.
+    qualifiers.setdefault("semantics_caveat", RETURN_SEMANTICS_CAVEAT)
     return {
         "subject_id": subject_id,
         "predicate": predicate,

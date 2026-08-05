@@ -122,3 +122,75 @@ def test_empty_when_no_returnable_predicates():
         "('X','name_en','n',NULL,NULL,'n','S','high')"
     )
     assert read_returnable_claims(con) == []
+
+
+# --------------------------------------------------------------------------- #
+# PR #13 ruling conditions (02/08) — the merge alone does not establish these
+# --------------------------------------------------------------------------- #
+from craidd.returns import (  # noqa: E402
+    DEFERRED_PREDICATES,
+    RETURN_SEMANTICS_CAVEAT,
+    federated_return_claim,
+)
+
+
+def test_allowlist_fails_closed_on_an_unknown_predicate():
+    """Condition 1. The slice is a positive allowlist — an identifier nobody has classified is
+    EXCLUDED by default, not leaked. Red against a hypothetical default-return (a denylist)."""
+    con = duckdb.connect(":memory:")
+    con.execute(
+        "CREATE TABLE current_claim ("
+        " subject_id TEXT, predicate TEXT, value_text TEXT, value_int BIGINT,"
+        " value_cy TEXT, value_en TEXT, source_id TEXT, confidence TEXT)"
+    )
+    con.executemany(
+        "INSERT INTO current_claim VALUES (?,?,?,?,?,?,?,?)",
+        [
+            ("b1", "uprn", None, 100, None, None, "s1", "high"),          # in allowlist
+            ("b1", "some_new_identifier", "X", None, None, None, "s1", "high"),  # unclassified
+            ("b1", "resident_name", "Jane", None, None, "Jane", "s2", "high"),   # content
+        ],
+    )
+    preds = {r["predicate"] for r in read_returnable_claims(con)}
+    assert preds == {"uprn"}, "only the allowlisted predicate returns; the unknown one is excluded"
+    assert "some_new_identifier" not in preds, "an unclassified identifier must fail CLOSED"
+
+
+def test_geometry_is_owed_and_deferred_not_silently_excluded():
+    """Condition 2. Geometry is recorded as a deferral WITH its condition, as data — so it
+    cannot decay into a silent exclusion. It must not be returnable yet, and it must be
+    named as owed with the WKT/CRS condition."""
+    assert "geometry" not in RETURNABLE_PREDICATES          # not returned yet
+    assert "geometry" in DEFERRED_PREDICATES                 # but explicitly owed, not dropped
+    condition = DEFERRED_PREDICATES["geometry"].lower()
+    assert "wkt" in condition and "crs" in condition, "the deferral must name its WKT/CRS condition"
+
+
+def test_every_federated_return_claim_carries_binding_and_a_semantics_caveat():
+    """Condition 3. A returned claim shows its binding visibly, and a federated one carries a
+    semantics_caveat so the consumer sees it is reading an unverified federated linkage."""
+    c = federated_return_claim(
+        subject_id="b1", predicate="uprn", value="100100123",
+        source_id="s1", recorded_by="huw@arloesidolgellau.cymru", source=_source(),
+    )
+    q = c["qualifiers"]
+    assert q["binding"] == "federated"                       # binding visible
+    assert q["federated_from"] == "dolgellau-town-dataset"
+    assert q["semantics_caveat"] == RETURN_SEMANTICS_CAVEAT   # caveat present
+    # and it still validates against the live grammar
+    gate = SchemaValidator()
+    assert gate.validate("claim", c).valid
+
+
+def test_the_caveat_survives_the_full_build_and_validates(tmp_path):
+    con = _con_with_claims()
+    src = _source()
+    rows = read_returnable_claims(con)
+    stamp = gazetteer_stamp(source=src, consumer_instance="craidd:core",
+                            counts={"claims": len(rows)}, federated_utc=BUILT_UTC)
+    recs = build_returns(rows, source=src, consumer_instance="craidd:core",
+                         recorded_by="huw@arloesidolgellau.cymru", stamp=stamp)
+    gate = SchemaValidator()
+    for c in recs.claims:
+        assert c["qualifiers"]["semantics_caveat"] == RETURN_SEMANTICS_CAVEAT
+        assert gate.validate("claim", c).valid
