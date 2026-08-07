@@ -4,7 +4,7 @@
  "title": "Entity (endid)",
  "x-awen-rule-id": "SCH-ENTITY-001",
  "x-awen-status": "reconciled 2026-07-04 against awen-weave 0.2.0 (SCHEMA_VERSION v0.1)",
- "description": "An endid is a thing the substrate knows about — the anchor for claims; it does not itself assert facts. This schema mirrors the entity-table contract the live awen-weave validator enforces (craidd.schema.entity_types.VALID_ENTITY_TYPES + storage/ddl.py entity CHECK, SCHEMA_VERSION v0.1). The nine v0.1 entity types are closed. `place_anchor` and `labels` are constitution/interface-layer optional extensions (interface-contract §2/§4), NOT columns in the v0.1 code entity table — they are omitted by live entities and do not affect round-trip; see compatibility.md.",
+ "description": "An endid is a thing the substrate knows about — the anchor for claims; it does not itself assert facts. This schema mirrors the entity-table contract the live awen-weave validator enforces (craidd.schema.entity_types.VALID_ENTITY_TYPES + storage/ddl.py entity CHECK, SCHEMA_VERSION v0.1). The eleven v0.1 entity types are closed. `place_anchor` and `labels` are constitution/interface-layer optional extensions (interface-contract §2/§4), NOT columns in the v0.1 code entity table — they are omitted by live entities and do not affect round-trip; see compatibility.md.",
  "type": "object",
  "required": [
   "entity_id",
@@ -29,9 +29,10 @@
     "research_question",
     "source",
     "person",
-    "site"
+    "site",
+    "station"
    ],
-   "description": "One of the nine v0.1 controlled entity types (entity_types.py VALID_ENTITY_TYPES / DDL CHECK). street & area have no dedicated seed predicates yet; person is declared but not pre-populated. `site` (added 0.1.4, ratified by the Llys 25/07/2026): a bounded parcel or development site considered as a subject in its own right — the thing a planning application, an allocation or an opportunity assessment is ABOUT. Distinct from `area` (an administrative or designated boundary) and from `building` (a structure): a site may hold no building and may span several."
+   "description": "One of the eleven v0.1 controlled entity types (entity_types.py VALID_ENTITY_TYPES / DDL CHECK). street & area have no dedicated seed predicates yet; person is declared but not pre-populated. `site` (added 0.1.4, ratified by the Llys 25/07/2026): a bounded parcel or development site considered as a subject in its own right — the thing a planning application, an allocation or an opportunity assessment is ABOUT. Distinct from `area` (an administrative or designated boundary) and from `building` (a structure): a site may hold no building and may span several. `station` (added 0.1.5, ratified by the Llys 06/08/2026): an environmental monitoring facility — a fixed point (gauge/sensor/station) that observations are taken AT and attach to — anchored to INSPIRE `EnvironmentalMonitoringFacility`. Distinct from `site` (a parcel/development subject) and `building` (a structure): a station is the measurement facility itself, the subject a hydrology or air-quality observation is about."
   },
   "uprn": {
    "type": [

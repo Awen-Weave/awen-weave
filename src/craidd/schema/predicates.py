@@ -339,6 +339,42 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Hydrology predicates (Axis A, constitution 0.1.5) — observations on the new
+# `station` entity kind (SCH-ENTITY-001, INSPIRE EnvironmentalMonitoringFacility).
+# Ratified Llys 06/08/2026 [sig:c659a12f]. ADOPT-AND-CITE the recognised standards
+# rather than invent: value carries a SOSA/O&M observation result; each predicate maps
+# to an EA `op:` observed-property (namespace http://environment.data.gov.uk/reference/def/op/),
+# a GCOS Essential Climate Variable, and a QUDT unit; the wire form is WaterML 2.0. Claims
+# are `binding=measured` (set at registration in the catalogue module, not here); the spine
+# is the gazetteer GSS via the station's containing authority (gp-locations precedent).
+# description_cy=CY_PENDING — the four Welsh forms are on the vocabulary-harvest worklist,
+# not yet Catrin-attested (identifiers stay English regardless).
+# ---------------------------------------------------------------------------
+_HYDROLOGY: tuple[PredicateDef, ...] = (
+    PredicateDef("water_flow", "real", "single", ("station",),
+                 "River discharge (volumetric flow) at a monitoring station. EA op: waterFlow; "
+                 "GCOS ECV River Discharge; QUDT unit CubicMeterPerSecond (m3/s); SOSA/O&M "
+                 "observation result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 description_cy=CY_PENDING),
+    PredicateDef("water_level", "real", "single", ("station",),
+                 "Water / river stage (level) at a monitoring station. EA op: waterLevel; "
+                 "QUDT unit Meter (m, or mAOD where datum-referenced); SOSA/O&M observation "
+                 "result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 description_cy=CY_PENDING),
+    PredicateDef("rainfall", "real", "single", ("station",),
+                 "Precipitation depth at a monitoring station. EA op: rainfall; GCOS ECV "
+                 "Precipitation; QUDT unit Millimetre (mm); SOSA/O&M observation result; "
+                 "WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 description_cy=CY_PENDING),
+    PredicateDef("groundwater_level", "real", "single", ("station",),
+                 "Groundwater level at a monitoring station. EA op: groundwaterLevel; GCOS ECV "
+                 "Groundwater; QUDT unit Meter (mAOD); SOSA/O&M observation result; WaterML 2.0. "
+                 "Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 description_cy=CY_PENDING),
+)
+
+
+# ---------------------------------------------------------------------------
 # EPC domestic predicates (IDR-006 EPC national layer) — per-certificate on the
 # existing 'building' kind + one per-authority 'area' aggregate. Additive, no
 # constitution change (EPC predicate-registration decision note, ratified
@@ -822,7 +858,7 @@ _SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
 # groups (2026-07-22) follow the v0.1 seed groups.
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
-    + _ENERGY_DEMAND + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
+    + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL
 )
@@ -849,6 +885,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # (_AREA_BACKFILL, 2026-07-27) = 119, + the 7 found by scanning every module
 # rather than only the committed snapshots — 2 UPRN-spine join identifiers,
 # the gazetteer settlement rank, and 4 GP-layer predicates
-# (_SPINE_AND_GP_BACKFILL, 2026-07-27) = 126.
+# (_SPINE_AND_GP_BACKFILL, 2026-07-27) = 126, + the 4 EA Hydrology predicates on the
+# new `station` kind (_HYDROLOGY, constitution 0.1.5, 2026-08-07, sig:c659a12f) = 130.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")

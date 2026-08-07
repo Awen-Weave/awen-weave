@@ -1,5 +1,5 @@
 """
-Controlled vocabulary for entity.entity_type — the nine v0.1 entity types.
+Controlled vocabulary for entity.entity_type — the eleven v0.1 entity types.
 
 Source of truth: design/v0.1-schema.md §3.4. The DDL CHECK constraint in
 src/craidd/storage/ mirrors VALID_ENTITY_TYPES exactly — keep the two in
@@ -28,6 +28,13 @@ ENTITY_TYPES: dict[str, str] = {
     # ABOUT. Distinct from `area` (a designated/administrative boundary, which exists
     # independently of any proposal) and from `building` (a site may hold none, or several).
     "site": "A bounded parcel or development site considered as a subject in its own right.",
+    # 0.1.5 (Llys ratified 06/08/2026, sig:c659a12f): an environmental monitoring facility
+    # (gauge/sensor/station) — the fixed point observations are taken AT and attach to;
+    # anchored to INSPIRE EnvironmentalMonitoringFacility. Distinct from `site` (a parcel/
+    # development subject) and `building` (a structure): a station is the measurement facility
+    # itself, the subject a hydrology or air-quality observation is about. Anchors the 4 EA
+    # Hydrology predicates ratified alongside.
+    "station": "An environmental monitoring facility — a fixed point (gauge/sensor/station) that observations attach to.",
 }
 
 # The set used for fast membership checks and by the validation contract.
@@ -35,5 +42,5 @@ VALID_ENTITY_TYPES: frozenset[str] = frozenset(ENTITY_TYPES)
 
 
 def is_valid_entity_type(entity_type: str) -> bool:
-    """True if entity_type is one of the ten v0.1 controlled types (`site` added 0.1.4)."""
+    """True if entity_type is one of the eleven v0.1 controlled types (`site` 0.1.4, `station` 0.1.5)."""
     return entity_type in VALID_ENTITY_TYPES
