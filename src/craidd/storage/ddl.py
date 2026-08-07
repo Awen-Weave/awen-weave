@@ -30,7 +30,8 @@ CREATE TABLE entity (
   entity_id     VARCHAR PRIMARY KEY,
   entity_type   VARCHAR NOT NULL CHECK (entity_type IN
                 ('building','street','area','town','tenancy','event',
-                 'research_question','source','person','site','station')),
+                 'research_question','source','person','site','station',
+                 'coastal_cell')),
   uprn          BIGINT,
   toid          VARCHAR,
   visibility    VARCHAR CHECK (visibility IN ('public','restricted','private')

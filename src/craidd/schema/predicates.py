@@ -853,6 +853,106 @@ _SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Climate sweep — the v0.1.6 batched increment (Llys 07/08/2026 [sig:7508450d]).
+# Adopt-and-cite standards; units + statistic ride the predicate NAME (the estate
+# convention). Projection predicates require the G0 qualifier keys (scenario/horizon/
+# baseline — constitution 0.1.6); the same predicate serves observation when it carries
+# `uncertainty_basis=observed` and omits the projection axes. description_cy=CY_PENDING
+# (vocabulary-harvest). All estate-originated national/shared layers (federate-don't-copy).
+# ---------------------------------------------------------------------------
+_CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
+    PredicateDef("water_quality_status", "text", "single", ("coastal_cell", "station"),
+                 "WFD ecological status class of a water body/coastal cell. Adopt-and-cite the "
+                 "Water Framework Directive status classes; source EA/NRW Water Quality Archive "
+                 "(WIMS). A dedicated `water_body` spine is deferred (fork a) — rides coastal_cell/"
+                 "station for now.",
+                 required_qualifiers=(),
+                 constraint_json='{"enum": ["High", "Good", "Moderate", "Poor", "Bad"]}',
+                 description_cy=CY_PENDING),
+    PredicateDef("air_temperature_mean_c", "real", "multi", ("area", "station"),
+                 "Mean air temperature, degrees Celsius. GCOS ECV Surface Air Temperature; CF "
+                 "standard_name air_temperature; QUDT unit DegreeCelsius; SOSA/O&M observation "
+                 "result. Observed OR projected: a projection carries scenario/horizon/baseline + "
+                 "uncertainty_basis; an observation carries uncertainty_basis=observed.",
+                 description_cy=CY_PENDING),
+    PredicateDef("sea_surface_temperature_c", "real", "multi", ("coastal_cell", "station"),
+                 "Sea-surface temperature, degrees Celsius. GCOS ECV SST; CF standard_name "
+                 "sea_water_temperature; QUDT DegreeCelsius; SOSA/O&M. Observed or projected "
+                 "(as air_temperature_mean_c).",
+                 description_cy=CY_PENDING),
+    PredicateDef("sea_level_rise_m", "real", "multi", ("coastal_cell",),
+                 "Projected sea-level rise, metres, relative to the baseline period. GCOS ECV Sea "
+                 "Level; UKCP18 marine / PSMSL; QUDT unit Meter; SOSA/O&M. PROJECTION — requires "
+                 "scenario (IPCC RCP/SSP) + horizon + baseline (constitution 0.1.6 G0).",
+                 required_qualifiers=("scenario", "horizon", "baseline"),
+                 description_cy=CY_PENDING),
+    PredicateDef("coastal_erosion_projection_m", "real", "multi", ("coastal_cell",),
+                 "Projected shoreline retreat, metres, over the horizon relative to baseline. "
+                 "Adopt-and-cite NCERM (National Coastal Erosion Risk Mapping, NRW / Cell Eleven). "
+                 "PROJECTION — requires scenario + horizon + baseline (constitution 0.1.6 G0).",
+                 required_qualifiers=("scenario", "horizon", "baseline"),
+                 description_cy=CY_PENDING),
+    PredicateDef("peatland_carbon_tco2", "real", "single", ("area",),
+                 "Estimated peatland carbon stock, tonnes CO2e. Adopt-and-cite the IUCN UK Peatland "
+                 "Programme / national peatland carbon mapping; SOSA/O&M estimate. Carry "
+                 "uncertainty_basis; confidence_interval where the source states one.",
+                 description_cy=CY_PENDING),
+    PredicateDef("shoreline_management_policy", "text", "multi", ("coastal_cell",),
+                 "Defra Shoreline Management Plan (SMP2) policy for a coastal cell, per epoch. "
+                 "Multi-cardinality: one per epoch, distinguished by the `horizon` qualifier "
+                 "(0-20/20-50/50-100 yr). Adopt-and-cite the four Defra SMP classes.",
+                 required_qualifiers=("horizon",),
+                 constraint_json='{"enum": ["hold-the-line", "managed-realignment", '
+                                 '"no-active-intervention", "advance-the-line"]}',
+                 description_cy=CY_PENDING),
+    PredicateDef("properties_at_flood_risk_count", "int", "multi", ("area",),
+                 "Count of properties at flood risk in an area. Adopt-and-cite EA NaFRA. RESOLVES "
+                 "the `flood_coverage` false-friend (that is Flood-Zone AREA-SHARE, not a property "
+                 "count — see FALSE_FRIENDS). Multi: distinguish source/vintage in the citation "
+                 "(carries the contested 245k/273k NaFRA pair, NWC-CONTEST-001).",
+                 description_cy=CY_PENDING),
+    PredicateDef("deprivation_rank", "int", "single", ("area",),
+                 "Multiple-deprivation rank of an area (1 = most deprived). Adopt-and-cite WIMD "
+                 "(Wales) / IMD (England); vintage in the citation. VERIFY-AT-REGISTRATION "
+                 "(coordinator condition, Llys 07/08): WIMD 2019 keys on 2011 LSOAs — reconcile to "
+                 "LSOA21 via the ONS 2011->2021 lookup, or make the join vintage-correct, before "
+                 "loading data; registering LSOA21 against 2011-keyed data is a nominal-but-wrong "
+                 "join where boundaries changed.",
+                 description_cy=CY_PENDING),
+)
+
+
+# ---------------------------------------------------------------------------
+# False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
+# SOUNDS like it means something it does not — so a consumer can silently reuse the
+# wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
+# below. The naming analogue of the semantics_caveat rule.
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class FalseFriend:
+    name: str            # the predicate that is easy to misread
+    means: str           # what it actually asserts
+    not_means: str       # the plausible-but-wrong reading to avoid
+    use_instead: str     # the predicate to use for the wrong reading (or "-" if none yet)
+
+
+FALSE_FRIENDS: tuple[FalseFriend, ...] = (
+    FalseFriend(
+        "flood_coverage",
+        "the Flood-Zone AREA-SHARE of a place (what fraction of the area is in a flood zone)",
+        "a count of properties at flood risk",
+        "properties_at_flood_risk_count",
+    ),
+    FalseFriend(
+        "condition_discharge_status",
+        "a PLANNING condition's discharge state (whether a planning condition has been discharged)",
+        "anything hydrological — a watercourse discharge / flow",
+        "water_flow",
+    ),
+)
+
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -860,7 +960,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
-    + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL
+    + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -886,6 +986,17 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # rather than only the committed snapshots — 2 UPRN-spine join identifiers,
 # the gazetteer settlement rank, and 4 GP-layer predicates
 # (_SPINE_AND_GP_BACKFILL, 2026-07-27) = 126, + the 4 EA Hydrology predicates on the
-# new `station` kind (_HYDROLOGY, constitution 0.1.5, 2026-08-07, sig:c659a12f) = 130.
+# new `station` kind (_HYDROLOGY, constitution 0.1.5, 2026-08-07, sig:c659a12f) = 130, + the 9
+# climate-sweep predicates (_CLIMATE_SWEEP, constitution 0.1.6, 2026-08-07, sig:7508450d) = 139.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
+
+# False-friend integrity: every register entry must name a REAL registered predicate,
+# and its `use_instead` must be real (or "-"). A dangling entry would misdirect a consumer.
+for _ff in FALSE_FRIENDS:
+    if _ff.name not in PREDICATE_REGISTRY:
+        raise RuntimeError(f"FALSE_FRIENDS names unregistered predicate {_ff.name!r}")
+    if _ff.use_instead != "-" and _ff.use_instead not in PREDICATE_REGISTRY:
+        raise RuntimeError(
+            f"FALSE_FRIENDS[{_ff.name!r}].use_instead {_ff.use_instead!r} is not registered"
+        )

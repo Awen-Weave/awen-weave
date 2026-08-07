@@ -51,7 +51,7 @@ from __future__ import annotations
 
 # The qualifier keys that exist at all in v0.1.
 # 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 + 1 added by
-# constitution 0.1.3 = 15 total.
+# constitution 0.1.3 + 1 (travel_mode) 0.1.4 + 5 projection keys 0.1.6 = 21 total.
 QUALIFIER_KEYS: frozenset[str] = frozenset(
     {
         # Original v0.1 vocabulary.
@@ -76,7 +76,25 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         "semantics_caveat",     # open-form: a stated limit on the value's meaning.
         # Constitution 0.1.4 — reachability. CLOSED domain (TRAVEL_MODES).
         "travel_mode",
+        # Constitution 0.1.6 — climate PROJECTIONS (NWC-FEEDBACK-001). 4 open-form +
+        # uncertainty_basis CLOSED. A projected value is meaningless without scenario/
+        # horizon/baseline; claim `confidence` is editorial, so uncertainty is stated
+        # statistically here. Cross-rule (validation.py): scenario => horizon + baseline.
+        "scenario",             # open-form: IPCC RCP/SSP pathway, verbatim.
+        "horizon",              # open-form: ISO-8601 period the projection is FOR.
+        "baseline",             # open-form: ISO-8601 reference period measured AGAINST.
+        "confidence_interval",  # open-form: statistical spread (distinct from editorial confidence).
+        "uncertainty_basis",    # CLOSED domain (UNCERTAINTY_BASES).
     }
+)
+
+# --- uncertainty_basis: CLOSED domain (constitution 0.1.6, SCH-CLAIM-001) ---
+# How a projected/estimated value's uncertainty was established. Anchor: OGC UncertML /
+# statistical convention. `observed` marks a measured (non-projected) reading — so
+# scenario/horizon/baseline are then legitimately absent; the same key separates observation
+# from projection without a second predicate (fork (c), Llys 07/08/2026).
+UNCERTAINTY_BASES: frozenset[str] = frozenset(
+    {"ensemble", "single-model", "expert-judgement", "observed"}
 )
 
 # --- travel_mode: CLOSED domain (constitution 0.1.4, SCH-CLAIM-001) ---
@@ -166,6 +184,7 @@ CLOSED_QUALIFIER_DOMAINS: dict[str, frozenset[str]] = {
     "geometry_basis": GEOMETRY_BASES,
     "binding": BINDINGS,
     "travel_mode": TRAVEL_MODES,
+    "uncertainty_basis": UNCERTAINTY_BASES,
 }
 
 # Open domains: the listed values are recognised, but a value outside the

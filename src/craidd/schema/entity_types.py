@@ -1,5 +1,5 @@
 """
-Controlled vocabulary for entity.entity_type — the eleven v0.1 entity types.
+Controlled vocabulary for entity.entity_type — the twelve v0.1 entity types.
 
 Source of truth: design/v0.1-schema.md §3.4. The DDL CHECK constraint in
 src/craidd/storage/ mirrors VALID_ENTITY_TYPES exactly — keep the two in
@@ -35,6 +35,12 @@ ENTITY_TYPES: dict[str, str] = {
     # itself, the subject a hydrology or air-quality observation is about. Anchors the 4 EA
     # Hydrology predicates ratified alongside.
     "station": "An environmental monitoring facility — a fixed point (gauge/sensor/station) that observations attach to.",
+    # 0.1.6 (Llys ratified 07/08/2026, sig:7508450d): a coastal/marine management unit — a Defra
+    # SMP sediment cell or policy unit — as a subject in its own right; the stretch of coast a
+    # shoreline policy, coastal-erosion projection or sea-level figure is ABOUT. The marine/coastal
+    # join spine (SPINES.md), alongside the UPRN and gazetteer-GSS spines. Distinct from `area` (a
+    # land boundary) and `station` (a fixed monitoring point). Anchors coastal indicators.
+    "coastal_cell": "A coastal/marine management unit (Defra SMP sediment cell) — the stretch of coast a shoreline policy, erosion projection or sea-level figure is about.",
 }
 
 # The set used for fast membership checks and by the validation contract.
@@ -42,5 +48,5 @@ VALID_ENTITY_TYPES: frozenset[str] = frozenset(ENTITY_TYPES)
 
 
 def is_valid_entity_type(entity_type: str) -> bool:
-    """True if entity_type is one of the eleven v0.1 controlled types (`site` 0.1.4, `station` 0.1.5)."""
+    """True if entity_type is one of the twelve v0.1 controlled types (`site` 0.1.4, `station` 0.1.5, `coastal_cell` 0.1.6)."""
     return entity_type in VALID_ENTITY_TYPES

@@ -46,7 +46,7 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # + 3 reachability predicates (constitution 0.1.4, 2026-07-26) = 113,
     # + 2 open-access (A5) = 115, + 4 backfilled area predicates (2026-07-27) = 119.
     # Same count the schema-layer test pins. The CLI must agree with the registry.
-    assert count == 130
+    assert count == 139
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

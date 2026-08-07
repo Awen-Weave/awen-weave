@@ -151,7 +151,7 @@
  "$defs": {
   "qualifiers": {
    "type": "object",
-   "description": "The 16 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Two cross-qualifier rules are enforced below.",
+   "description": "The 21 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Three cross-qualifier rules are enforced below. The 5 projection keys (scenario/horizon/baseline/confidence_interval/uncertainty_basis) were added 0.1.6 (NWC-FEEDBACK-001) so a climate projection can render scenario, horizon, baseline and a statistical (not editorial) uncertainty.",
    "additionalProperties": false,
    "properties": {
     "dialect": {
@@ -270,11 +270,45 @@
       "bicycle"
      ],
      "description": "CLOSED domain. The travel profile a routing-derived claim was computed under. Required on reachability predicates (travel_time_to_nearest, network_distance_to_nearest, reachable_area): a duration or distance is meaningless without the mode it was computed for, and carrying mode as a qualifier rather than in the predicate name keeps one predicate per concept instead of one per concept-times-mode. `transit` is deliberately absent until GTFS feeds exist — an unavailable mode must be rejected, never silently served as driving."
+    },
+    "scenario": {
+     "type": "string",
+     "minLength": 1,
+     "description": "OPEN-form (0.1.6). The emissions/socioeconomic pathway a projection was computed under, verbatim from its source. Standard anchor: IPCC RCP / SSP vocabulary (e.g. 'RCP8.5', 'SSP2-4.5'). A projected value is meaningless without it; requires horizon + baseline (cross-rule below). Absent on an observation (see uncertainty_basis=observed)."
+    },
+    "horizon": {
+     "type": "string",
+     "minLength": 1,
+     "description": "OPEN-form (0.1.6). The future period a projection is FOR, as an ISO-8601 period (e.g. '2070/2099'). Paired with scenario + baseline."
+    },
+    "baseline": {
+     "type": "string",
+     "minLength": 1,
+     "description": "OPEN-form (0.1.6). The reference period a projected change is measured AGAINST, as an ISO-8601 period (e.g. '1981/2010'). Paired with scenario + horizon."
+    },
+    "confidence_interval": {
+     "type": "string",
+     "minLength": 1,
+     "description": "OPEN-form (0.1.6). The statistical spread of a projected/estimated value, verbatim (e.g. '10th-90th percentile', '±0.3 m'). Distinct from the claim's editorial `confidence` (high/medium/low) — this is the statistical range NWC-FEEDBACK-001 requires."
+    },
+    "uncertainty_basis": {
+     "type": "string",
+     "enum": [
+      "ensemble",
+      "single-model",
+      "expert-judgement",
+      "observed"
+     ],
+     "description": "CLOSED domain (0.1.6). How the value's uncertainty was established. Standard anchor: OGC UncertML / statistical convention. `observed` marks a measured (non-projected) reading — so scenario/horizon/baseline are then legitimately absent; the same key cleanly separates observation from projection without a second predicate (fork (c), Llys 07/08)."
     }
    },
    "dependentRequired": {
     "co_signed_by": [
      "field_session_id"
+    ],
+    "scenario": [
+     "horizon",
+     "baseline"
     ]
    },
    "allOf": [

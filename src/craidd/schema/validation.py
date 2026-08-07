@@ -255,6 +255,13 @@ def validate_qualifiers(
             "co_signed_by",
             "federated_from",
             "semantics_caveat",
+            # Constitution 0.1.6 — projection keys (open-form; ISO-8601 periods for
+            # horizon/baseline are not schema-checked beyond non-empty, per the
+            # source-verify discipline). uncertainty_basis is CLOSED (handled above).
+            "scenario",
+            "horizon",
+            "baseline",
+            "confidence_interval",
         ):
             if not isinstance(value, str) or _is_empty(value):
                 errors.append(
@@ -271,6 +278,20 @@ def validate_qualifiers(
             "same qualifier set — co-sign requires a named session "
             "(design/lleolydd.md §12.A)"
         )
+
+    # Cross-qualifier rule (constitution 0.1.6): a projection declares a scenario,
+    # and a scenario is meaningless without the period it is FOR (horizon) and the
+    # period it is measured AGAINST (baseline). Mirrors the co_signed_by shape and the
+    # SCH-CLAIM-001 dependentRequired {scenario: [horizon, baseline]}. See
+    # amendments/2026-08-07-SCH-CLAIM-001-projection-qualifiers.md.
+    if "scenario" in qualifiers:
+        for required in ("horizon", "baseline"):
+            if required not in qualifiers or _is_empty(qualifiers.get(required)):
+                errors.append(
+                    f"qualifier 'scenario' requires '{required}' in the same "
+                    f"qualifier set — a projection scenario is meaningless without "
+                    f"its horizon and baseline (constitution 0.1.6, SCH-CLAIM-001)"
+                )
 
     # Cross-qualifier rule (Phase 2.1): a federated binding requires its
     # source-of-record. A claim marked binding=federated is a read-only

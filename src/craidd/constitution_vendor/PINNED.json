@@ -1,9 +1,9 @@
 {
  "repo": "Awen-Weave/awen-constitution",
- "tag": "v0.1.5",
- "commit": "731c2f8cc36b8d65eb19b49e44e2a97f87cb3e26",
+ "tag": "v0.1.6",
+ "commit": "26ac2adbf0e210aa717e760d56b7cf4304696f4f",
  "vendored": "schema/ + VERSION",
  "pin_kind": "machine-layer (moves only when SCH-*/VOC-*/POL-* change)",
- "vendored_from": "git archive v0.1.5 (pinned tag, not working tree)",
+ "vendored_from": "git archive v0.1.6 (pinned tag, not working tree)",
  "regenerate": "scripts/vendor_constitution.sh"
 }
