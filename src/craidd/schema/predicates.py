@@ -325,6 +325,20 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  "Annual gas consumption for the small area, kWh (DESNZ "
                  "sub-national) — settles where the gas grid actually reaches.",
                  description_cy=CY_PENDING),
+    # Ratified Llys 09/08/2026 [sig:7577b7d1 clearance / energy-grammar-rulings]. Adopt-and-cite
+    # DESNZ's own official statistics; statistical-indicator shape (RDF Data Cube / SDMX). Both
+    # are counts on the place grain (area→gazetteer GSS); awen-weave-minor, no Tier-1 change.
+    PredicateDef("off_gas_grid_properties", "int", "single", ("area",),
+                 "Count of domestic properties NOT connected to the mains gas network in the "
+                 "area (DESNZ estimates). The mains-gas-footprint complement to "
+                 "gas_consumption_kwh — the off-gas-grid / heat-transition case. Vintage in the "
+                 "citation; VERIFY-AT-REGISTRATION the LSOA vintage (LSOA21 spine vs source).",
+                 description_cy=CY_PENDING),
+    PredicateDef("energy_efficiency_measures_installed", "int", "single", ("area",),
+                 "Count of home energy-efficiency measures installed under ECO / Green Deal in "
+                 "the area (DESNZ Household Energy Efficiency). An absolute count; vintage in "
+                 "the citation.",
+                 description_cy=CY_PENDING),
     # multi: one claim per main-fuel class in the small area (Census TS046) —
     # the fuel label rides in value_en/value_cy, the percentage in value_real.
     # A single-cardinality predicate could hold only one fuel's share per area.
