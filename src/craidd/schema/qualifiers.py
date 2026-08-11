@@ -51,7 +51,7 @@ from __future__ import annotations
 
 # The qualifier keys that exist at all in v0.1.
 # 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 + 1 added by
-# constitution 0.1.3 + 1 (travel_mode) 0.1.4 + 5 projection keys 0.1.6 = 21 total.
+# constitution 0.1.3 + 1 (travel_mode) 0.1.4 + 5 projection keys 0.1.6 + 2 spatial-membership keys 0.1.7 = 23 total.
 QUALIFIER_KEYS: frozenset[str] = frozenset(
     {
         # Original v0.1 vocabulary.
@@ -85,6 +85,9 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         "baseline",             # open-form: ISO-8601 reference period measured AGAINST.
         "confidence_interval",  # open-form: statistical spread (distinct from editorial confidence).
         "uncertainty_basis",    # CLOSED domain (UNCERTAINTY_BASES).
+        # Constitution 0.1.7 — spatial-membership provenance (confidence/provenance model).
+        "resolved_toid",        # open-form: the OGL OS TOID a property resolves to.
+        "spatial_status",       # CLOSED domain (SPATIAL_STATUSES).
     }
 )
 
@@ -96,6 +99,13 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
 UNCERTAINTY_BASES: frozenset[str] = frozenset(
     {"ensemble", "single-model", "expert-judgement", "observed"}
 )
+
+# --- spatial_status: CLOSED domain (constitution 0.1.7, SCH-CLAIM-001) ---
+# The result of a spatial-membership test of a property against an area boundary (the rung-1
+# OS OpenMap Local footprint-snap). `boundary-adjacent` = the footprint straddles / is within the
+# margin of the boundary — membership is NOT asserted in or out; paired with editorial `confidence`
+# (within→high, boundary-adjacent→low). `resolved_toid` is open-form (an OGL identifier, not a domain).
+SPATIAL_STATUSES: frozenset[str] = frozenset({"within", "boundary-adjacent", "outside"})
 
 # --- travel_mode: CLOSED domain (constitution 0.1.4, SCH-CLAIM-001) ---
 # The travel profile a routing-derived claim was computed under. Required on the reachability
@@ -185,6 +195,7 @@ CLOSED_QUALIFIER_DOMAINS: dict[str, frozenset[str]] = {
     "binding": BINDINGS,
     "travel_mode": TRAVEL_MODES,
     "uncertainty_basis": UNCERTAINTY_BASES,
+    "spatial_status": SPATIAL_STATUSES,
 }
 
 # Open domains: the listed values are recognised, but a value outside the

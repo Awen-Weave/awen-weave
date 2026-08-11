@@ -151,7 +151,7 @@
  "$defs": {
   "qualifiers": {
    "type": "object",
-   "description": "The 21 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Three cross-qualifier rules are enforced below. The 5 projection keys (scenario/horizon/baseline/confidence_interval/uncertainty_basis) were added 0.1.6 (NWC-FEEDBACK-001) so a climate projection can render scenario, horizon, baseline and a statistical (not editorial) uncertainty.",
+   "description": "The 23 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Three cross-qualifier rules are enforced below. The 5 projection keys (scenario/horizon/baseline/confidence_interval/uncertainty_basis) were added 0.1.6 (NWC-FEEDBACK-001) so a climate projection can render scenario, horizon, baseline and a statistical (not editorial) uncertainty. 0.1.7 adds `resolved_toid` (open-form OGL OS TOID) + `spatial_status` (CLOSED within/boundary-adjacent/outside) for spatial-membership provenance (confidence/provenance model — confirm-property + rung-1 footprint-snap).",
    "additionalProperties": false,
    "properties": {
     "dialect": {
@@ -300,6 +300,20 @@
       "observed"
      ],
      "description": "CLOSED domain (0.1.6). How the value's uncertainty was established. Standard anchor: OGC UncertML / statistical convention. `observed` marks a measured (non-projected) reading — so scenario/horizon/baseline are then legitimately absent; the same key cleanly separates observation from projection without a second predicate (fork (c), Llys 07/08)."
+    },
+    "resolved_toid": {
+     "type": "string",
+     "minLength": 1,
+     "description": "OPEN-form (0.1.7). The OGL OS TOID a property's UPRN/address resolves to (OS Open Linked Identifiers UPRN↔TOID for the desk path; curator address↔UPRN↔TOID for the gold path). An OGL identifier — verification-not-data: NEVER premium MasterMap geometry. First-class per Llys 11/08 so the resolved identity is a structured field, not caveat text. Amendment: amendments/2026-08-11-SCH-CLAIM-001-toid-spatial-status.md."
+    },
+    "spatial_status": {
+     "type": "string",
+     "enum": [
+      "within",
+      "boundary-adjacent",
+      "outside"
+     ],
+     "description": "CLOSED domain (0.1.7). The result of a spatial-membership test of a property against an area boundary: `within` (clear of the boundary by a margin), `boundary-adjacent` (straddles / within the margin — membership NOT asserted in or out), `outside`. Written by the rung-1 footprint-snap (OS OpenMap Local, desk-derived). Paired with the editorial `confidence` (within→high, boundary-adjacent→low). Amendment: amendments/2026-08-11-SCH-CLAIM-001-toid-spatial-status.md."
     }
    },
    "dependentRequired": {
