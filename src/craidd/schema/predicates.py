@@ -575,6 +575,21 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "Registered battlefield containing the property — verbatim "
                  "list-entry reference (NHLE; England only).",
                  description_cy="o fewn maes brwydr cofrestredig"),
+    # Ratified 11/08 [Llys R1+R2 ACCEPT, welsh-heritage-predicates-ruling] — additive, within-only,
+    # fold into the heritage-designations composite (Cadw, Wales). within_protected_wreck was HELD
+    # (marine). Welsh CY_PENDING → Catrin harvest (safle treftadaeth y byd / tirwedd hanesyddol
+    # gofrestredig). Anchors: Cadw / Cof Cymru; Historic Environment (Wales) Act 2016; UNESCO WH
+    # Convention (WHS); OGL v3.0.
+    PredicateDef("within_world_heritage_site", "text", "multi", ("building",),
+                 "World Heritage Site whose inscribed area contains the property — verbatim "
+                 "reference (UNESCO ref / site name; Cadw). The OGL designation fact; descriptive "
+                 "text held VERIFY.",
+                 description_cy="CY_PENDING"),
+    PredicateDef("within_registered_historic_landscape", "text", "multi", ("building",),
+                 "Registered historic landscape containing the property — verbatim Cadw "
+                 "reference (landscape-scale; a within-flag, not a proximity flag). The OGL "
+                 "designation fact.",
+                 description_cy="CY_PENDING"),
 )
 
 

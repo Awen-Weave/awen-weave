@@ -40,7 +40,7 @@ def test_seed_predicate_count_matches_v01_schema():
     published layers but never registered — bring it to 119. (Later: hydrology + the
     climate sweep took it to 139; the 2 ratified DESNZ energy predicates —
     off_gas_grid_properties + energy_efficiency_measures_installed, 09/08/2026 — make 141.)"""
-    assert len(SEED_PREDICATES) == 141
+    assert len(SEED_PREDICATES) == 143
 
 
 def test_predicate_registry_matches_seed_set():

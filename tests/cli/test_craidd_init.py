@@ -47,7 +47,7 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # + 2 open-access (A5) = 115, + 4 backfilled area predicates (2026-07-27) = 119.
     # (+ hydrology + climate sweep = 139; + 2 DESNZ energy predicates 09/08 = 141.)
     # Same count the schema-layer test pins. The CLI must agree with the registry.
-    assert count == 141
+    assert count == 143
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
