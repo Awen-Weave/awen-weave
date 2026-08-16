@@ -28,12 +28,62 @@ they are frozen into a directory a repo commits or a static endpoint serves.
 """
 from __future__ import annotations
 
+import gzip
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 from .federation import now_utc
+
+# ── coverage regression (rule 4) ────────────────────────────────────────────────────────────────
+# A GSS (E06000001) or census area code (E01000001 LSOA / E00… OA): a nation letter followed by
+# eight digits, not embedded in a longer alphanumeric run — so a bare UPRN like 100023336956 never
+# matches and a per-property layer is correctly seen as carrying no nation code at all.
+_NATION_CODE = re.compile(r"(?<![A-Za-z0-9])([EWSN])\d{8}(?![0-9])")
+_NATION_NAME = {"E": "england", "W": "wales", "S": "scotland", "N": "northern-ireland"}
+# Every claims shape the estate actually writes, newest-first preference. Checked on the live box
+# 16/08: claims.json (flood, elderly, heritage points), claims.json.gz (desnz, census, gazetteer,
+# gp) and claims.jsonl.gz (the streamed tiled layers — conservation, coal, roads, coast path).
+_CLAIMS_FILES = ("claims.json", "claims.json.gz", "claims.jsonl.gz")
+
+
+def _nations_of(claims) -> set:
+    """The nation letters present across a claim set's subject_ids. Empty for a UPRN-keyed layer."""
+    out = set()
+    for c in claims:
+        if not isinstance(c, dict):
+            continue
+        m = _NATION_CODE.search(str(c.get("subject_id", "")))
+        if m:
+            out.add(m.group(1))
+    return out
+
+
+def _read_claims(path: Path):
+    """Read one claims file in any of the three shapes the estate writes. None if unreadable."""
+    try:
+        if path.name.endswith(".jsonl.gz"):
+            with gzip.open(path, "rt", encoding="utf-8") as fh:
+                return [json.loads(line) for line in fh if line.strip()]
+        raw = (gzip.open(path, "rt", encoding="utf-8") if path.name.endswith(".gz")
+               else path.open("r", encoding="utf-8"))
+        with raw as fh:
+            doc = json.load(fh)
+        return doc if isinstance(doc, list) else doc.get("claims", [])
+    except Exception:
+        return None
+
+
+def _prior_snapshot(out_dir: Path):
+    """The newest existing snapshot under out_dir, or None. Sorted by name: snapshot ids are
+    compact UTC timestamps, so lexical order IS chronological order."""
+    try:
+        snaps = sorted(p for p in Path(out_dir).glob("snapshot-*") if p.is_dir())
+    except OSError:
+        return None
+    return snaps[-1] if snaps else None
 
 
 class SnapshotError(RuntimeError):
@@ -136,6 +186,64 @@ class SnapshotBuilder:
             "counts": counts,
         }
 
+    # -- coverage regression --------------------------------------------------
+    def _assert_no_coverage_regression(self, records: "SnapshotRecords",
+                                       out_dir: Path) -> None:
+        """Refuse a rebuild that drops a nation the snapshot it replaces carried.
+
+        SELF-LIMITING BY DESIGN, so a guard added at the shared spine cannot break builds it was
+        never meant to police. It does nothing unless the NEW record set is nation-coded:
+
+          * new set has no nation codes  -> no-op. A per-UPRN layer (or a layer that emits no
+            claims at all, like planning-lifecycle) has nothing to compare and never will.
+          * no prior snapshot            -> no-op. A first build cannot shrink anything, and a
+            guard that makes the empty case impossible is its own failure mode.
+          * prior present but its claims cannot be read -> RAISE. This is the ambiguous state, and
+            it is only reached for a layer we already know is nation-coded. Passing silently here
+            is precisely the "empty scan reads as clean" defect the estate keeps paying for.
+          * a nation present before and absent now -> RAISE.
+
+        Widening coverage is always fine. A deliberate REDUCTION is expressed by removing the prior
+        snapshot first, which makes shrinking an explicit act rather than a side effect of a flag.
+        """
+        new_nations = _nations_of(records.claims)
+        if not new_nations:
+            return                                   # not a nation-coded layer; nothing to police
+
+        prior = _prior_snapshot(out_dir)
+        if prior is None:
+            return                                   # first build
+
+        prior_claims = None
+        for name in _CLAIMS_FILES:
+            f = prior / name
+            if f.exists():
+                prior_claims = _read_claims(f)
+                if prior_claims is not None:
+                    break
+        if prior_claims is None:
+            raise SnapshotError(
+                f"coverage check could not read the prior snapshot's claims in {prior} — this "
+                f"layer IS nation-coded ({sorted(_NATION_NAME[n] for n in new_nations)}), so the "
+                f"check matters and cannot be skipped. Looked for {list(_CLAIMS_FILES)}. An "
+                f"unverifiable coverage comparison is not a passing one."
+            )
+
+        prior_nations = _nations_of(prior_claims)
+        dropped = prior_nations - new_nations
+        if dropped:
+            raise SnapshotError(
+                f"coverage REGRESSION: this rebuild covers "
+                f"{sorted(_NATION_NAME[n] for n in new_nations)} but the snapshot it replaces "
+                f"({prior.name}) covered {sorted(_NATION_NAME[n] for n in prior_nations)} — it "
+                f"DROPS {sorted(_NATION_NAME[n] for n in dropped)}. "
+                f"A re-materialise must not silently shrink national coverage (flood-coverage, "
+                f"16/08: --nations wales cut 296 English authorities out of a national layer and "
+                f"only an unrelated failure stopped it shipping). Restore the missing nation, or, "
+                f"if the reduction is genuinely intended, remove the prior snapshot deliberately "
+                f"first."
+            )
+
     # -- build ---------------------------------------------------------------
     def build(self, records: SnapshotRecords, out_dir: Path,
               built_utc: Optional[str] = None,
@@ -161,6 +269,20 @@ class SnapshotBuilder:
                 f"snapshot written",
                 problems,
             )
+
+        # 1b. RULE 4 — a re-materialise must not silently SHRINK national coverage.
+        #
+        # This lives HERE, in the one place every snapshot write passes through, and not in the
+        # runners. It was in a runner, and on 16/08 that cost the estate a 93% coverage loss it
+        # caught only by luck: flood-coverage was re-materialised with `--nations wales`, dropping
+        # 296 English authorities (646 claims -> 48), and the guard did not fire because
+        # `build_flood_snapshot.py` is a SEPARATE runner from the shared `build_layer_snapshot.py`
+        # the guard had been wired into. Seven runners in the catalogue write snapshots; two called
+        # the guard. All seven call THIS method.
+        #
+        # A guard that covers one path and not its sibling is worse than no guard, because it
+        # produces confidence. So the check moved to the chokepoint.
+        self._assert_no_coverage_regression(records, Path(out_dir))
 
         # 2. Build every file's content in memory (deterministic ordering).
         manifest = self._manifest(records, snapshot_id, built_utc)
