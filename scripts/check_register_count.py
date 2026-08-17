@@ -95,6 +95,35 @@ def main(argv: list[str]) -> int:
     stated = WORD_TO_NUMBER[word]
     actual = _count_register_rows(text)
 
+    # WORD_TO_NUMBER is a hard-coded vocabulary; the register is the schema
+    # that defines the range it has to cover. Assert the actual row count is
+    # inside the map before comparing — otherwise a register that grows past
+    # the map's ceiling produces a mismatch message whose suggested wording
+    # is a bare integer, and the real cause (the map stopped reaching) is
+    # never named.
+    # Order matters: zero rows means the table was never found, which is a
+    # different fault from a register that outgrew the map. Diagnose the
+    # failed scan first, or it gets reported as a vocabulary problem.
+    if actual == 0:
+        print(
+            "FAIL [register-count]: parsed 0 register rows. A register that "
+            "cannot be found is a failed scan, not an empty register — check "
+            "the '| Component' table header in §3.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if actual not in NUMBER_TO_WORD:
+        print(
+            f"FAIL [register-count]: the register has {actual} rows, which "
+            f"is outside WORD_TO_NUMBER "
+            f"({min(NUMBER_TO_WORD)}..{max(NUMBER_TO_WORD)}). The map can no "
+            f"longer name the register it is checking. Extend "
+            f"WORD_TO_NUMBER in scripts/check_register_count.py.",
+            file=sys.stderr,
+        )
+        return 1
+
     if stated != actual:
         suggested = NUMBER_TO_WORD.get(actual, str(actual))
         print(

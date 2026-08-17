@@ -57,13 +57,45 @@ KNOWN_FILES: tuple[str, ...] = (
     "client-contract.md",
     "craidd-foundation-handover.md",
     "craidd-propose-spec.md",
+    "bra-proposal-handoff.md",
     "building-research-agent.md",
     "bra-v2-estate-agents.md",
     "bra-v2-estate-agents-pilot.md",
-    "sources-backlog.md",
     "v0-schema.md",
     "migration-2026-05.md",
 )
+
+
+def assert_vocabulary(design_dir: Path) -> list[str]:
+    """KNOWN_FILES is a hard-coded vocabulary; design/*.md is the schema
+    that defines it. Assert the two are the same set — SUBSET in both
+    directions, not a non-empty intersection.
+
+    A name in KNOWN_FILES that no longer exists is a router entry that can
+    never resolve: `idx.get()` returns [] and the resolver walks past it in
+    silence. A file on disk that isn't in KNOWN_FILES is worse — its
+    headings are never a resolution target from anywhere, and references
+    originating in it lose self-first routing, so a §N.M defined only there
+    either fails or resolves against a same-numbered heading in an
+    unrelated file. Both are the "scan that could not look" failure: the
+    run reports OK because it never looked, not because it found nothing.
+    """
+    on_disk = {p.name for p in design_dir.glob("*.md")}
+    vocabulary = set(KNOWN_FILES)
+    errors: list[str] = []
+    for dead in sorted(vocabulary - on_disk):
+        errors.append(
+            f"KNOWN_FILES lists '{dead}' but no such file exists in "
+            f"{design_dir}/ — a routing entry that can never resolve. "
+            f"Remove it, or restore the file."
+        )
+    for unrouted in sorted(on_disk - vocabulary):
+        errors.append(
+            f"{design_dir}/{unrouted} exists but is not in KNOWN_FILES — "
+            f"its headings can never be a resolution target and its own "
+            f"references lose self-first routing. Add it to KNOWN_FILES."
+        )
+    return errors
 
 # A parenthetical that begins with one of these tokens, or contains one
 # of the ANNOTATION_MARKERS, is editorial annotation about the reference
@@ -132,6 +164,7 @@ class Reference:
     kind: str            # 'section' or 'item'
     number: str          # "6.10", "7.6", or item-only "7"
     expected_name: str | None
+    major: str | None = None   # item refs only: the §N in "§N item M"
 
 
 def extract_refs(design_dir: Path) -> list[Reference]:
@@ -170,6 +203,7 @@ def extract_refs(design_dir: Path) -> list[Reference]:
                         kind="item",
                         number=item,
                         expected_name=None,
+                        major=sec,
                     ))
     return refs
 
@@ -201,32 +235,89 @@ def _candidate_files(ref: Reference) -> list[str]:
     reference's own file is checked first — many docs self-reference their
     own §-numbered sections (roadmap.md §4.x, lleolydd.md §12.x, etc.) and
     those should resolve before the resolver looks elsewhere."""
-    if ref.kind == "item":
-        return ["v0.1-schema.md"]
     if ref.file in KNOWN_FILES:
         return [ref.file] + [f for f in KNOWN_FILES if f != ref.file]
     return list(KNOWN_FILES)
 
 
-def resolve(ref: Reference, idx: dict[str, list[Heading]]) -> list[str]:
+ITEM_MARKER = re.compile(r"^(?P<num>\d+)\.\s+\S")
+
+
+def index_items(design_dir: Path) -> dict[str, dict[str, set[str]]]:
+    """Map file -> §N -> {top-level ordered-list item numbers under §N}.
+
+    This is the schema that defines the item vocabulary. §10 of
+    v0.1-schema.md carries its eight open questions as a numbered list
+    rather than as nested headings, so `§10 item 7` has to be checked
+    against the list, not against a §10.7 heading that was never going to
+    exist. Only column-0 markers count — indented `1.` inside an item's
+    own sub-list belongs to that item, not to §N.
+    """
+    out: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for md in sorted(design_dir.glob("*.md")):
+        current: str | None = None
+        for line in md.read_text(encoding="utf-8").splitlines():
+            head = re.match(r"^##\s*(?:§)?(?P<num>\d+)\.?\s", line)
+            if head:
+                current = head.group("num")
+                continue
+            if line.startswith("#"):
+                continue
+            if current is None:
+                continue
+            m = ITEM_MARKER.match(line)
+            if m:
+                out[md.name][current].add(m.group("num"))
+    return {f: dict(secs) for f, secs in out.items()}
+
+
+def resolve(
+    ref: Reference,
+    idx: dict[str, list[Heading]],
+    item_idx: dict[str, dict[str, set[str]]] | None = None,
+) -> list[str]:
     """Return a list of error messages — empty when the reference is clean."""
     errors: list[str] = []
+    item_idx = item_idx if item_idx is not None else {}
 
     if ref.kind == "item":
-        item = ref.number
+        major = ref.major or "10"
+        top = ref.number.split(".")[0]
         candidates = _candidate_files(ref)
+
+        # Find the file that actually carries §<major>, then assert the
+        # item number against the ordered list under it. The previous
+        # implementation returned clean whenever *any* candidate carried a
+        # bare §10 heading — which made every item reference vacuous:
+        # "§10 item 999" and "§7 item 3" both passed, because the §-number
+        # was discarded and membership was never tested.
+        host: str | None = None
         for target in candidates:
-            headings = idx.get(target, [])
-            if any(h.number == f"10.{item}" for h in headings):
-                return errors
-            # v0.1-schema.md §10 uses numbered list items rather than
-            # nested headings — trust the item exists when §10 does.
-            if any(h.number == "10" for h in headings):
-                return errors
-        errors.append(
-            f"{ref.file}:{ref.line} references '{ref.raw}' but no candidate "
-            f"file ({', '.join(candidates)}) carries §10 item {item}."
-        )
+            if any(h.number == major for h in idx.get(target, [])):
+                host = target
+                break
+        if host is None:
+            errors.append(
+                f"{ref.file}:{ref.line} references '{ref.raw}' but no "
+                f"candidate file carries a §{major} heading at all."
+            )
+            return errors
+
+        available = item_idx.get(host, {}).get(major, set())
+        if not available:
+            errors.append(
+                f"{ref.file}:{ref.line} references '{ref.raw}' and {host} "
+                f"§{major} exists, but no ordered list could be parsed "
+                f"under it — the item number cannot be checked. Give §{major} "
+                f"a numbered list, or stop referencing it by item."
+            )
+            return errors
+        if top not in available:
+            errors.append(
+                f"{ref.file}:{ref.line} references '{ref.raw}' but {host} "
+                f"§{major} has items "
+                f"{', '.join(sorted(available, key=int))} — no item {top}."
+            )
         return errors
 
     # §N.M dotted reference. Walk candidate files for the first match.
@@ -284,12 +375,24 @@ def main(argv: list[str]) -> int:
         print(f"check_crossrefs: {design_dir} not found", file=sys.stderr)
         return 2
 
+    vocab_errors = assert_vocabulary(design_dir)
+    if vocab_errors:
+        print(
+            f"FAIL [cross-ref]: KNOWN_FILES does not match {design_dir}/ — "
+            f"the resolver is not looking where it claims to look:",
+            file=sys.stderr,
+        )
+        for err in vocab_errors:
+            print(f"  {err}", file=sys.stderr)
+        return 1
+
     idx = index_headings(design_dir)
+    item_idx = index_items(design_dir)
     refs = extract_refs(design_dir)
 
     errors: list[str] = []
     for ref in refs:
-        errors.extend(resolve(ref, idx))
+        errors.extend(resolve(ref, idx, item_idx))
 
     if errors:
         print(
@@ -300,11 +403,26 @@ def main(argv: list[str]) -> int:
             print(f"  {err}", file=sys.stderr)
         return 1
 
+    items = [r for r in refs if r.kind == "item"]
+    subparts = [r for r in items if "." in r.number]
     print(
         f"OK [cross-ref]: {len(refs)} references across "
         f"{sum(1 for f, headings in idx.items() if headings)} files "
         f"all resolve."
     )
+    print(
+        f"   vocabulary: KNOWN_FILES ({len(KNOWN_FILES)}) == design/*.md "
+        f"({len(list(design_dir.glob('*.md')))}); "
+        f"{len(items)} item-reference(s) checked against parsed lists."
+    )
+    if subparts:
+        # Not a silent cap: sub-parts like "item 7.1" are prose inside the
+        # parent item, not enumerated structure. Only the parent is checked.
+        print(
+            f"   NOT CHECKED: {len(subparts)} item-reference(s) name a "
+            f"sub-part the corpus does not enumerate — parent item only: "
+            + ", ".join(sorted({r.raw for r in subparts}))
+        )
     return 0
 
 
