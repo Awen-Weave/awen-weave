@@ -47,9 +47,53 @@ CHARTER_QUESTIONS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 # Sections in §6 that aren't single-component charters and are exempt.
-EXEMPT_SECTIONS: frozenset[str] = frozenset({
-    "6.8",  # "The six CLIs" — shared charter pointer to cli-design.md
-})
+#
+# A bare §-number is not a safe exemption. The number is a position, not an
+# identity: renumber §6 and "6.8" silently transfers the exemption to
+# whatever component now sits in that slot, which then skips all six
+# charter questions and still prints OK. So each exemption is bound to a
+# fragment of the heading it is meant to excuse, and the binding is
+# asserted against architecture.md before any section is skipped.
+EXEMPT_SECTIONS: dict[str, str] = {
+    "6.8": "six clis",  # "The six CLIs" — shared charter pointer to cli-design.md
+}
+
+HEADING_RE = re.compile(r"^###\s*(?:§)?(?P<num>\d+\.\d+(?:\.\d+)?)\s*(?P<title>.*?)\s*$")
+
+
+def _section_titles(text: str) -> dict[str, str]:
+    """§6.x number -> heading title, straight from architecture.md."""
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        m = HEADING_RE.match(line)
+        if m and m.group("num").startswith("6."):
+            out[m.group("num")] = m.group("title")
+    return out
+
+
+def assert_exemptions(titles: dict[str, str]) -> list[str]:
+    """EXEMPT_SECTIONS is a hard-coded vocabulary; the §6.x headings in
+    architecture.md are the schema that defines it. Assert every exemption
+    still resolves to the section it was written for — SUBSET of the live
+    headings, matched on identity, not merely present."""
+    errors: list[str] = []
+    for num, expected in EXEMPT_SECTIONS.items():
+        if num not in titles:
+            errors.append(
+                f"EXEMPT_SECTIONS excuses §{num}, but architecture.md has no "
+                f"§{num} heading — a dead exemption. Remove it, or restore "
+                f"the section."
+            )
+            continue
+        actual = re.sub(r"\W+", " ", titles[num].lower()).strip()
+        if expected not in actual:
+            errors.append(
+                f"EXEMPT_SECTIONS excuses §{num} as {expected!r}, but §{num} "
+                f"is now \"{titles[num]}\". The exemption has drifted onto a "
+                f"different component, which would skip all six charter "
+                f"questions unchecked. Re-point or remove it."
+            )
+    return errors
 
 
 def _split_six_sections(text: str) -> list[tuple[str, str]]:
@@ -87,6 +131,17 @@ def main(argv: list[str]) -> int:
     text = path.read_text(encoding="utf-8")
     sections = _split_six_sections(text)
 
+    exemption_errors = assert_exemptions(_section_titles(text))
+    if exemption_errors:
+        print(
+            "FAIL [charter]: exemption vocabulary no longer matches "
+            "architecture.md — sections would be skipped unchecked:",
+            file=sys.stderr,
+        )
+        for line in exemption_errors:
+            print(f"  {line}", file=sys.stderr)
+        return 1
+
     failures: list[str] = []
     for num, body in sections:
         if num in EXEMPT_SECTIONS:
@@ -113,10 +168,18 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
+    exempt = [n for n, _ in sections if n in EXEMPT_SECTIONS]
+    checked = len(sections) - len(exempt)
     print(
-        f"OK [charter]: all {len(sections)} §6.x sections answer the "
-        f"six charter questions."
+        f"OK [charter]: {checked} of {len(sections)} §6.x sections answer "
+        f"the six charter questions."
     )
+    # Not a silent cap: say which sections were skipped and on what grounds.
+    if exempt:
+        print(
+            "   EXEMPT (not checked): "
+            + ", ".join(f"§{n} ({EXEMPT_SECTIONS[n]})" for n in exempt)
+        )
     return 0
 
 

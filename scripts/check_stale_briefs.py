@@ -44,24 +44,54 @@ def _list_briefs(outbox: Path, stale_days: int) -> list[Path]:
     )
 
 
-def _fetch_pr_titles_and_bodies() -> list[str]:
-    """Return a flat list of strings to grep for brief names. Includes
-    open PRs plus PRs merged within MATCH_WINDOW_DAYS. Returns [] if gh
-    isn't available or the call fails."""
+def _current_repo() -> str | None:
+    """nameWithOwner of the repo this script is running in, or None."""
     if not _gh_available():
-        return []
+        return None
     try:
         result = subprocess.run(
-            ["gh", "pr", "list",
-             "--state", "all",
-             "--limit", "100",
-             "--json", "title,body,state,mergedAt"],
+            ["gh", "repo", "view", "--json", "nameWithOwner", "-q",
+             ".nameWithOwner"],
             capture_output=True, text=True, check=True, timeout=10,
         )
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return []
+        return None
+    return result.stdout.strip() or None
+
+
+def _fetch_pr_titles_and_bodies(repos: list[str]) -> tuple[list[str], list[str]]:
+    """Return (haystack strings, repos actually searched).
+
+    Includes open PRs plus PRs merged within MATCH_WINDOW_DAYS, across
+    every repo named. The outbox is shared by every project on the desk,
+    so searching a single repo's PRs and reporting the rest as "forgotten"
+    is a scope error, not a finding — the check has to say which repos it
+    could see."""
+    if not _gh_available():
+        return [], []
+    out: list[str] = []
+    searched: list[str] = []
+    for repo in repos:
+        cmd = ["gh", "pr", "list", "--state", "all", "--limit", "100",
+               "--json", "title,body,state,mergedAt"]
+        if repo:
+            cmd += ["--repo", repo]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, check=True, timeout=10,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            continue
+        searched.append(repo)
+        out.extend(_parse_prs(result.stdout))
+    return out, searched
+
+
+def _parse_prs(stdout: str) -> list[str]:
+    """Flatten one `gh pr list --json` payload into title+body strings,
+    keeping open PRs and those merged within MATCH_WINDOW_DAYS."""
     try:
-        prs = json.loads(result.stdout)
+        prs = json.loads(stdout)
     except json.JSONDecodeError:
         return []
     cutoff = time.time() - MATCH_WINDOW_DAYS * 86400
@@ -95,6 +125,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--stale-days", type=int, default=DEFAULT_STALE_DAYS,
                         help=f"stale threshold in days (default: "
                              f"{DEFAULT_STALE_DAYS})")
+    parser.add_argument("--repo", action="append", default=[], metavar="OWNER/NAME",
+                        help="repo whose PRs can match a brief; repeatable. "
+                             "Default: the repo this script runs in. The "
+                             "outbox is shared across projects, so a brief "
+                             "whose work lives in an unnamed repo cannot be "
+                             "matched and is reported as unmatchable, not "
+                             "forgotten.")
     args = parser.parse_args(argv[1:] if len(argv) > 1 else [])
 
     outbox: Path = args.outbox
@@ -113,12 +150,24 @@ def main(argv: list[str]) -> int:
         )
         return 0
 
-    pr_haystack = _fetch_pr_titles_and_bodies()
-    if not pr_haystack:
+    repos: list[str] = args.repo or [r for r in [_current_repo()] if r]
+    if not repos:
         print(
-            f"WARN [stale-briefs]: gh CLI unavailable or no PRs returned; "
-            f"cannot match the {len(briefs)} stale brief(s) below against "
-            f"PRs. Listing them anyway:"
+            f"WARN [stale-briefs]: no repo scope — gh CLI unavailable or "
+            f"not in a GitHub repo. The {len(briefs)} stale brief(s) below "
+            f"could not be matched against anything. This is a scan that "
+            f"could not look, not a clean result:"
+        )
+        for p in briefs:
+            print(f"  {p}")
+        return 0
+
+    pr_haystack, searched = _fetch_pr_titles_and_bodies(repos)
+    if not searched:
+        print(
+            f"WARN [stale-briefs]: every `gh pr list` call failed for "
+            f"{', '.join(repos)}; the {len(briefs)} stale brief(s) below "
+            f"could not be matched. Scan failed — not a pass:"
         )
         for p in briefs:
             print(f"  {p}")
@@ -131,20 +180,28 @@ def main(argv: list[str]) -> int:
             continue
         forgotten.append(brief)
 
+    scope = (
+        f"   scope: {len(pr_haystack)} PR(s) across {', '.join(searched)}. "
+        f"Briefs whose work landed in a repo outside this scope cannot "
+        f"match — widen with --repo before treating the list as forgotten."
+    )
     if forgotten:
         print(
-            f"WARN [stale-briefs]: {len(forgotten)} brief(s) older than "
-            f"{args.stale_days} days have no matching PR. Either rename to "
-            f"indicate supersession, archive, or open a PR:"
+            f"WARN [stale-briefs]: {len(forgotten)} of {len(briefs)} "
+            f"brief(s) older than {args.stale_days} days have no matching "
+            f"PR in scope. Either rename to indicate supersession, archive, "
+            f"open a PR, or widen the scope:"
         )
         for p in forgotten:
             age_days = (time.time() - p.stat().st_mtime) / 86400
             print(f"  {p} ({age_days:.0f} days old)")
+        print(scope)
     else:
         print(
             f"OK [stale-briefs]: all {len(briefs)} stale brief(s) match "
             f"open or recently-merged PRs."
         )
+        print(scope)
     return 0
 
 
