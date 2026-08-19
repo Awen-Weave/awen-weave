@@ -49,6 +49,31 @@ _NATION_NAME = {"E": "england", "W": "wales", "S": "scotland", "N": "northern-ir
 _CLAIMS_FILES = ("claims.json", "claims.json.gz", "claims.jsonl.gz")
 
 
+def _subjects_by_nation(claims) -> dict:
+    """Nation letter -> the set of distinct nation-coded subject_ids under it.
+
+    WHY THIS EXISTS, one level finer than `_nations_of`. The England+Wales flood run of 19/08
+    completed `rc=0` having LOST TWO ENGLISH AUTHORITIES — North Devon and Cotswold, both dropped on
+    a transient truncated WFS body — and the nation-presence check above passed correctly, because
+    England was still there. 294 authorities where the snapshot it replaced had 296, and the only
+    thing that noticed was a line in the runner's own log.
+
+    That is the same shape as the 16/08 failure it was written for, one level down: a national layer
+    silently shrinking. A guard that catches a dropped NATION but not a dropped AUTHORITY produces
+    confidence about exactly the case a consumer would hit — a lookup on a real GSS code returning
+    nothing, with no error anywhere.
+    """
+    out: dict = {}
+    for c in claims:
+        if not isinstance(c, dict):
+            continue
+        sid = str(c.get("subject_id", ""))
+        m = _NATION_CODE.search(sid)
+        if m:
+            out.setdefault(m.group(1), set()).add(sid)
+    return out
+
+
 def _nations_of(claims) -> set:
     """The nation letters present across a claim set's subject_ids. Empty for a UPRN-keyed layer."""
     out = set()
@@ -231,6 +256,31 @@ class SnapshotBuilder:
 
         prior_nations = _nations_of(prior_claims)
         dropped = prior_nations - new_nations
+        if not dropped:
+            # A nation kept but THINNED. Counted per nation rather than in total, because a total
+            # could be held level by one nation growing while another loses authorities.
+            new_by = _subjects_by_nation(records.claims)
+            prior_by = _subjects_by_nation(prior_claims)
+            thinned = {n: (len(prior_by[n]), len(new_by.get(n, ())))
+                       for n in prior_by if len(new_by.get(n, ())) < len(prior_by[n])}
+            if thinned:
+                detail = "; ".join(
+                    f"{_NATION_NAME[n]} {before} -> {after} ({before - after} lost)"
+                    for n, (before, after) in sorted(thinned.items()))
+                missing = sorted(
+                    s for n in thinned for s in (prior_by[n] - new_by.get(n, set())))
+                raise SnapshotError(
+                    f"coverage REGRESSION (subjects, not nations): every nation is still present, "
+                    f"but this rebuild covers FEWER subjects than the snapshot it replaces "
+                    f"({prior.name}) — {detail}. "
+                    f"First missing: {missing[:8]}{' …' if len(missing) > 8 else ''}. "
+                    f"This is the 19/08 flood case: an England+Wales rebuild finished rc=0 having "
+                    f"lost North Devon and Cotswold to a transient truncated WFS body, and the "
+                    f"nation-presence check passed because England was still there. A consumer "
+                    f"looking up a real GSS code would have got nothing, with no error anywhere. "
+                    f"Re-run the failed subjects, or, if the reduction is genuinely intended, "
+                    f"remove the prior snapshot deliberately first."
+                )
         if dropped:
             raise SnapshotError(
                 f"coverage REGRESSION: this rebuild covers "

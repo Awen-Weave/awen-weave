@@ -189,3 +189,72 @@ def test_a_bare_uprn_is_never_read_as_a_nation_code(tmp_path):
     from craidd.snapshot import _nations_of
     assert _nations_of([_claim("100023336956")]) == set()
     assert _nations_of([_claim("E06000001")]) == {"E"}
+
+
+# ── one level finer: a nation KEPT but THINNED (the 19/08 flood case) ────────────────────────────
+ENGLAND_THREE_AND_WALES = ["E06000001", "E06000002", "E06000003", "W06000001"]
+ENGLAND_TWO_AND_WALES = ["E06000001", "E06000002", "W06000001"]
+
+
+def test_losing_authorities_while_KEEPING_the_nation_is_refused(tmp_path):
+    """THE 19/08 CASE. An England+Wales flood rebuild finished `rc=0` having lost North Devon and
+    Cotswold to a transient truncated WFS body — 294 authorities where the snapshot it replaced had
+    296. The nation-presence check passed CORRECTLY, because England was still there, and the only
+    thing that noticed was a line in the runner's own log. A consumer looking up a real GSS code
+    would have received nothing, with no error anywhere."""
+    out = tmp_path / "flood-coverage"
+    _write_prior(out, ENGLAND_THREE_AND_WALES)
+
+    with pytest.raises(SnapshotError) as exc:
+        _build(out, ENGLAND_TWO_AND_WALES)
+
+    msg = str(exc.value)
+    assert "subjects, not nations" in msg, "the message must distinguish this from a dropped nation"
+    assert "england 3 -> 2" in msg, "it must say which nation thinned and by how much"
+    assert "E06000003" in msg, "and name the subject that went missing, or nobody can re-run it"
+
+
+def test_a_total_held_LEVEL_by_another_nation_growing_still_fails(tmp_path):
+    """Why the count is per nation and not a total. England loses one, Wales gains one, the total is
+    unchanged — and England has still lost an authority a consumer can look up. A total-only check
+    would pass this, which is the more dangerous shape because the headline number looks healthy."""
+    out = tmp_path / "flood-coverage"
+    _write_prior(out, ["E06000001", "E06000002", "W06000001"])
+
+    with pytest.raises(SnapshotError, match="england 2 -> 1"):
+        _build(out, ["E06000001", "W06000001", "W06000002"])
+
+
+def test_gaining_subjects_is_allowed(tmp_path):
+    out = tmp_path / "flood-coverage"
+    _write_prior(out, ENGLAND_TWO_AND_WALES)
+    assert _build(out, ENGLAND_THREE_AND_WALES).exists()
+
+
+def test_the_same_subjects_in_a_different_ORDER_is_allowed(tmp_path):
+    """Sets, not sequences. A guard that keyed on order would fail every rebuild for no reason and
+    be deleted within a day."""
+    out = tmp_path / "flood-coverage"
+    _write_prior(out, ENGLAND_THREE_AND_WALES)
+    assert _build(out, list(reversed(ENGLAND_THREE_AND_WALES))).exists()
+
+
+def test_a_per_uprn_layer_is_untouched_by_the_SUBJECT_count_check(tmp_path):
+    """Blast radius again. UPRN subjects carry no nation code, so there is nothing to count — and a
+    property-grain layer legitimately loses subjects between builds (a demolished building). This
+    check must never reach them, in any repo."""
+    out = tmp_path / "epc-domestic"
+    _write_prior(out, ["100023336956", "100023336957", "100023336958"])
+    assert _build(out, ["100023336956", "100023336957"]).exists()
+
+
+def test_a_dropped_NATION_still_reports_as_a_dropped_nation(tmp_path):
+    """The two checks must not shadow each other: losing Wales entirely is a dropped nation, not a
+    thinned one, and the message a reader gets has to say which of the two happened."""
+    out = tmp_path / "flood-coverage"
+    _write_prior(out, ENGLAND_THREE_AND_WALES)
+    with pytest.raises(SnapshotError) as exc:
+        _build(out, ["E06000001", "E06000002", "E06000003"])
+    msg = str(exc.value)
+    assert "DROPS ['wales']" in msg
+    assert "subjects, not nations" not in msg
