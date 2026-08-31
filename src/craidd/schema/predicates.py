@@ -37,6 +37,36 @@ carries the verified attestor + capture timestamp) and the session
 export at Awen-Weave/awen-cards/sessions/2026-05-19-catrin-stephens.json.
 CY_PENDING remains in this module as a placeholder for any future
 predicate added before its Welsh form is attested.
+
+NOTE — THE WELSH GAP IS A CONSTRAINT ON WHAT CAN BE EMITTED, NOT A
+BACKLOG. Ruled by Huw as Llys 2026-08-31. Recorded here rather than only
+in the build ledger, because this module is where a reader of the
+registry meets the predicates themselves.
+
+MEASURED at 0.2.20: **71 of 143 predicates carry no attested Welsh** —
+every one of them the explicit CY_PENDING sentinel, and description_cy
+is empty on NONE. At 0.2.15 it was 69 of 141. **Plus two predicates,
+plus two pending: the gap grows with every addition rather than
+closing**, and that delta is exactly the two predicates added since.
+
+SO, PLAINLY: for an instance gated on bilingual parity — NWC-WLM-001 is
+the live example — **a predicate whose description_cy is the pending
+sentinel is UNEMITTABLE.** Not degraded, not emittable-with-a-caveat:
+unemittable. **That currently applies to half this registry**, and to
+every predicate the v0.1.6 climate increment delivered.
+
+The sentence above the count is the one that misleads if read alone:
+CY_PENDING is described as a placeholder for "any future predicate",
+which reads as an edge case. It is the majority case.
+
+HOW IT CLOSES IS DELIBERATELY NOT RECORDED HERE. Huw has deferred that
+decision; attested Welsh comes from a tutor session, not from this
+module, and nothing here proposes a plan or supplies a translation.
+
+AND THIS NOTE HAS NO GUARD. A test asserting the count was explicitly
+forbidden with the rest of the 2026-09-06 pause, so the number above
+will drift as predicates are added and nothing will go red when it
+does. Re-derive it from description_cy rather than trusting this line.
 """
 from __future__ import annotations
 
