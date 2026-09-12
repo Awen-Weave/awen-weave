@@ -85,27 +85,44 @@ def test_applies_to_is_enforced_when_the_subject_type_is_declared():
         "claim", dict(BASE, predicate="building_type", value_text="barn"))
     assert not result.valid
     assert any("does not apply to entity type" in v for v in result.violations)
-    assert result.unchecked == ()
+    # `finest_grain` is unchecked because `building_type` is one of the 143
+    # predicates task 8.6 has not yet evidenced — not because the subject is
+    # unresolvable. The gate names the rule either way.
+    assert result.unchecked == ("finest_grain",)
 
 
 def test_applies_to_is_reported_unchecked_when_the_subject_type_is_unknown():
     """A snapshot builder usually cannot resolve the subject's entity type — the
     subject of a search-layer claim is a UPRN in the frozen spine, not a record
-    in the record set being built. applies_to is then the ONE rule skipped, and
-    the result must SAY so rather than read as full enforcement."""
+    in the record set being built. applies_to is then skipped, and the result
+    must SAY so rather than read as full enforcement.
+
+    Since 12/09/2026 `finest_grain` (phase 8) needs the same fact and is
+    reported beside it — and would be reported here anyway, because
+    `building_type` is one of the 143 predicates whose grain task 8.6 has not
+    yet evidenced."""
     result = _gate().validate(
         "claim", dict(BASE, predicate="building_type", value_text="barn"))
     assert result.valid
-    assert result.unchecked == ("applies_to",)
+    assert result.unchecked == ("applies_to", "finest_grain")
 
 
 def test_a_wholly_valid_claim_still_passes():
-    """The gate must not have become a blanket refusal."""
+    """The gate must not have become a blanket refusal.
+
+    THIS IS THE BLAST-RADIUS TEST FOR PHASE 8 TOO, and the reason `unchecked`
+    is not empty here. Every claim on the estate cites one of the 143
+    predicates that carry no evidenced grain yet, and every snapshot builder
+    reaches this gate. Had an undeclared grain been treated as a REFUSAL rather
+    than as unchecked, this claim — and every other claim in the estate — would
+    have stopped here until task 8.6 landed."""
+    from craidd.schema.predicates import undeclared_predicates
+    assert "build_period" in undeclared_predicates()
     result = _gate(subject_entity_type="building").validate(
         "claim", dict(BASE, predicate="build_period", value_text="c.1885",
                       qualifiers={"date_precision": "decade"}))
     assert result.valid, result.violations
-    assert result.unchecked == ()
+    assert result.unchecked == ("finest_grain",)
 
 
 @pytest.mark.parametrize(

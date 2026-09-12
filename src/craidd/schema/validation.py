@@ -24,7 +24,14 @@ from collections.abc import Collection, Mapping
 from typing import Any
 
 from .entity_types import VALID_ENTITY_TYPES
+from .grain import (
+    DECLARED_GRAINS,
+    Grain,
+    grain_of_entity_type,
+    is_finer_than,
+)
 from .predicates import (
+    INTERIM_UNDECLARED,
     PredicateDef,
     PREDICATE_REGISTRY,
     SEED_PREDICATES,
@@ -132,15 +139,96 @@ def validate_predicate_def(pred: PredicateDef) -> list[str]:
                 f"predicate '{pred.name}': constraint_json is not valid JSON "
                 f"({exc})"
             )
+    errors.extend(_grain_declaration_errors(pred))
     return errors
 
 
-def validate_seed_predicates() -> list[str]:
-    """Validate every predicate in SEED_PREDICATES. craidd-init calls this
-    before bootstrapping the registry — a non-empty result means the seed
-    set itself is malformed and bootstrap must not proceed."""
+def _grain_declaration_errors(pred: PredicateDef) -> list[str]:
+    """Phase 8 tasks 8.1/8.2 — the REGISTRATION-time half of the grain rule.
+
+    Two refusals, both of them here so a caller cannot get one without the
+    other:
+
+    1. NO GRAIN IS REFUSED. Absent is not a wildcard (accepted by Huw as Llys,
+       25/08/2026). The only exception is the frozen INTERIM_UNDECLARED list —
+       the predicates registered before the rule existed, which task 8.6
+       replaces with evidenced values and which nothing may be added to.
+    2. A GRAIN THE PREDICATE'S OWN `applies_to_types` CONTRADICTS IS REFUSED.
+       A predicate declaring an AREA-grain source while accepting `building`
+       subjects is a standing permission to emit property-grain claims from an
+       area-grain source — which is exactly the `alc-predictive-wales` fault,
+       caught here at registration rather than at build. Coarser is untouched:
+       a property-grain source that also applies to `area` is a roll-up, which
+       is normal and wanted.
+    """
     errors: list[str] = []
-    for pred in SEED_PREDICATES:
+    grain = pred.finest_grain
+
+    if not isinstance(grain, Grain):
+        return [
+            f"predicate '{pred.name}': finest_grain {grain!r} is not one of "
+            f"{sorted(g.value for g in DECLARED_GRAINS)} — the value set is "
+            f"closed (a fourth value is a ruling, not an edit)"
+        ]
+
+    if grain is Grain.UNDECLARED:
+        if pred.name not in INTERIM_UNDECLARED:
+            errors.append(
+                f"predicate '{pred.name}': finest_grain is not declared — "
+                f"ABSENT IS NOT A WILDCARD (phase 8 task 8.2). Declare one of "
+                f"{sorted(g.value for g in DECLARED_GRAINS)}: the finest grain "
+                f"this predicate's SOURCE supports."
+            )
+        # A grandfathered predicate has nothing to be consistent WITH, so the
+        # applies_to cross-check below is skipped rather than guessed at.
+        return errors
+
+    for t in pred.applies_to_types:
+        try:
+            subject_grain = grain_of_entity_type(t)
+        except KeyError:
+            continue            # already reported as an invalid entity type
+        if subject_grain is Grain.NOT_SPATIAL or grain is Grain.NOT_SPATIAL:
+            if subject_grain is not grain:
+                errors.append(
+                    f"predicate '{pred.name}': finest_grain '{grain.value}' "
+                    f"and applies_to type '{t}' ('{subject_grain.value}') are "
+                    f"not comparable — a predicate about places cannot accept "
+                    f"a subject that is not one, or the reverse"
+                )
+            continue
+        if is_finer_than(subject_grain, grain):
+            errors.append(
+                f"predicate '{pred.name}': finest_grain is '{grain.value}' but "
+                f"applies_to type '{t}' is '{subject_grain.value}' grain, which "
+                f"is FINER — a predicate may not accept claims finer than its "
+                f"source supports (phase 8 task 8.3). Coarser is legal; finer "
+                f"is a statement the source cannot make."
+            )
+    return errors
+
+
+def validate_seed_predicates(
+    predicates: Collection[PredicateDef] | None = None,
+) -> list[str]:
+    """Validate every predicate in `predicates` (default: SEED_PREDICATES).
+    craidd-init calls this before bootstrapping the registry — a non-empty
+    result means the seed set itself is malformed and bootstrap must not
+    proceed.
+
+    THE ARGUMENT EXISTS SO THE CALLER VALIDATES WHAT IT WILL ACTUALLY WRITE.
+    Until 12/09/2026 this took no argument and iterated the tuple bound into
+    THIS module at import, while `craidd-init` built its INSERT rows from the
+    tuple bound into ITS module. The two are the same object in practice and
+    the check therefore passed — but only by coincidence of import order, and a
+    caller seeding a different set would have had its rows validated against
+    someone else's. That is the 26/07 lesson ("the runner must ask the module")
+    in its quietest form: the runner was asking, about the wrong thing.
+    """
+    if predicates is None:
+        predicates = SEED_PREDICATES
+    errors: list[str] = []
+    for pred in predicates:
         errors.extend(validate_predicate_def(pred))
     return errors
 
@@ -315,6 +403,74 @@ def validate_qualifiers(
     return errors
 
 
+def grain_check(
+    pred: PredicateDef, subject_entity_type: str | None,
+) -> tuple[list[str], tuple[str, ...]]:
+    """Phase 8 tasks 8.3 / 8.4 — the CLAIM-time half of the grain rule.
+
+    Returns `(errors, unchecked)`. A claim may be at its predicate's declared
+    grain or COARSER; finer is refused. The split return is the point: this
+    rule has three outcomes, not two, and the third has to be sayable.
+
+      * REFUSED — the subject is FINER than the predicate's source supports.
+      * CLEAN — equal or coarser (an aggregation), or both sides `not_spatial`.
+      * UNCHECKED — the rule could not be decided for this claim, and the gate
+        reports which rule that was. Two causes, both honest and both named:
+        the caller could not resolve the subject's entity type (a snapshot
+        builder usually cannot — the subject of a search-layer claim lives in
+        the frozen spine, not in the record set), or the predicate is one of
+        the 143 whose grain task 8.6 has not yet evidenced.
+
+    WHY AN UNDECLARED PREDICATE IS UNCHECKED AND NOT REFUSED, since the
+    alternative was considered and measured. Every claim on the estate cites
+    one of the 143, all UNDECLARED until 8.6 lands; and every snapshot builder
+    reaches this contract through `validation_gate.grammar_violations`, which
+    runs over EVERY record materialised into EVERY snapshot. Refusing on
+    UNDECLARED would therefore hard-stop every build on the estate between 8.5
+    and 8.6 — a guard that stops all legitimate work is deleted by the next
+    person, which is the failure 8.4 exists to prevent. Refusing would also
+    assert something untrue: an undeclared predicate has not been found to
+    conflict with the claim, it has not been ASSESSED. `unchecked` says that,
+    where a refusal would say something else. The interim is visible in three
+    places — here, `predicates.undeclared_predicates()`, and the frozen
+    INTERIM_UNDECLARED list — so nobody can report the rule as fully enforced
+    while 8.6 is outstanding.
+    """
+    grain = pred.finest_grain
+    if not isinstance(grain, Grain) or grain is Grain.UNDECLARED:
+        # A malformed grain is reported by validate_predicate_def at
+        # registration; here it is simply not a basis for refusing a claim.
+        return [], ("finest_grain",)
+    if subject_entity_type is None:
+        return [], ("finest_grain",)
+    try:
+        subject_grain = grain_of_entity_type(subject_entity_type)
+    except KeyError:
+        # An invalid entity type is already reported by validate_entity /
+        # applies_to; the grain rule has nothing to say about it.
+        return [], ("finest_grain",)
+
+    if grain is Grain.NOT_SPATIAL or subject_grain is Grain.NOT_SPATIAL:
+        if subject_grain is grain:
+            return [], ()          # not applicable, and both sides agree it is
+        return [
+            f"predicate '{pred.name}': finest_grain '{grain.value}' does not "
+            f"admit a '{subject_grain.value}' subject (entity type "
+            f"'{subject_entity_type}') — a predicate about places cannot take "
+            f"a subject that is not one, or the reverse"
+        ], ()
+
+    if is_finer_than(subject_grain, grain):
+        return [
+            f"predicate '{pred.name}': finest_grain is '{grain.value}' but "
+            f"this claim's subject is '{subject_grain.value}' grain (entity "
+            f"type '{subject_entity_type}'), which is FINER — a claim may be "
+            f"at its predicate's grain or coarser, never finer (phase 8 task "
+            f"8.3)"
+        ], ()
+    return [], ()
+
+
 def validate_claim(
     claim: Mapping[str, Any],
     *,
@@ -399,6 +555,10 @@ def validate_claim(
             f"'{subject_entity_type}' (applies to: "
             f"{', '.join(pred.applies_to_types)})"
         )
+
+    # --- grain (phase 8 tasks 8.3 / 8.4) ---------------------------------
+    grain_errors, _ = grain_check(pred, subject_entity_type)
+    errors.extend(grain_errors)
 
     # --- value placement -------------------------------------------------
     columns = _VALUE_COLUMNS.get(pred.value_type, ())
