@@ -14,6 +14,16 @@ Source of truth: design/v0.1-schema.md.
 from __future__ import annotations
 
 from .entity_types import ENTITY_TYPES, VALID_ENTITY_TYPES, is_valid_entity_type
+from .grain import (
+    DECLARED_GRAINS,
+    ENTITY_TYPE_GRAIN,
+    GRAIN_ORDER,
+    Grain,
+    UndeclaredGrainError,
+    grain_of_entity_type,
+    grain_rank,
+    is_finer_than,
+)
 from .qualifiers import (
     DEFAULT_DIALECT,
     DEFAULT_TEMPORAL_STATUS,
@@ -39,6 +49,7 @@ from .predicates import (
 )
 from .validation import (
     validate_predicate_def,
+    grain_check,
     validate_seed_predicates,
     validate_entity,
     validate_entity_proposal,
@@ -80,6 +91,15 @@ __all__ = [
     "CY_PENDING",
     # validation contract
     "validate_predicate_def",
+    "grain_check",
+    "Grain",
+    "GRAIN_ORDER",
+    "DECLARED_GRAINS",
+    "ENTITY_TYPE_GRAIN",
+    "UndeclaredGrainError",
+    "grain_of_entity_type",
+    "grain_rank",
+    "is_finer_than",
     "validate_seed_predicates",
     "validate_entity",
     "validate_entity_proposal",

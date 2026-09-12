@@ -74,10 +74,15 @@ _INSERT_PREDICATE = (
 )
 
 
-def _seed_predicate_rows(actor: str) -> list[tuple]:
+def _seed_predicate_rows(actor: str, predicates=None) -> list[tuple]:
     """Build the INSERT parameter rows for the predicate registry. The
     applies_to_types and required_qualifiers columns are stored as JSON
-    array strings, per design/v0.1-schema.md §3.3."""
+    array strings, per design/v0.1-schema.md §3.3.
+
+    `predicates` defaults to SEED_PREDICATES; `main()` passes the very tuple it
+    validated, so validation and insertion cannot diverge."""
+    if predicates is None:
+        predicates = SEED_PREDICATES
     return [
         (
             p.name,
@@ -90,7 +95,7 @@ def _seed_predicate_rows(actor: str) -> list[tuple]:
             json.dumps(list(p.required_qualifiers)),
             actor,
         )
-        for p in SEED_PREDICATES
+        for p in predicates
     ]
 
 
@@ -196,7 +201,10 @@ def main(argv: list[str] | None = None) -> int:
     prawf_path = prawf_db_path(args.data_dir)
 
     # --- 1. validate the seed set before touching anything --------------
-    seed_errors = validate_seed_predicates()
+    # The SAME tuple is validated and inserted — read once, here — so the
+    # registrar cannot check one set and write another (phase 8 task 8.5).
+    seed_set = SEED_PREDICATES
+    seed_errors = validate_seed_predicates(seed_set)
     if seed_errors:
         _report_failure(args.as_json, code=2,
                         reason="seed predicate set is malformed",
@@ -224,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     # --- 3. dry run: report and stop ------------------------------------
     if args.dry_run:
         _report_dry_run(args.as_json, craidd_path, prawf_path,
-                        len(SEED_PREDICATES), args.actor)
+                        len(seed_set), args.actor)
         return 0
 
     # --- 4. bootstrap ---------------------------------------------------
@@ -234,7 +242,8 @@ def main(argv: list[str] | None = None) -> int:
         # craidd.duckdb — v0.1 schema + seeded predicate registry
         conn = connect_craidd(craidd_path)
         apply_ddl(conn, CRAIDD_DDL)
-        conn.executemany(_INSERT_PREDICATE, _seed_predicate_rows(args.actor))
+        conn.executemany(_INSERT_PREDICATE,
+                         _seed_predicate_rows(args.actor, seed_set))
         seeded = conn.execute("SELECT count(*) FROM predicate").fetchone()[0]
         conn.close()
 

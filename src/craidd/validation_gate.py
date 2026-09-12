@@ -179,14 +179,25 @@ def grammar_violations(
     caller knows it. A snapshot builder usually does not: the subject entity of
     a search-layer claim is a UPRN in the frozen spine, not a record in this
     record set. In that case applies_to is reported as unchecked rather than
-    quietly passed."""
+    quietly passed — and so is `finest_grain`, which needs the same fact."""
     canonical = resolve_kind(kind)
     if canonical not in _GRAMMAR_KINDS or not isinstance(document, dict):
         return [], ()
-    from .schema.validation import validate_claim
+    from .schema.predicates import PREDICATE_REGISTRY
+    from .schema.validation import grain_check, validate_claim
 
     violations = validate_claim(document, subject_entity_type=subject_entity_type)
-    unchecked = () if subject_entity_type is not None else ("applies_to",)
+    unchecked: tuple = () if subject_entity_type is not None else ("applies_to",)
+
+    # Grain (phase 8) has a third outcome the error list cannot carry: the rule
+    # could not be DECIDED for this claim — the subject's entity type is
+    # unresolvable, or the predicate is one of the 143 whose grain task 8.6 has
+    # not yet evidenced. A clean result that silently skipped it would be the
+    # wildcard 8.2 refuses, so it is named here beside `applies_to`.
+    pred = PREDICATE_REGISTRY.get(document.get("predicate"))
+    if pred is not None:
+        _, grain_unchecked = grain_check(pred, subject_entity_type)
+        unchecked = unchecked + grain_unchecked
     return violations, unchecked
 
 

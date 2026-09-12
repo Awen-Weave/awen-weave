@@ -41,6 +41,9 @@ predicate added before its Welsh form is attested.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+
+from .grain import DECLARED_GRAINS, Grain
 
 
 # Placeholder for description_cy until a proper Welsh pass is done. It
@@ -69,6 +72,13 @@ class PredicateDef:
     description_cy       Welsh description (CY_PENDING until a Welsh pass)
     required_qualifiers  qualifier keys every claim on this predicate must carry
     constraint_json      optional JSON constraint string (e.g. an enum), or None
+    finest_grain         the FINEST grain this predicate's SOURCE supports
+                         (phase 8, accepted by Huw as Llys 25/08/2026). A claim
+                         may be at that grain or coarser, never finer. The
+                         default is `Grain.UNDECLARED` — an INTERIM marker, not
+                         a wildcard: `validate_predicate_def` refuses it for
+                         any predicate not on the frozen INTERIM_UNDECLARED
+                         list below, which task 8.6 empties.
     """
 
     name: str
@@ -79,6 +89,7 @@ class PredicateDef:
     description_cy: str = CY_PENDING
     required_qualifiers: tuple[str, ...] = ()
     constraint_json: str | None = None
+    finest_grain: Grain = Grain.UNDECLARED
 
 
 # ---------------------------------------------------------------------------
@@ -1010,7 +1021,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 }
 
 # Import-time invariant: a duplicate predicate name would silently shadow
-# in PREDICATE_REGISTRY. 115 distinct names expected: 60 v0.1 seed (58 +
+# in PREDICATE_REGISTRY. 143 distinct names expected: 60 v0.1 seed (58 +
 # §10 item 7's verified_building_toid + location_verification_status), the
 # 4 Egni demand predicates (_ENERGY_DEMAND, 2026-07-20), the 34 ratified
 # 2026-07-22 additions — 17 EPC (_EPC), 15 planning (_PLANNING), 2 BGS
@@ -1028,7 +1039,21 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # the gazetteer settlement rank, and 4 GP-layer predicates
 # (_SPINE_AND_GP_BACKFILL, 2026-07-27) = 126, + the 4 EA Hydrology predicates on the
 # new `station` kind (_HYDROLOGY, constitution 0.1.5, 2026-08-07, sig:c659a12f) = 130, + the 9
-# climate-sweep predicates (_CLIMATE_SWEEP, constitution 0.1.6, 2026-08-07, sig:7508450d) = 139.
+# climate-sweep predicates (_CLIMATE_SWEEP, constitution 0.1.6, 2026-08-07, sig:7508450d) = 139,
+# + the 2 DESNZ predicates ratified Llys 09/08/2026 [sig:7577b7d1] into the EXISTING _ENERGY_DEMAND
+# group (`off_gas_grid_properties`, `energy_efficiency_measures_installed`) = 141, + the 2 Welsh
+# heritage predicates ratified 11/08/2026 [Llys R1+R2 ACCEPT, welsh-heritage-predicates-ruling] into
+# the EXISTING _HERITAGE_SEARCHES group (`within_world_heritage_site`,
+# `within_registered_historic_landscape`) = 143.
+#
+# THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
+# correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
+# the concatenation below, so the tally got updated. These four were added INSIDE two existing
+# groups, which changes no line the tally mentions — so the running total silently stopped being a
+# count of the code. Re-measured 12/09/2026 against 2f16659 (dispatch 199 §0): len(SEED_PREDICATES)
+# == len(PREDICATE_REGISTRY) == 143, and the group sums agree. The tally is KEPT rather than
+# replaced with a bare 143 — it is the file's provenance, and the invariant below is what actually
+# enforces the number.
 if len(PREDICATE_REGISTRY) != len(SEED_PREDICATES):
     raise RuntimeError("duplicate predicate name in SEED_PREDICATES")
 
@@ -1041,3 +1066,88 @@ for _ff in FALSE_FRIENDS:
         raise RuntimeError(
             f"FALSE_FRIENDS[{_ff.name!r}].use_instead {_ff.use_instead!r} is not registered"
         )
+
+
+# ---------------------------------------------------------------------------
+# TASK 8.6's SURFACE, MADE EXPLICIT AND FROZEN — delete this block when it empties
+# ---------------------------------------------------------------------------
+# THE COLLISION THIS RESOLVES, stated plainly because it is by construction and
+# not an oversight. Task 8.2 refuses a predicate with no `finest_grain`; every
+# predicate registered before the rule existed has none. If 8.2 simply applied,
+# `validate_seed_predicates()` would refuse the whole seed set and `craidd-init`
+# could not bootstrap at all — so the rule would land un-landable and the first
+# person to hit it would delete it.
+#
+# The interim is therefore NAMED rather than implied: exactly these predicates
+# carry `Grain.UNDECLARED` and are not refused. Nothing else may. Task 8.6
+# declares a grain EVIDENCED AGAINST EACH PREDICATE'S SOURCE (not inferred from
+# a layer name) and removes the name from this list IN THE SAME COMMIT; when the
+# list empties, this block and the branch in `validate_predicate_def` that reads
+# it are deleted and 8.2 applies without exception.
+#
+# WHY IT IS PINNED BY DIGEST AND NOT JUST BY MEMBERSHIP. A list a writer may
+# append to is a wildcard with an audit trail: the next new predicate would be
+# waved through by adding one line here. The digest means the list can only ever
+# be made SMALLER without the pin also changing, and changing the pin is a
+# deliberate, reviewable act. `undeclared_predicates()` below reports what is
+# still outstanding so nobody can state the rule is fully enforced while it is
+# not.
+def _interim_digest(names: tuple[str, ...]) -> str:
+    """sha256 over the sorted names, so the pin is order-independent."""
+    return hashlib.sha256("\n".join(sorted(names)).encode("utf-8")).hexdigest()[:16]
+
+
+INTERIM_UNDECLARED: tuple[str, ...] = tuple(
+    p.name for p in SEED_PREDICATES if p.finest_grain is Grain.UNDECLARED
+)
+
+#: Pinned 12/09/2026 over the 143 predicates registered at awen-weave 0.2.20
+#: (2f16659). Task 8.6 shrinks the list and re-pins; it may never grow.
+INTERIM_UNDECLARED_DIGEST: str = "f66b47d7a5a0b752"
+
+#: The count at the pin, carried separately so a reader sees the number without
+#: computing it, and so a partial 8.6 landing is visible as a moved figure.
+INTERIM_UNDECLARED_COUNT_AT_PIN: int = 143
+
+
+def undeclared_predicates() -> tuple[str, ...]:
+    """The registered predicates whose grain nobody has yet evidenced.
+
+    Non-empty means task 8.6 is outstanding and the grain rule is enforced for
+    NEW registrations only. Read this rather than asserting the rule is on.
+    """
+    return tuple(
+        name for name, p in PREDICATE_REGISTRY.items()
+        if p.finest_grain is Grain.UNDECLARED
+    )
+
+
+def _assert_grain_declarations(predicates: tuple[PredicateDef, ...]) -> None:
+    """Import-time invariant: no predicate may be UNDECLARED unless it is on
+    the frozen interim list, and the list may not grow.
+
+    This is the registrar's second line (task 8.5): even a predicate added
+    straight into this module — reaching no validator, no CLI and no gate —
+    cannot carry a missing grain. Lifted out as a function so it can be tested
+    against a hypothetical set rather than only against the real one.
+    """
+    undeclared = tuple(p.name for p in predicates
+                       if p.finest_grain is Grain.UNDECLARED)
+    unlisted = sorted(set(undeclared) - set(INTERIM_UNDECLARED))
+    if unlisted:
+        raise RuntimeError(
+            f"predicate(s) {unlisted} carry no finest_grain and are not on the "
+            f"frozen interim list — absent is not a wildcard (phase 8 task 8.2). "
+            f"Declare a grain: "
+            f"{', '.join(g.value for g in sorted(DECLARED_GRAINS, key=lambda g: g.value))}."
+        )
+    if _interim_digest(INTERIM_UNDECLARED) != INTERIM_UNDECLARED_DIGEST:
+        raise RuntimeError(
+            "INTERIM_UNDECLARED does not match its pin — task 8.6 may only "
+            "SHRINK this list, and re-pinning is a deliberate act "
+            f"(expected {INTERIM_UNDECLARED_DIGEST}, "
+            f"got {_interim_digest(INTERIM_UNDECLARED)})"
+        )
+
+
+_assert_grain_declarations(SEED_PREDICATES)
