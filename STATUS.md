@@ -1,6 +1,21 @@
 # Awen Weave — STATUS
 
-**Last updated:** 2026-09-12 (**grain enforcement at registration** — `finest_grain` on the predicate, refused when absent, enforced on the registration paths; awen-weave **0.2.21**. Prior headline: **S1 federation spine built** — snapshot builder + stamp emitter + async request queue in `src/craidd/`; validates every record against the live awen-porth `constitution.validate` gate (offline vendored-schema fallback); committed Dolgellau gazetteer sample snapshot. Written on the Mac, **not yet committed/pushed** — Huw commits + deploys to craidd. Prior headline: constitution drift-check ride-along staged; **v0.2.0 on PyPI**.)
+**Last updated:** 2026-09-12 (**`alc_grade` carries its pinned AWE-004 definition** — awen-weave **0.2.23**. Prior headline: **task 8.6 — all 143 predicates carry an evidenced `finest_grain` and the interim is gone**, 0.2.22. Prior headline: **grain enforcement at registration** — `finest_grain` on the predicate, refused when absent, enforced on the registration paths, 0.2.21. Prior headline: **S1 federation spine built** — snapshot builder + stamp emitter + async request queue in `src/craidd/`; validates every record against the live awen-porth `constitution.validate` gate (offline vendored-schema fallback); committed Dolgellau gazetteer sample snapshot. Written on the Mac, **not yet committed/pushed** — Huw commits + deploys to craidd. Prior headline: constitution drift-check ride-along staged; **v0.2.0 on PyPI**.)
+
+## `alc_grade` supersedes its backfill entry — AWE-004 read-contract (2026-09-12, **0.2.23**)
+
+- **ONE PREDICATE, ONE ENTRY.** The 2026-07-27 backfill sweep registered `alc_grade` off the published data while this branch was open; this lands the **pinned AWE-004 read-contract definition** (2026-07-18) and **removes** the backfill entry rather than leaving it beside it — *a second entry under the same name would shadow silently*. Registry count is **unchanged at 143**, asserted, and `alc_grade` appears exactly once.
+- **WHAT THE NEW ENTRY ADDS:** the bilingual gloss, and the two qualifiers the live emitter already sends (`alc_predictive_wales.py`: `verification_method`, `semantics_caveat`). Same name, value type, cardinality, entity type **and grain**.
+- **THE GRAIN SURVIVED THE REBASE UNCHANGED: `area`**, and it was evidenced the same way on both sides — `awen-source-catalogue/spines.py` declares `"alc-predictive-wales": "gazetteer"`, the place/GSS spine, never the UPRN spine. Read off the catalogue's declaration (task 8.6's method), not inferred from the name.
+- **REBASED ONTO 0.2.22 AND THE RESOLUTION IS RECORDED**, because it was not mechanical. Two conflicts in `predicates.py`: the first kept 8.6's `finest_grain` on the *preceding* predicate while taking this PR's deletion of the `alc_grade` entry; the second **took `main` whole** — this PR had re-pinned the interim digest at 142, and task 8.6 deleted the interim block entirely, so there was nothing left to re-pin. Both conflicts in `test_grain_enforcement.py` took `main`: this PR's three interim tests reference symbols 8.6 removed.
+- Suite **335 passed** (334 before). `description_cy` is flagged pending tutor attestation, as the branch wrote it.
+
+## Task 8.6 — every predicate carries an evidenced grain (2026-09-12, **0.2.22**)
+
+- **ALL 143 DECLARED: 74 `property`, 25 `area`, 44 `not_spatial`** — and the 44 matches the coordinator's independently measured non-spatial count exactly. Evidence: **33** `catalogue-spine`, **22** `module-read`, **88** `subject-declared`, with **39** rows honestly carrying *"none found — subject-declared only"*.
+- **THE INTERIM IS DELETED.** `INTERIM_UNDECLARED`, its digest pin and `validation.py`'s exemption branch are gone; `_assert_grain_declarations` refuses any undeclared grain **at import**. There is no longer a list a writer could append a name to.
+- **A LAYER'S SPINE IS NOT ALWAYS ITS SOURCE'S FINEST GRAIN.** The five `gp-locations` predicates sit on a gazetteer (area) spine but bind to one ODS practice as `building` (`gp_locations.py:190`). Measured: with `area` those claims are **refused**; with `property` they are legal.
+- Evidence pack for Huw's exit-6 attestation: `IDR-006 Awen/EVIDENCE-8.6-grain-backfill-2026-09-12.md`, sha256 `e3318af10c62798825ca32b6cfd2f0951c318d5407dbbd53b35e0767dd47a563`. **Exit 6 is attested by Huw, not by the seat.**
 
 ## Grain enforcement at registration — phase 8, tasks 8.1–8.5 (2026-09-12, **0.2.21**)
 
