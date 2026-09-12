@@ -31,7 +31,6 @@ from .grain import (
     is_finer_than,
 )
 from .predicates import (
-    INTERIM_UNDECLARED,
     PredicateDef,
     PREDICATE_REGISTRY,
     SEED_PREDICATES,
@@ -150,9 +149,9 @@ def _grain_declaration_errors(pred: PredicateDef) -> list[str]:
     other:
 
     1. NO GRAIN IS REFUSED. Absent is not a wildcard (accepted by Huw as Llys,
-       25/08/2026). The only exception is the frozen INTERIM_UNDECLARED list —
-       the predicates registered before the rule existed, which task 8.6
-       replaces with evidenced values and which nothing may be added to.
+       25/08/2026). THERE IS NO LONGER ANY EXCEPTION: the frozen
+       INTERIM_UNDECLARED list that once excused the 143 pre-rule predicates
+       was emptied and removed by task 8.6 on 2026-09-12 (dispatch 200).
     2. A GRAIN THE PREDICATE'S OWN `applies_to_types` CONTRADICTS IS REFUSED.
        A predicate declaring an AREA-grain source while accepting `building`
        subjects is a standing permission to emit property-grain claims from an
@@ -172,14 +171,13 @@ def _grain_declaration_errors(pred: PredicateDef) -> list[str]:
         ]
 
     if grain is Grain.UNDECLARED:
-        if pred.name not in INTERIM_UNDECLARED:
-            errors.append(
-                f"predicate '{pred.name}': finest_grain is not declared — "
-                f"ABSENT IS NOT A WILDCARD (phase 8 task 8.2). Declare one of "
-                f"{sorted(g.value for g in DECLARED_GRAINS)}: the finest grain "
-                f"this predicate's SOURCE supports."
-            )
-        # A grandfathered predicate has nothing to be consistent WITH, so the
+        errors.append(
+            f"predicate '{pred.name}': finest_grain is not declared — "
+            f"ABSENT IS NOT A WILDCARD (phase 8 task 8.2). Declare one of "
+            f"{sorted(g.value for g in DECLARED_GRAINS)}: the finest grain "
+            f"this predicate's SOURCE supports."
+        )
+        # An undeclared predicate has nothing to be consistent WITH, so the
         # applies_to cross-check below is skipped rather than guessed at.
         return errors
 
