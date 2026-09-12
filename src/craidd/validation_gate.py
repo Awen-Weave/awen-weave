@@ -191,9 +191,11 @@ def grammar_violations(
 
     # Grain (phase 8) has a third outcome the error list cannot carry: the rule
     # could not be DECIDED for this claim — the subject's entity type is
-    # unresolvable, or the predicate is one of the 143 whose grain task 8.6 has
-    # not yet evidenced. A clean result that silently skipped it would be the
-    # wildcard 8.2 refuses, so it is named here beside `applies_to`.
+    # unresolvable. (Until 0.2.22 there was a second reason, a predicate among
+    # the 143 whose grain task 8.6 had not yet evidenced; 8.6 landed on
+    # 2026-09-12 and none is undeclared now.) A clean result that silently
+    # skipped it would be the wildcard 8.2 refuses, so it is named here beside
+    # `applies_to`.
     pred = PREDICATE_REGISTRY.get(document.get("predicate"))
     if pred is not None:
         _, grain_unchecked = grain_check(pred, subject_entity_type)

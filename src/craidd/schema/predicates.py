@@ -104,11 +104,13 @@ class PredicateDef:
     constraint_json      optional JSON constraint string (e.g. an enum), or None
     finest_grain         the FINEST grain this predicate's SOURCE supports
                          (phase 8, accepted by Huw as Llys 25/08/2026). A claim
-                         may be at that grain or coarser, never finer. The
-                         default is `Grain.UNDECLARED` — an INTERIM marker, not
-                         a wildcard: `validate_predicate_def` refuses it for
-                         any predicate not on the frozen INTERIM_UNDECLARED
-                         list below, which task 8.6 empties.
+                         may be at that grain or coarser, never finer. ABSENT
+                         IS REFUSED FOR EVERY PREDICATE, with no exception:
+                         `validate_predicate_def` refuses `Grain.UNDECLARED`
+                         and `_assert_grain_declarations` refuses it again at
+                         IMPORT. The default stays `Grain.UNDECLARED` so that
+                         "absent" is a typed, refusable state rather than a
+                         crash — it is not a wildcard and nothing forgives it.
     """
 
     name: str

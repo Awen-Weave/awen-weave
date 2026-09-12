@@ -416,23 +416,30 @@ def grain_check(
         reports which rule that was. Two causes, both honest and both named:
         the caller could not resolve the subject's entity type (a snapshot
         builder usually cannot — the subject of a search-layer claim lives in
-        the frozen spine, not in the record set), or the predicate is one of
-        the 143 whose grain task 8.6 has not yet evidenced.
+        the frozen spine, not in the record set). The second former reason — a
+        predicate among the 143 whose grain 8.6 had not yet evidenced — ENDED
+        WITH 0.2.22: none is undeclared now.
 
-    WHY AN UNDECLARED PREDICATE IS UNCHECKED AND NOT REFUSED, since the
-    alternative was considered and measured. Every claim on the estate cites
-    one of the 143, all UNDECLARED until 8.6 lands; and every snapshot builder
+    WHY AN UNDECLARED PREDICATE IS UNCHECKED AND NOT REFUSED *HERE*, since the
+    alternative was considered and measured. Between 8.5 and 8.6 every claim on
+    the estate cited one of the 143, all UNDECLARED; and every snapshot builder
     reaches this contract through `validation_gate.grammar_violations`, which
     runs over EVERY record materialised into EVERY snapshot. Refusing on
-    UNDECLARED would therefore hard-stop every build on the estate between 8.5
-    and 8.6 — a guard that stops all legitimate work is deleted by the next
-    person, which is the failure 8.4 exists to prevent. Refusing would also
-    assert something untrue: an undeclared predicate has not been found to
-    conflict with the claim, it has not been ASSESSED. `unchecked` says that,
-    where a refusal would say something else. The interim is visible in three
-    places — here, `predicates.undeclared_predicates()`, and the frozen
-    INTERIM_UNDECLARED list — so nobody can report the rule as fully enforced
-    while 8.6 is outstanding.
+    UNDECLARED would therefore have hard-stopped every build on the estate — a
+    guard that stops all legitimate work is deleted by the next person, which
+    is the failure 8.4 exists to prevent. Refusing would also assert something
+    untrue: an undeclared predicate has not been found to conflict with the
+    claim, it has not been ASSESSED. `unchecked` says that, where a refusal
+    would say something else.
+
+    TASK 8.6 LANDED IN 0.2.22 (2026-09-12, dispatch 200) AND THE RULE IS NOW
+    FULLY ENFORCED. All 143 registered predicates carry an evidenced grain, the
+    frozen INTERIM_UNDECLARED list is deleted, and an undeclared grain is
+    refused at registration AND at import. So this branch is no longer reachable
+    from the registry — it is kept as the CLAIM-time contract for a predicate
+    that is somehow undeclared anyway (a hand-built `PredicateDef` in a test, a
+    future regression), and the reasoning above is kept because it is why this
+    path reports rather than refuses, which has not changed.
     """
     grain = pred.finest_grain
     if not isinstance(grain, Grain) or grain is Grain.UNDECLARED:
