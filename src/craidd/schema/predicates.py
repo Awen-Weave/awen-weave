@@ -127,9 +127,13 @@ class PredicateDef:
 # ---------------------------------------------------------------------------
 _BUILDING: tuple[PredicateDef, ...] = (
     PredicateDef("address", "bilingual", "single", ("building",),
-                 "Postal address.", description_cy="cyfeiriad post"),
+                 "Postal address.", description_cy="cyfeiriad post",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("geometry", "geom", "single", ("building",),
-                 "Building footprint or point.", description_cy="geometreg yr adeilad - ôl troed yr adeilad"),
+                 "Building footprint or point.", description_cy="geometreg yr adeilad - ôl troed yr adeilad",
+        finest_grain=Grain.PROPERTY,
+    ),
     # `text`, not `int`: a UPRN is an IDENTIFIER, never a quantity. Nothing adds
     # or averages one, its 12-digit width is significant, and every other part
     # of the estate already treats it as a string — place-anchor.schema.json
@@ -139,55 +143,95 @@ _BUILDING: tuple[PredicateDef, ...] = (
     # grammar-invalid the moment the build gate started checking the grammar
     # (27/07). Sibling identifier `listed_id` was already `text`.
     PredicateDef("uprn", "text", "single", ("building",),
-                 "OS Unique Property Reference Number.", description_cy="Rhif Cyfeirnod Unigryw Eiddo (UPRN) yr OS"),
+                 "OS Unique Property Reference Number.", description_cy="Rhif Cyfeirnod Unigryw Eiddo (UPRN) yr OS",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("building_type", "text", "single", ("building",),
                  "Building type. v0.1-schema.md §3.5 marks this a controlled "
-                 "enum but does not yet define the enum values.", description_cy="math o adeilad"),
+                 "enum but does not yet define the enum values.", description_cy="math o adeilad",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("floor_area_m2", "real", "single", ("building",),
-                 "Total internal floor area in square metres.", description_cy="cyfanswm arwynebedd llawr mewnol mewn metrau sgwâr"),
+                 "Total internal floor area in square metres.", description_cy="cyfanswm arwynebedd llawr mewnol mewn metrau sgwâr",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("build_year", "int", "single", ("building",),
-                 "Year built — use only when the date is exact.", description_cy="blwyddyn adeiladu — defnyddiwch dim ond pan fo'r dyddiad yn fanwl gywir"),
+                 "Year built — use only when the date is exact.", description_cy="blwyddyn adeiladu — defnyddiwch dim ond pan fo'r dyddiad yn fanwl gywir",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("build_period", "text", "single", ("building",),
                  "Imprecise build period, e.g. 'c.1885', 'late C18'.",
-                 required_qualifiers=("date_precision",), description_cy="Cyfnod adeiladu yn fras"),
+                 required_qualifiers=("date_precision",), description_cy="Cyfnod adeiladu yn fras",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("original_use", "bilingual", "multi", ("building",),
-                 "Historic primary use(s).", description_cy="defnydd(iau) gwreiddiol"),
+                 "Historic primary use(s).", description_cy="defnydd(iau) gwreiddiol",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("current_use", "bilingual", "single", ("building",),
-                 "Today's primary use.", description_cy="defnydd presennol"),
+                 "Today's primary use.", description_cy="defnydd presennol",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("listed_grade", "text", "single", ("building",),
                  "Statutory listing grade.",
-                 constraint_json='{"enum": ["I", "II*", "II"]}', description_cy="gradd restredig statudol"),
+                 constraint_json='{"enum": ["I", "II*", "II"]}', description_cy="gradd restredig statudol",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("listed_id", "text", "multi", ("building",),
                  "Cadw or British Listed Buildings register reference. "
-                 "Multi-cardinality: a building may carry several.", description_cy="cyfeirnod cofrestr Cadw neu adeiladau rhestredig Prydain"),
+                 "Multi-cardinality: a building may carry several.", description_cy="cyfeirnod cofrestr Cadw neu adeiladau rhestredig Prydain",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("conservation_area", "text", "multi", ("building",),
-                 "Conservation area(s) the building sits within.", description_cy="ardal gadwraeth"),
+                 "Conservation area(s) the building sits within.", description_cy="ardal gadwraeth",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("name_cy", "text", "multi", ("building",),
                  "Welsh name. Multi-cardinality; every claim must carry a "
                  "name_type qualifier.",
-                 required_qualifiers=("name_type",), description_cy="enw Cymraeg"),
+                 required_qualifiers=("name_type",), description_cy="enw Cymraeg",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("name_en", "text", "multi", ("building",),
                  "English name. Multi-cardinality; every claim must carry a "
                  "name_type qualifier.",
-                 required_qualifiers=("name_type",), description_cy="enw Saesneg"),
+                 required_qualifiers=("name_type",), description_cy="enw Saesneg",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("historical_note", "bilingual", "multi", ("building",),
-                 "Free-text historical claim.", description_cy="nodyn hanesyddol — testun rhydd"),
+                 "Free-text historical claim.", description_cy="nodyn hanesyddol — testun rhydd",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("architectural_description", "bilingual", "multi", ("building",),
-                 "Structured architectural detail.", description_cy="disgrifiad pensaernïol strwythuredig"),
+                 "Structured architectural detail.", description_cy="disgrifiad pensaernïol strwythuredig",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("material_primary", "text", "single", ("building",),
                  "Primary external wall material, e.g. 'snecked rubble "
-                 "dolerite'.", description_cy="prif ddeunydd wal allanol"),
+                 "dolerite'.", description_cy="prif ddeunydd wal allanol",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("roof_type", "text", "single", ("building",),
-                 "Roof form and material, e.g. 'hipped slate'.", description_cy="math o do — ffurf a deunydd"),
+                 "Roof form and material, e.g. 'hipped slate'.", description_cy="math o do — ffurf a deunydd",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("storeys", "int", "single", ("building",),
-                 "Number of full storeys.", description_cy="nifer y lloriau llawn"),
+                 "Number of full storeys.", description_cy="nifer y lloriau llawn",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("adjacent_to", "entity_ref", "multi", ("building",),
-                 "Another building physically adjacent to this one.", description_cy="adeilad arall sy'n gyfagos yn gorfforol i hwn"),
+                 "Another building physically adjacent to this one.", description_cy="adeilad arall sy'n gyfagos yn gorfforol i hwn",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("contemporary_with", "entity_ref", "multi", ("building",),
-                 "A building of the same construction period.", description_cy="adeilad o'r un cyfnod adeiladu"),
+                 "A building of the same construction period.", description_cy="adeilad o'r un cyfnod adeiladu",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("group_value_with", "entity_ref", "multi", ("building",),
                  "A building whose listing reason is shared or related "
-                 "(listed 'group value').", description_cy="adeilad sy'n rhannu rheswm rhestru (gwerth grŵp)"),
+                 "(listed 'group value').", description_cy="adeilad sy'n rhannu rheswm rhestru (gwerth grŵp)",
+        finest_grain=Grain.PROPERTY,
+    ),
     # --- §10 item 7 — Lleolydd UPRN-verification predicates (2026-05-16) ---
     PredicateDef(
         name="verified_building_toid",
@@ -204,6 +248,8 @@ _BUILDING: tuple[PredicateDef, ...] = (
             "verification_method", "verified_at", "cache_snapshot_id",
         ),
         constraint_json=None,
+    
+        finest_grain=Grain.PROPERTY,
     ),
     PredicateDef(
         name="location_verification_status",
@@ -227,6 +273,8 @@ _BUILDING: tuple[PredicateDef, ...] = (
             '{"enum": ["verified", "auto-snapped", "unsnapped", '
             '"contested", "non-postal"]}'
         ),
+    
+        finest_grain=Grain.PROPERTY,
     ),
 )
 
@@ -235,25 +283,39 @@ _BUILDING: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _TENANCY: tuple[PredicateDef, ...] = (
     PredicateDef("tenancy_of", "entity_ref", "single", ("tenancy",),
-                 "The building (or area) this tenancy occupies.", description_cy="yr adeilad (neu'r ardal) y mae'r denantiaeth hon yn ei feddiannu"),
+                 "The building (or area) this tenancy occupies.", description_cy="yr adeilad (neu'r ardal) y mae'r denantiaeth hon yn ei feddiannu",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("tenant_name", "text", "single", ("tenancy",),
-                 "Common name of the tenant.", description_cy="enw cyffredin y tenant"),
+                 "Common name of the tenant.", description_cy="enw cyffredin y tenant",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("tenant_organisation", "text", "single", ("tenancy",),
-                 "Formal organisation name, where applicable.", description_cy="enw'r sefydliad yn ffurfiol, lle bo'n berthnasol"),
+                 "Formal organisation name, where applicable.", description_cy="enw'r sefydliad yn ffurfiol, lle bo'n berthnasol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("tenancy_type", "text", "single", ("tenancy",),
                  "Tenancy type.",
                  constraint_json='{"enum": ["commercial_retail", '
                  '"commercial_wholesale", "residential", "office", '
-                 '"hospitality", "community", "mixed", "vacant", "other"]}', description_cy="math o denantiaeth"),
+                 '"hospitality", "community", "mixed", "vacant", "other"]}', description_cy="math o denantiaeth",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("tenant_business_type", "bilingual", "single", ("tenancy",),
                  "Nature of the tenant's business, e.g. 'newsagents and "
-                 "bookshop'.", description_cy="natur busnes y tenant, e.e. 'siop bapurau newydd a llyfrau'"),
+                 "bookshop'.", description_cy="natur busnes y tenant, e.e. 'siop bapurau newydd a llyfrau'",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("period_start", "date", "single", ("tenancy",),
                  "Earliest plausible start of the tenancy.",
-                 required_qualifiers=("date_precision",), description_cy="dechrau cynharaf credadwy y denantiaeth"),
+                 required_qualifiers=("date_precision",), description_cy="dechrau cynharaf credadwy y denantiaeth",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("period_end", "date", "single", ("tenancy",),
                  "Earliest plausible end of the tenancy; null means current.",
-                 required_qualifiers=("date_precision",), description_cy="diwedd cynharaf credadwy y denantiaeth; gadael yn wag ar gyfer tenantiaeth cyfredol"),
+                 required_qualifiers=("date_precision",), description_cy="diwedd cynharaf credadwy y denantiaeth; gadael yn wag ar gyfer tenantiaeth cyfredol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -264,23 +326,39 @@ _EVENT: tuple[PredicateDef, ...] = (
                  "Event type.",
                  constraint_json='{"enum": ["refurbishment", "designation", '
                  '"change_of_use", "sale", "construction", "demolition", '
-                 '"fire", "flood", "other"]}', description_cy="math o ddigwyddiad"),
+                 '"fire", "flood", "other"]}', description_cy="math o ddigwyddiad",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("event_start", "date", "single", ("event",),
                  "Event start date.",
-                 required_qualifiers=("date_precision",), description_cy="dyddiad dechrau'r digwyddiad"),
+                 required_qualifiers=("date_precision",), description_cy="dyddiad dechrau'r digwyddiad",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("event_end", "date", "single", ("event",),
                  "Event end date; null means ongoing.",
-                 required_qualifiers=("date_precision",), description_cy="dyddiad diwedd y digwyddiad; gadael yn wag ar gyfer digwyddiad cyfredol"),
+                 required_qualifiers=("date_precision",), description_cy="dyddiad diwedd y digwyddiad; gadael yn wag ar gyfer digwyddiad cyfredol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("affects_entity", "entity_ref", "multi", ("event",),
-                 "An entity this event acts upon.", description_cy="endid y mae'r digwyddiad hwn yn ei effeithio"),
+                 "An entity this event acts upon.", description_cy="endid y mae'r digwyddiad hwn yn ei effeithio",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("funder", "entity_ref", "multi", ("event",),
-                 "A funder, where the funder is itself a recorded entity.", description_cy="arianwr, lle bo'r arianwr ei hun yn endid sydd wedi'i gofnodi"),
+                 "A funder, where the funder is itself a recorded entity.", description_cy="arianwr, lle bo'r arianwr ei hun yn endid sydd wedi'i gofnodi",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("funder_text", "text", "multi", ("event",),
-                 "A funder, where recorded as a string only.", description_cy="arianwr, lle'i nodir fel llinyn yn unig"),
+                 "A funder, where recorded as a string only.", description_cy="arianwr, lle'i nodir fel llinyn yn unig",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("scope_description", "bilingual", "single", ("event",),
-                 "What the event did.", description_cy="disgrifiad y digwyddiad - beth wnaeth y digwyddiad"),
+                 "What the event did.", description_cy="disgrifiad y digwyddiad - beth wnaeth y digwyddiad",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("consent_reference", "text", "multi", ("event",),
-                 "Listed-building-consent, planning, or designation reference.", description_cy="cyfeirnod cydsynio adeilad rhestredig, cynllunio, neu ddynodi"),
+                 "Listed-building-consent, planning, or designation reference.", description_cy="cyfeirnod cydsynio adeilad rhestredig, cynllunio, neu ddynodi",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -288,21 +366,33 @@ _EVENT: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _RESEARCH_QUESTION: tuple[PredicateDef, ...] = (
     PredicateDef("question_text", "bilingual", "single", ("research_question",),
-                 "The research question itself.", description_cy="y cwestiwn ymchwil ei hun"),
+                 "The research question itself.", description_cy="y cwestiwn ymchwil ei hun",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("relates_to_entity", "entity_ref", "multi",
                  ("research_question",),
-                 "An entity the question is about.", description_cy="pwnc y mae'r cwestiwn yn ei gylch"),
+                 "An entity the question is about.", description_cy="pwnc y mae'r cwestiwn yn ei gylch",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("suggested_sources", "text", "multi", ("research_question",),
-                 "Where to look — free text.", description_cy="ble i edrych — testun rhydd"),
+                 "Where to look — free text.", description_cy="ble i edrych — testun rhydd",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("priority", "text", "single", ("research_question",),
                  "Question priority.",
-                 constraint_json='{"enum": ["low", "medium", "high"]}', description_cy="blaenoriaeth cwestiwn"),
+                 constraint_json='{"enum": ["low", "medium", "high"]}', description_cy="blaenoriaeth cwestiwn",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("status", "text", "single", ("research_question",),
                  "Question status.",
                  constraint_json='{"enum": ["open", "in_progress", '
-                 '"answered", "abandoned"]}', description_cy="statws cwestiwn"),
+                 '"answered", "abandoned"]}', description_cy="statws cwestiwn",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("answered_by_claim", "text", "single", ("research_question",),
-                 "claim_id of the claim that resolved the question.", description_cy="claim_id yr honiad a ddatrysodd y cwestiwn"),
+                 "claim_id of the claim that resolved the question.", description_cy="claim_id yr honiad a ddatrysodd y cwestiwn",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -310,21 +400,37 @@ _RESEARCH_QUESTION: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _SOURCE: tuple[PredicateDef, ...] = (
     PredicateDef("title_cy", "text", "single", ("source",),
-                 "Welsh title, where applicable.", description_cy="teitl Cymraeg, lle bo'n berthnasol"),
+                 "Welsh title, where applicable.", description_cy="teitl Cymraeg, lle bo'n berthnasol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("title_en", "text", "single", ("source",),
-                 "English title.", description_cy="teitl Saesneg"),
+                 "English title.", description_cy="teitl Saesneg",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("citation", "text", "single", ("source",),
-                 "Full citation string.", description_cy="mynegai cyfeirio"),
+                 "Full citation string.", description_cy="mynegai cyfeirio",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("url", "text", "single", ("source",),
-                 "Canonical URL.", description_cy="URL canhwynol"),
+                 "Canonical URL.", description_cy="URL canhwynol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("organisation", "text", "single", ("source",),
-                 "Authoring or holding organisation.", description_cy="sefydliad awduriaethol neu storfa"),
+                 "Authoring or holding organisation.", description_cy="sefydliad awduriaethol neu storfa",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("licence", "text", "single", ("source",),
-                 "Licence — OGL, CC-BY-SA, internal, etc.", description_cy="trwydded — OGL, CC-BY-SA, mewnol, ac yn y blaen"),
+                 "Licence — OGL, CC-BY-SA, internal, etc.", description_cy="trwydded — OGL, CC-BY-SA, mewnol, ac yn y blaen",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("accessed_at", "date", "single", ("source",),
-                 "Most recent retrieval date.", description_cy="dyddiad agor mwyaf diweddar"),
+                 "Most recent retrieval date.", description_cy="dyddiad agor mwyaf diweddar",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("file_hash", "text", "single", ("source",),
-                 "SHA-256 of the evidence file, where applicable.", description_cy="SHA-256 y ffeil dystiolaeth, lle bo'n berthnasol"),
+                 "SHA-256 of the evidence file, where applicable.", description_cy="SHA-256 y ffeil dystiolaeth, lle bo'n berthnasol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -332,22 +438,36 @@ _SOURCE: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 _TOWN: tuple[PredicateDef, ...] = (
     PredicateDef("material_tradition", "bilingual", "multi", ("town",),
-                 "The town's building-material tradition.", description_cy="traddodiad deunyddiau adeiladu'r dref"),
+                 "The town's building-material tradition.", description_cy="traddodiad deunyddiau adeiladu'r dref",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("street_pattern", "bilingual", "single", ("town",),
-                 "Narrative description of the town's street pattern.", description_cy="disgrifiad naratif o batrwm strydoedd y dref"),
+                 "Narrative description of the town's street pattern.", description_cy="disgrifiad naratif o batrwm strydoedd y dref",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("notable_event", "bilingual", "multi", ("town",),
-                 "A notable event in the town's history.", description_cy="digwyddiad nodedig yn hanes y dref"),
+                 "A notable event in the town's history.", description_cy="digwyddiad nodedig yn hanes y dref",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("conservation_authority", "text", "single", ("town",),
-                 "Local planning authority for conservation consent.", description_cy="awdurdod cynllunio lleol ar gyfer cydsynio cadwraeth"),
+                 "Local planning authority for conservation consent.", description_cy="awdurdod cynllunio lleol ar gyfer cydsynio cadwraeth",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("unitary_authority", "text", "single", ("town",),
-                 "Council responsible for non-planning matters.", description_cy="cyngor unedol"),
+                 "Council responsible for non-planning matters.", description_cy="cyngor unedol",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("listed_building_count", "int", "single", ("town",),
                  "Count of listed buildings in the town. v0.1-schema.md §3.5 "
                  "notes the count should record the date it was made; "
                  "'accessed_at' is not a §3.2 qualifier, so record that date "
-                 "in the claim note or via the source until v0.2 resolves it.", description_cy="nifer yr adeiladau rhestredig yn y dref"),
+                 "in the claim note or via the source until v0.2 resolves it.", description_cy="nifer yr adeiladau rhestredig yn y dref",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("parish", "text", "single", ("town",),
-                 "Ecclesiastical parish, where relevant.", description_cy="plwyf eglwysig, lle bo'n berthnasol"),
+                 "Ecclesiastical parish, where relevant.", description_cy="plwyf eglwysig, lle bo'n berthnasol",
+        finest_grain=Grain.AREA,
+    ),
 )
 
 
@@ -361,11 +481,15 @@ _TOWN: tuple[PredicateDef, ...] = (
 _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
     PredicateDef("electricity_consumption_kwh", "real", "single", ("area",),
                  "Annual electricity consumption for the small area, kWh "
-                 "(DESNZ sub-national).", description_cy=CY_PENDING),
+                 "(DESNZ sub-national).", description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("gas_consumption_kwh", "real", "single", ("area",),
                  "Annual gas consumption for the small area, kWh (DESNZ "
                  "sub-national) — settles where the gas grid actually reaches.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     # Ratified Llys 09/08/2026 [sig:7577b7d1 clearance / energy-grammar-rulings]. Adopt-and-cite
     # DESNZ's own official statistics; statistical-indicator shape (RDF Data Cube / SDMX). Both
     # are counts on the place grain (area→gazetteer GSS); awen-weave-minor, no Tier-1 change.
@@ -374,22 +498,30 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  "area (DESNZ estimates). The mains-gas-footprint complement to "
                  "gas_consumption_kwh — the off-gas-grid / heat-transition case. Vintage in the "
                  "citation; VERIFY-AT-REGISTRATION the LSOA vintage (LSOA21 spine vs source).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("energy_efficiency_measures_installed", "int", "single", ("area",),
                  "Count of home energy-efficiency measures installed under ECO / Green Deal in "
                  "the area (DESNZ Household Energy Efficiency). An absolute count; vintage in "
                  "the citation.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     # multi: one claim per main-fuel class in the small area (Census TS046) —
     # the fuel label rides in value_en/value_cy, the percentage in value_real.
     # A single-cardinality predicate could hold only one fuel's share per area.
     PredicateDef("heating_fuel_share", "real", "multi", ("area",),
                  "Share of households by main heating fuel, per cent "
                  "(Census 2021 TS046); fuel carried in value_en/cy.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("main_fuel", "text", "single", ("building",),
                  "Main heating fuel of the dwelling, verbatim from EPC.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -410,22 +542,30 @@ _HYDROLOGY: tuple[PredicateDef, ...] = (
                  "River discharge (volumetric flow) at a monitoring station. EA op: waterFlow; "
                  "GCOS ECV River Discharge; QUDT unit CubicMeterPerSecond (m3/s); SOSA/O&M "
                  "observation result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("water_level", "real", "single", ("station",),
                  "Water / river stage (level) at a monitoring station. EA op: waterLevel; "
                  "QUDT unit Meter (m, or mAOD where datum-referenced); SOSA/O&M observation "
                  "result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("rainfall", "real", "single", ("station",),
                  "Precipitation depth at a monitoring station. EA op: rainfall; GCOS ECV "
                  "Precipitation; QUDT unit Millimetre (mm); SOSA/O&M observation result; "
                  "WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("groundwater_level", "real", "single", ("station",),
                  "Groundwater level at a monitoring station. EA op: groundwaterLevel; GCOS ECV "
                  "Groundwater; QUDT unit Meter (mAOD); SOSA/O&M observation result; WaterML 2.0. "
                  "Adopt-and-cite EA Hydrology, licence OGL v3.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -440,57 +580,91 @@ _EPC: tuple[PredicateDef, ...] = (
     PredicateDef("epc_location", "geom", "single", ("building",),
                  "Point location of the assessed dwelling — the UPRN spine's "
                  "coordinate (EPSG:4326), never a Royal Mail address.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("current_energy_rating", "text", "single", ("building",),
                  "Current energy-efficiency band (A–G), verbatim from the EPC.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("potential_energy_rating", "text", "single", ("building",),
                  "Potential energy-efficiency band after recommended "
-                 "improvements, verbatim.", description_cy=CY_PENDING),
+                 "improvements, verbatim.", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("current_energy_efficiency", "int", "single", ("building",),
                  "Current energy-efficiency score (SAP points, 1–100).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("potential_energy_efficiency", "int", "single", ("building",),
                  "Potential energy-efficiency score after improvements.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("environment_impact_current", "int", "single", ("building",),
                  "Current environmental-impact (CO₂) score.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("environment_impact_potential", "int", "single", ("building",),
                  "Potential environmental-impact score after improvements.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("co2_emissions_current", "real", "single", ("building",),
                  "Current CO₂ emissions, per the EPC (tonnes/yr or "
-                 "per-floor-area as sourced).", description_cy=CY_PENDING),
+                 "per-floor-area as sourced).", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("total_floor_area", "real", "single", ("building",),
                  "Total floor area (m²), verbatim from the EPC (distinct from "
-                 "the survey 'floor_area_m2').", description_cy=CY_PENDING),
+                 "the survey 'floor_area_m2').", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("property_type", "text", "single", ("building",),
                  "Dwelling type (House/Flat/Bungalow/Maisonette), verbatim.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("built_form", "text", "single", ("building",),
                  "Built form (Detached/Semi/Terrace/…), verbatim.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("tenure", "text", "single", ("building",),
                  "Tenure at assessment (owner-occupied / rented …), verbatim.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("mainheat_description", "text", "single", ("building",),
                  "Main heating system descriptor, verbatim.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("inspection_date", "date", "single", ("building",),
                  "Date the assessment was carried out.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("lodgement_date", "date", "single", ("building",),
                  "Date the certificate was lodged on the register.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("epc_recommendation", "text", "multi", ("building",),
                  "An improvement measure recommended on the certificate (one "
-                 "claim per measure).", description_cy=CY_PENDING),
+                 "claim per measure).", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("epc_certificate_count", "int", "single", ("area",),
                  "Count of addressless domestic EPC certificates joined to the "
                  "UPRN spine in the authority (derived aggregate; the full "
                  "per-certificate set is the box full-store).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -505,55 +679,85 @@ _PLANNING: tuple[PredicateDef, ...] = (
     PredicateDef("application_reference", "text", "single", ("event",),
                  "The planning application reference, verbatim from the "
                  "authority (the PK; authority is the record of truth).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("lpa", "text", "single", ("event",),
                  "Local planning authority name (GSS where an LA; NPAs resolve "
-                 "via boundary).", description_cy=CY_PENDING),
+                 "via boundary).", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("application_type", "text", "single", ("event",),
                  "Application type, verbatim (Full / Outline / Tree works / …).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("application_status", "text", "single", ("event",),
                  "Application status, verbatim from the authority portal.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("received_date", "date", "single", ("event",),
                  "Date the LPA first received the application (the "
-                 "timeliness/deadline basis).", description_cy=CY_PENDING),
+                 "timeliness/deadline basis).", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("valid_date", "date", "single", ("event",),
                  "Date the application was made valid.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("decision_outcome", "text", "single", ("event",),
                  "Decision outcome mapped to the MHCLG enum "
                  "(granted/refused/split/withdrawn); raw text kept, never "
-                 "re-bucketed away.", description_cy=CY_PENDING),
+                 "re-bucketed away.", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("decided_by", "text", "single", ("event",),
                  "WHO decided — officer / committee / inspectorate (the MHCLG "
                  "first-class provenance field; None when the source doesn't "
                  "state it — recorded honestly, never guessed).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("decision_date", "date", "single", ("event",),
-                 "Date of the decision notice.", description_cy=CY_PENDING),
+                 "Date of the decision notice.", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("condition_discharge_status", "text", "single", ("event",),
                  "A condition's discharge status "
                  "(imposed/discharged/not_discharged/unknown) — the line of "
                  "sight from imposition → discharge → works.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("appeal_outcome", "text", "single", ("event",),
                  "PINS appeal outcome (allowed/dismissed/split) — from Open "
-                 "Evidence appeals_corpus (v0.2).", description_cy=CY_PENDING),
+                 "Evidence appeals_corpus (v0.2).", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("works_evidence", "text", "single", ("event",),
                  "Did-it-happen confidence (confirmed/likely/unknown) — "
                  "permission granted is NOT evidence of works; the kind + basis "
-                 "ride in the semantics_caveat.", description_cy=CY_PENDING),
+                 "ride in the semantics_caveat.", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("site_toid", "text", "single", ("event",),
                  "The bound building's OS TOID — from OS Open Linked "
                  "Identifiers (OGL) via the UPRN spine, NOT MasterMap; part of "
-                 "the returnable UPRN/TOID bind.", description_cy=CY_PENDING),
+                 "the returnable UPRN/TOID bind.", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("source_url", "text", "single", ("event",),
                  "The authoritative authority record URL (per-application "
-                 "provenance; the record of truth).", description_cy=CY_PENDING),
+                 "provenance; the record of truth).", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
     PredicateDef("fetch_hash", "text", "single", ("event",),
                  "Content hash of the fetched source record (verify-not-recall "
-                 "audit).", description_cy=CY_PENDING),
+                 "audit).", description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
 )
 
 
@@ -569,12 +773,16 @@ _BGS_SEARCHES: tuple[PredicateDef, ...] = (
                  "property (NA / Low / Moderate / Significant), verbatim from "
                  "the BGS 1 km hex. Indicative likelihood, not a site "
                  "investigation; coal is a separate regime (Mining Remediation "
-                 "Authority).", description_cy=CY_PENDING),
+                 "Authority).", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("radon_potential", "int", "single", ("building",),
                  "UKHSA/BGS radon potential class 1–6 for the property's "
                  "location (estimated % of homes above the radon action level; "
                  "1 = lowest <1%, 6 = highest ≥30%). An area indication, not a "
-                 "measured dwelling radon level.", description_cy=CY_PENDING),
+                 "measured dwelling radon level.", description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -594,28 +802,38 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "Scheduled monument whose designated area contains the property "
                  "— verbatim list-entry reference (Historic England NHLE / Cadw). "
                  "The OGL designation fact; descriptive text held VERIFY.",
-                 description_cy="o fewn heneb gofrestredig"),
+                 description_cy="o fewn heneb gofrestredig",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("near_scheduled_monument_250m", "text", "multi", ("building",),
                  "DEPRECATED (2026-07-24, superseded by `near_scheduled_monument` "
                  "with a setting-scale-derived radius; not emitted). Kept for additive "
                  "discipline — a fixed 250 m is a poor proxy for a monument's setting. "
                  "Scheduled monument(s) within 250 m of the property.",
-                 description_cy="o fewn 250 m i heneb gofrestredig"),
+                 description_cy="o fewn 250 m i heneb gofrestredig",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("near_scheduled_monument", "text", "multi", ("building",),
                  "Scheduled monument(s) near the property (within the monument's "
                  "setting-scale-derived radius) — verbatim list-entry reference. A "
                  "proximity indication for a search, NOT a statement the property is "
                  "designated. The applied radius scales with the monument's designated "
                  "area (see `setting_scale` / `designated_area_ha`).",
-                 description_cy="yn agos at heneb gofrestredig (o fewn dalgylch ei gosodiad)"),
+                 description_cy="yn agos at heneb gofrestredig (o fewn dalgylch ei gosodiad)",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("in_registered_park_garden", "text", "multi", ("building",),
                  "Registered park or garden of special historic interest "
                  "containing the property — verbatim list-entry reference "
-                 "(NHLE / Cadw).", description_cy="o fewn parc a gardd hanesyddol gofrestredig"),
+                 "(NHLE / Cadw).", description_cy="o fewn parc a gardd hanesyddol gofrestredig",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("in_registered_battlefield", "text", "single", ("building",),
                  "Registered battlefield containing the property — verbatim "
                  "list-entry reference (NHLE; England only).",
-                 description_cy="o fewn maes brwydr cofrestredig"),
+                 description_cy="o fewn maes brwydr cofrestredig",
+        finest_grain=Grain.PROPERTY,
+    ),
     # Ratified 11/08 [Llys R1+R2 ACCEPT, welsh-heritage-predicates-ruling] — additive, within-only,
     # fold into the heritage-designations composite (Cadw, Wales). within_protected_wreck was HELD
     # (marine). Welsh CY_PENDING → Catrin harvest (safle treftadaeth y byd / tirwedd hanesyddol
@@ -625,12 +843,16 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "World Heritage Site whose inscribed area contains the property — verbatim "
                  "reference (UNESCO ref / site name; Cadw). The OGL designation fact; descriptive "
                  "text held VERIFY.",
-                 description_cy="CY_PENDING"),
+                 description_cy="CY_PENDING",
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("within_registered_historic_landscape", "text", "multi", ("building",),
                  "Registered historic landscape containing the property — verbatim Cadw "
                  "reference (landscape-scale; a within-flag, not a proximity flag). The OGL "
                  "designation fact.",
-                 description_cy="CY_PENDING"),
+                 description_cy="CY_PENDING",
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -648,22 +870,32 @@ _HERITAGE_ENRICHMENT: tuple[PredicateDef, ...] = (
     PredicateDef("heritage_class", "text", "single", ("area",),
                  "Broad class of a designated heritage asset, verbatim from the "
                  "authority (e.g. Cadw BroadClass 'Religious, Ritual and Funerary').",
-                 description_cy="dosbarth treftadaeth"),
+                 description_cy="dosbarth treftadaeth",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("heritage_site_type", "text", "single", ("area",),
                  "Site type of a designated heritage asset, verbatim (Cadw SiteType).",
-                 description_cy="math o safle treftadaeth"),
+                 description_cy="math o safle treftadaeth",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("heritage_period", "text", "single", ("area",),
                  "Historic period of a designated heritage asset, verbatim (Cadw Period).",
-                 description_cy="cyfnod hanesyddol"),
+                 description_cy="cyfnod hanesyddol",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("designated_area_ha", "real", "single", ("area",),
                  "Designated area of a heritage asset in hectares (the polygon area) — "
-                 "the objective scale signal for its setting.", description_cy="arwynebedd dynodedig (hectarau)"),
+                 "the objective scale signal for its setting.", description_cy="arwynebedd dynodedig (hectarau)",
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("setting_scale", "text", "single", ("area",),
                  "DERIVED curated setting-scale tier (immediate | local | landscape) "
                  "inferred from designated_area_ha — Awen's judgment, emitted "
                  "binding=derived, NOT the authority's statement.",
                  description_cy="graddfa gosodiad",
-                 constraint_json='{"enum": ["immediate", "local", "landscape"]}'),
+                 constraint_json='{"enum": ["immediate", "local", "landscape"]}',
+        finest_grain=Grain.AREA,
+    ),
 )
 
 
@@ -689,7 +921,9 @@ _COAL_SEARCH: tuple[PredicateDef, ...] = (
                  "mining': a property may be inside the coal reporting area but not "
                  "high-risk, or outside the coalfield entirely — this layer only "
                  "distinguishes the high-risk area. The detailed Coal Mining Report "
-                 "is a separate (licensed) product.", description_cy="o fewn ardal risg uchel oherwydd datblygiad (glo)"),
+                 "is a separate (licensed) product.", description_cy="o fewn ardal risg uchel oherwydd datblygiad (glo)",
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -719,7 +953,9 @@ _ROAD_PROXIMITY: tuple[PredicateDef, ...] = (
                  "road network AS BUILT. Published road/rail PROPOSALS are a "
                  "separate question with no OGL national dataset — held. Absence "
                  "means no road of an included class within the radius, nothing more.",
-                 description_cy="yn agos at rwydwaith ffyrdd strategol"),
+                 description_cy="yn agos at rwydwaith ffyrdd strategol",
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -750,7 +986,9 @@ _REACHABILITY: tuple[PredicateDef, ...] = (
                  "duration, not a guaranteed journey. Absence means no route was found under "
                  "that mode, which is NOT the same as no physical connection existing.",
                  required_qualifiers=("source_ran_at", "travel_mode"),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("network_distance_to_nearest", "real", "multi", ("building", "site", "area"),
                  "Distance in METRES along the network to the nearest feature of a named set, "
                  "by the qualified travel mode. `value_real` is the distance; `value_text` "
@@ -760,7 +998,9 @@ _REACHABILITY: tuple[PredicateDef, ...] = (
                  "limits, one-ways or turn restrictions (confirmed against the shipped "
                  "GeoPackage 26/07). Never present a network distance as a drive time.",
                  required_qualifiers=("source_ran_at", "travel_mode"),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("reachable_area", "geom", "multi", ("building", "site", "area"),
                  "The isochrone polygon reachable from the subject within a stated duration by "
                  "the qualified travel mode — the catchment itself, for publishing or "
@@ -768,7 +1008,9 @@ _REACHABILITY: tuple[PredicateDef, ...] = (
                  "claim id and the emitting layer's documentation; the geometry is the value. "
                  "Modelled from the routing graph at the stated vintage.",
                  required_qualifiers=("source_ran_at", "travel_mode"),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -796,7 +1038,9 @@ _OPEN_ACCESS: tuple[PredicateDef, ...] = (
                  "(MoD byelaw, s.28 exclusions, racecourses, aerodromes) is already "
                  "removed by the source; the coastal margin is deliberately excluded "
                  "from it and carried separately.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("near_england_coast_path", "text", "multi", ("building", "site", "area"),
                  "An approved stretch of the King Charles III England Coast Path lies "
                  "within the stated radius of the property. Value is the source's "
@@ -807,7 +1051,9 @@ _OPEN_ACCESS: tuple[PredicateDef, ...] = (
                  "and reporting those as a walkable amenity would over-claim. A "
                  "proximity indication for a search, not a designation and not a "
                  "guarantee of access at the property boundary.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -843,26 +1089,34 @@ _AREA_BACKFILL: tuple[PredicateDef, ...] = (
                  "highly flood-prone sites, and a specific site must be assessed "
                  "directly. Note FZ2 by definition contains FZ3, so the two shares "
                  "overlap and must not be summed.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("population_estimate", "int", "multi", ("area",),
                  "ONS mid-year population estimate for an area, for the age band named "
                  "in value_en / value_cy. An ABSOLUTE count (market size), NOT a "
                  "per-capita or age-standardised rate — a populous area scores high "
                  "simply by being large, so comparing areas on this alone measures size "
                  "rather than concentration.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("alc_grade", "text", "single", ("area",),
                  "Agricultural Land Classification grade for a mapped area, verbatim from "
                  "the source ('1', '2', '3a', '3b', '4', '5', 'NA'). PREDICTIVE: Welsh "
                  "ALC Map 2 applies MAFF 1988 criteria on a 50 m grid — it is not a site "
                  "survey and not a record of current or permitted land use.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("uprn_count", "int", "single", ("area",),
                  "Number of OS Open UPRNs falling within an area, derived by counting the "
                  "frozen UPRN spine against that area's boundary. A count of ADDRESSABLE "
                  "LOCATIONS, not of dwellings or of households — a UPRN can be a garage, "
                  "a mast or a subdivided flat.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
 )
 
 
@@ -892,34 +1146,48 @@ _SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
                  "OS TOID for the building a UPRN sits in, from OS Open Linked Identifiers. "
                  "TEXT because a TOID is an identifier with a significant 'osgb' prefix, not "
                  "a quantity — the same reasoning that corrected `uprn` from int to text.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("street_usrn", "text", "single", ("building",),
                  "USRN of the street a UPRN is associated with, from OS Open Linked "
                  "Identifiers. An identifier, hence text.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("settlement_rank", "text", "single", ("town",),
                  "The source's own settlement size class for a populated place, VERBATIM from "
                  "OS Open Names (e.g. 'City', 'Town', 'Village', 'Hamlet'). OS's "
                  "classification, not ours, and not a population figure.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("ods_code", "text", "single", ("building",),
                  "NHS Organisation Data Service code for a practice. An identifier.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("gp_location", "geom", "single", ("building",),
                  "Point location of a GP practice. DERIVED from the practice postcode via an "
                  "ONS postcode centroid, so it locates the POSTCODE UNIT, not the surgery "
                  "door — adequate for a search, not for a site plan.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("operational_status", "text", "single", ("building",),
                  "Whether a practice is currently operational, verbatim from the source's own "
                  "status vocabulary. A record status, not a statement about whether the "
                  "premises are open today.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("list_size", "int", "single", ("building",),
                  "Registered patient list size for a practice. A COUNT OF REGISTRATIONS at "
                  "the stated extract month, not of people resident in the area, and lists "
                  "overlap between neighbouring practices.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
 )
 
 
@@ -939,7 +1207,9 @@ _CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
                  "station for now.",
                  required_qualifiers=(),
                  constraint_json='{"enum": ["High", "Good", "Moderate", "Poor", "Bad"]}',
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("air_temperature_mean_c", "real", "multi", ("area", "station"),
                  "Mean air temperature, degrees Celsius. GCOS ECV Surface Air Temperature; CF "
                  "standard_name air_temperature; QUDT unit DegreeCelsius; SOSA/O&M observation "
@@ -954,32 +1224,42 @@ _CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
                  # `scenario` pull in `horizon` and `baseline`, so requiring the key that declares
                  # WHICH KIND OF VALUE THIS IS is sufficient and complete.
                  required_qualifiers=("uncertainty_basis",),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("sea_surface_temperature_c", "real", "multi", ("coastal_cell", "station"),
                  "Sea-surface temperature, degrees Celsius. GCOS ECV SST; CF standard_name "
                  "sea_water_temperature; QUDT DegreeCelsius; SOSA/O&M. Observed or projected "
                  "(as air_temperature_mean_c).",
                  required_qualifiers=("uncertainty_basis",),   # R1 — as air_temperature_mean_c
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("sea_level_rise_m", "real", "multi", ("coastal_cell",),
                  "Projected sea-level rise, metres, relative to the baseline period. GCOS ECV Sea "
                  "Level; UKCP18 marine / PSMSL; QUDT unit Meter; SOSA/O&M. PROJECTION — requires "
                  "scenario (IPCC RCP/SSP) + horizon + baseline (constitution 0.1.6 G0).",
                  required_qualifiers=("scenario", "horizon", "baseline"),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("coastal_erosion_projection_m", "real", "multi", ("coastal_cell",),
                  "Projected shoreline retreat, metres, over the horizon relative to baseline. "
                  "Adopt-and-cite NCERM (National Coastal Erosion Risk Mapping, NRW / Cell Eleven). "
                  "PROJECTION — requires scenario + horizon + baseline (constitution 0.1.6 G0).",
                  required_qualifiers=("scenario", "horizon", "baseline"),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("peatland_carbon_tco2", "real", "single", ("area",),
                  "Estimated peatland carbon stock, tonnes CO2e. Adopt-and-cite the IUCN UK Peatland "
                  "Programme / national peatland carbon mapping; SOSA/O&M estimate. Carry "
                  "uncertainty_basis; confidence_interval where the source states one.",
                  # R1 — "Carry" was an instruction to a person, not a constraint. Now it is one.
                  required_qualifiers=("uncertainty_basis",),
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("shoreline_management_policy", "text", "multi", ("coastal_cell",),
                  "Defra Shoreline Management Plan (SMP2) policy for a coastal cell, per epoch. "
                  "Multi-cardinality: one per epoch, distinguished by the `horizon` qualifier "
@@ -987,13 +1267,17 @@ _CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
                  required_qualifiers=("horizon",),
                  constraint_json='{"enum": ["hold-the-line", "managed-realignment", '
                                  '"no-active-intervention", "advance-the-line"]}',
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
     PredicateDef("properties_at_flood_risk_count", "int", "multi", ("area",),
                  "Count of properties at flood risk in an area. Adopt-and-cite EA NaFRA. RESOLVES "
                  "the `flood_coverage` false-friend (that is Flood-Zone AREA-SHARE, not a property "
                  "count — see FALSE_FRIENDS). Multi: distinguish source/vintage in the citation "
                  "(carries the contested 245k/273k NaFRA pair, NWC-CONTEST-001).",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("deprivation_rank", "int", "single", ("area",),
                  "Multiple-deprivation rank of an area (1 = most deprived). Adopt-and-cite WIMD "
                  "(Wales) / IMD (England); vintage in the citation. VERIFY-AT-REGISTRATION "
@@ -1001,7 +1285,9 @@ _CLIMATE_SWEEP: tuple[PredicateDef, ...] = (
                  "LSOA21 via the ONS 2011->2021 lookup, or make the join vintage-correct, before "
                  "loading data; registering LSOA21 against 2011-keyed data is a nominal-but-wrong "
                  "join where boundaries changed.",
-                 description_cy=CY_PENDING),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
 )
 
 
@@ -1099,52 +1385,30 @@ for _ff in FALSE_FRIENDS:
 
 
 # ---------------------------------------------------------------------------
-# TASK 8.6's SURFACE, MADE EXPLICIT AND FROZEN — delete this block when it empties
+# TASK 8.6 IS DONE — THE INTERIM IS GONE, AND 8.2 NOW APPLIES WITHOUT EXCEPTION
 # ---------------------------------------------------------------------------
-# THE COLLISION THIS RESOLVES, stated plainly because it is by construction and
-# not an oversight. Task 8.2 refuses a predicate with no `finest_grain`; every
-# predicate registered before the rule existed has none. If 8.2 simply applied,
-# `validate_seed_predicates()` would refuse the whole seed set and `craidd-init`
-# could not bootstrap at all — so the rule would land un-landable and the first
-# person to hit it would delete it.
+# WHAT WAS HERE AND WHY IT IS NOT. Between 8.5 and 8.6 this module carried a
+# frozen `INTERIM_UNDECLARED` list — the 143 predicates registered before the
+# grain rule existed, pinned by digest so the list could only ever SHRINK. Its
+# own instruction was: "when the list empties, this block and the branch in
+# `validate_predicate_def` that reads it are deleted and 8.2 applies without
+# exception." Task 8.6 emptied it on 2026-09-12 (dispatch 200) and this is that
+# deletion. The digest guard fired on the empty list exactly as designed, which
+# is how the emptying was noticed rather than assumed.
 #
-# The interim is therefore NAMED rather than implied: exactly these predicates
-# carry `Grain.UNDECLARED` and are not refused. Nothing else may. Task 8.6
-# declares a grain EVIDENCED AGAINST EACH PREDICATE'S SOURCE (not inferred from
-# a layer name) and removes the name from this list IN THE SAME COMMIT; when the
-# list empties, this block and the branch in `validate_predicate_def` that reads
-# it are deleted and 8.2 applies without exception.
-#
-# WHY IT IS PINNED BY DIGEST AND NOT JUST BY MEMBERSHIP. A list a writer may
-# append to is a wildcard with an audit trail: the next new predicate would be
-# waved through by adding one line here. The digest means the list can only ever
-# be made SMALLER without the pin also changing, and changing the pin is a
-# deliberate, reviewable act. `undeclared_predicates()` below reports what is
-# still outstanding so nobody can state the rule is fully enforced while it is
-# not.
-def _interim_digest(names: tuple[str, ...]) -> str:
-    """sha256 over the sorted names, so the pin is order-independent."""
-    return hashlib.sha256("\n".join(sorted(names)).encode("utf-8")).hexdigest()[:16]
-
-
-INTERIM_UNDECLARED: tuple[str, ...] = tuple(
-    p.name for p in SEED_PREDICATES if p.finest_grain is Grain.UNDECLARED
-)
-
-#: Pinned 12/09/2026 over the 143 predicates registered at awen-weave 0.2.20
-#: (2f16659). Task 8.6 shrinks the list and re-pins; it may never grow.
-INTERIM_UNDECLARED_DIGEST: str = "f66b47d7a5a0b752"
-
-#: The count at the pin, carried separately so a reader sees the number without
-#: computing it, and so a partial 8.6 landing is visible as a moved figure.
-INTERIM_UNDECLARED_COUNT_AT_PIN: int = 143
-
-
+# THE EXEMPTION IS NOT WIDENED, IT IS REMOVED. There is no longer any list a
+# writer could add a name to, so the only way a predicate reaches the registry
+# without a grain is if this assertion is deleted — a visible act, not a line
+# appended to a register. `Grain.UNDECLARED` survives as the FIELD DEFAULT so
+# that "absent" is still a typed, refusable state rather than a crash; what has
+# gone is anything that forgives it.
 def undeclared_predicates() -> tuple[str, ...]:
-    """The registered predicates whose grain nobody has yet evidenced.
+    """The registered predicates whose grain nobody has evidenced.
 
-    Non-empty means task 8.6 is outstanding and the grain rule is enforced for
-    NEW registrations only. Read this rather than asserting the rule is on.
+    EMPTY since task 8.6, and asserted empty at import below. Read this rather
+    than asserting the rule is on — it is the reporting half that made 8.6's
+    outstanding surface visible while it existed, and it is kept so that a
+    future regression is reportable and not merely raisable.
     """
     return tuple(
         name for name, p in PREDICATE_REGISTRY.items()
@@ -1153,30 +1417,25 @@ def undeclared_predicates() -> tuple[str, ...]:
 
 
 def _assert_grain_declarations(predicates: tuple[PredicateDef, ...]) -> None:
-    """Import-time invariant: no predicate may be UNDECLARED unless it is on
-    the frozen interim list, and the list may not grow.
+    """Import-time invariant: NO predicate may carry an undeclared grain.
 
     This is the registrar's second line (task 8.5): even a predicate added
     straight into this module — reaching no validator, no CLI and no gate —
     cannot carry a missing grain. Lifted out as a function so it can be tested
     against a hypothetical set rather than only against the real one.
+
+    Before 8.6 this tolerated the frozen interim list. It no longer does, and
+    that is the whole of what 8.6 changed here.
     """
-    undeclared = tuple(p.name for p in predicates
-                       if p.finest_grain is Grain.UNDECLARED)
-    unlisted = sorted(set(undeclared) - set(INTERIM_UNDECLARED))
-    if unlisted:
+    undeclared = sorted(p.name for p in predicates
+                        if p.finest_grain is Grain.UNDECLARED)
+    if undeclared:
         raise RuntimeError(
-            f"predicate(s) {unlisted} carry no finest_grain and are not on the "
-            f"frozen interim list — absent is not a wildcard (phase 8 task 8.2). "
-            f"Declare a grain: "
-            f"{', '.join(g.value for g in sorted(DECLARED_GRAINS, key=lambda g: g.value))}."
-        )
-    if _interim_digest(INTERIM_UNDECLARED) != INTERIM_UNDECLARED_DIGEST:
-        raise RuntimeError(
-            "INTERIM_UNDECLARED does not match its pin — task 8.6 may only "
-            "SHRINK this list, and re-pinning is a deliberate act "
-            f"(expected {INTERIM_UNDECLARED_DIGEST}, "
-            f"got {_interim_digest(INTERIM_UNDECLARED)})"
+            f"predicate(s) {undeclared} carry no finest_grain — ABSENT IS NOT "
+            f"A WILDCARD (phase 8 task 8.2, and the interim that once excused "
+            f"this was removed by task 8.6 on 2026-09-12). Declare one of "
+            f"{', '.join(g.value for g in sorted(DECLARED_GRAINS, key=lambda g: g.value))}: "
+            f"the finest grain this predicate's SOURCE supports."
         )
 
 

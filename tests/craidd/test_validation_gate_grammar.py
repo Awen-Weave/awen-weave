@@ -98,9 +98,13 @@ def test_applies_to_is_reported_unchecked_when_the_subject_type_is_unknown():
     must SAY so rather than read as full enforcement.
 
     Since 12/09/2026 `finest_grain` (phase 8) needs the same fact and is
-    reported beside it — and would be reported here anyway, because
-    `building_type` is one of the 143 predicates whose grain task 8.6 has not
-    yet evidenced."""
+    reported beside it. THE SECOND HALF OF THIS REASON EXPIRED WHEN TASK 8.6
+    LANDED and is corrected rather than left: it used to say `building_type`
+    would be unchecked anyway, as one of the 143 with no evidenced grain. All
+    143 now carry one, so the ONLY reason `finest_grain` is unchecked here is
+    the one this test is about — no subject entity type, so no subject grain to
+    compare against. The assertion is unchanged; the reason for it is now
+    single, which is a stronger test than it was."""
     result = _gate().validate(
         "claim", dict(BASE, predicate="building_type", value_text="barn"))
     assert result.valid
@@ -110,19 +114,24 @@ def test_applies_to_is_reported_unchecked_when_the_subject_type_is_unknown():
 def test_a_wholly_valid_claim_still_passes():
     """The gate must not have become a blanket refusal.
 
-    THIS IS THE BLAST-RADIUS TEST FOR PHASE 8 TOO, and the reason `unchecked`
-    is not empty here. Every claim on the estate cites one of the 143
-    predicates that carry no evidenced grain yet, and every snapshot builder
-    reaches this gate. Had an undeclared grain been treated as a REFUSAL rather
-    than as unchecked, this claim — and every other claim in the estate — would
-    have stopped here until task 8.6 landed."""
-    from craidd.schema.predicates import undeclared_predicates
-    assert "build_period" in undeclared_predicates()
+    THIS IS THE BLAST-RADIUS TEST FOR PHASE 8 TOO, AND TASK 8.6 INVERTED WHAT
+    IT PROVES. It used to assert that `build_period` was undeclared and that
+    the gate therefore reported `finest_grain` UNCHECKED — the safety property
+    that kept every snapshot builder on the estate working between 8.5 and 8.6.
+
+    8.6 landed on 2026-09-12, so the interesting claim is the opposite one:
+    the grain is now DECLARED, the gate actually CHECKS it, and the estate's
+    own claims still pass. `unchecked` is empty here — that is the check being
+    on, not a weaker assertion."""
+    from craidd.schema.predicates import undeclared_predicates, PREDICATE_REGISTRY
+    from craidd.schema.grain import Grain
+    assert undeclared_predicates() == ()
+    assert PREDICATE_REGISTRY["build_period"].finest_grain is Grain.PROPERTY
     result = _gate(subject_entity_type="building").validate(
         "claim", dict(BASE, predicate="build_period", value_text="c.1885",
                       qualifiers={"date_precision": "decade"}))
     assert result.valid, result.violations
-    assert result.unchecked == ("finest_grain",)
+    assert result.unchecked == ()
 
 
 @pytest.mark.parametrize(
