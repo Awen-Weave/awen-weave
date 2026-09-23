@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://awenweave.com/constitution/0.1/prawf-batch-commitment.schema.json",
+  "title": "Prawf batch commitment",
+  "x-awen-rule-id": "SCH-BATCH-001",
+  "x-awen-status": "DRAFT 2026-09-15 — NOT RECONCILED. Rule id proposed, not allocated; Llys names schemas. Drafted against the local vendored tree at v0.1.4; the served constitution is v0.1.7.",
+  "description": "PRAWF RECORDS GOVERNANCE EVENTS, NOT READINGS. Readings live in time-series or object storage; Prawf logs registration, commissioning, calibration, firmware, key events, tamper alerts, custodian changes, disputes, adjudications and decommissioning — plus THIS: a periodic commitment over a batch of observations. Reference-don't-copy, applied to ourselves. THE COMMITMENT IS THE REASON READINGS ARE LATER PROVABLE, and it cannot be added retrospectively: a record sealed after the fact can only be proven unchanged SINCE SEALING, never since creation. This structure must therefore exist BEFORE the first reading is stored, or the pilot's evidence is permanently second-class. The floor is what is already true of the estate — append-only, supersede-don't-delete; the cryptographic baseline below is adopted with a Llys-set compliance window so that live instances are not thrown into retroactive non-conformance.",
+  "type": "object",
+  "required": ["batch_id", "period", "devices", "observation_count", "storage_ref", "commitment", "sealed_at_utc", "schema_version"],
+  "additionalProperties": false,
+  "properties": {
+
+    "batch_id": { "type": "string", "minLength": 1, "description": "Stable identifier for this batch." },
+
+    "period": {
+      "type": "object",
+      "description": "The observation window this batch covers. Windows must tile without gaps or overlaps — a gap in the tiling is an unproven interval and must be visible as one.",
+      "required": ["from_utc", "to_utc"],
+      "additionalProperties": false,
+      "properties": {
+        "from_utc": { "type": "string", "minLength": 1 },
+        "to_utc": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "devices": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Every device contributing to this batch, WITH THE STAMP VERSION THAT APPLIED DURING THE WINDOW. A batch may not reference a device without resolving its assurance state at observation time.",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "stamp_id", "stamp_version"],
+        "additionalProperties": false,
+        "properties": {
+          "source_id": { "type": "string", "minLength": 1 },
+          "stamp_id": { "type": "string", "minLength": 1 },
+          "stamp_version": { "type": "integer", "minimum": 1 },
+          "observation_count": { "type": ["integer", "null"], "description": "Per-device count. Must sum to the batch observation_count." }
+        }
+      }
+    },
+
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total observations committed. ZERO IS A LEGITIMATE VALUE and must be recorded explicitly rather than by omitting the batch — an empty window and an unrecorded window are different facts, and only one of them is good news."
+    },
+
+    "verification_tally": {
+      "type": "object",
+      "description": "How the observations in this batch verified. Integrity is PER READING, not per device: a device that CAN sign may still emit a reading that does not verify.",
+      "required": ["verified", "unverified", "failed"],
+      "additionalProperties": false,
+      "properties": {
+        "verified": { "type": "integer", "minimum": 0, "description": "Signature or MAC checked and correct." },
+        "unverified": { "type": "integer", "minimum": 0, "description": "No authentication present to check — honest for an I0 device, not a fault." },
+        "failed": { "type": "integer", "minimum": 0, "description": "Authentication present and WRONG. Fail-loud. Any claim derived from a failed reading is marked disputed; the reading is never silently dropped." }
+      }
+    },
+
+    "storage_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Where the observations themselves live — the time-series store or object path. THE COMMITMENT POINTS AT THE DATA; IT DOES NOT CONTAIN IT."
+    },
+
+    "commitment": {
+      "type": "object",
+      "description": "The cryptographic commitment over the batch.",
+      "required": ["merkle_root", "hash_algorithm", "canonicalisation", "leaf_definition"],
+      "additionalProperties": false,
+      "properties": {
+        "merkle_root": { "type": "string", "minLength": 1, "description": "Root over the canonicalised observation leaves, in the order defined by leaf_definition." },
+        "hash_algorithm": { "type": "string", "description": "e.g. 'SHA-256'. Recorded, never assumed." },
+        "canonicalisation": {
+          "type": "string",
+          "description": "The serialisation rule under which leaves were hashed — e.g. 'RFC-8785-JCS' for JSON, or a named deterministic CBOR profile. SPECIFY A STANDARD, DO NOT INVENT ONE. A root computed under an unrecorded canonicalisation is unverifiable by anyone else."
+        },
+        "leaf_definition": {
+          "type": "string",
+          "description": "Which fields of an observation form the leaf, and in what order. A root is meaningless without it. MUST bind at minimum: source_id, stamp_id, stamp_version, observed_at_utc, the reading payload, and the verification outcome — so that a reading cannot be spliced onto a different device, time, place or assurance state."
+        },
+        "leaf_count": { "type": ["integer", "null"], "description": "Leaves in the tree. Should equal observation_count; a mismatch is a fault to surface, not to reconcile silently." },
+        "previous_root": { "type": ["string", "null"], "description": "Root of the preceding batch, chaining the sequence. Null only for the first batch in a lineage — and that fact is then on the record." }
+      }
+    },
+
+    "sealed_at_utc": { "type": "string", "minLength": 1, "description": "When the commitment was computed and sealed, as asserted by the sealer." },
+
+    "trusted_time": {
+      "type": ["object", "null"],
+      "description": "A SELF-ASSERTED SEALING TIME PROVES ORDERING, NOT TIMING. Independent time is what converts the former into the latter.",
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": ["string", "null"], "description": "e.g. 'RFC-3161' timestamp token, or a witness countersignature." },
+        "token_ref": { "type": ["string", "null"] },
+        "authority": { "type": ["string", "null"] }
+      }
+    },
+
+    "witness": {
+      "type": ["object", "null"],
+      "description": "WITNESSING-AS-A-SERVICE. Proportionality fails in practice if every community group must arrange its own anchoring, so the framework offers it: craidd / awen-porth countersigns and retains checkpoint roots for federated instances. Absent is valid; the batch is then self-sealed only, and honestly so.",
+      "additionalProperties": false,
+      "properties": {
+        "witness_instance": { "type": ["string", "null"] },
+        "countersignature_ref": { "type": ["string", "null"] },
+        "checkpoint_ref": { "type": ["string", "null"], "description": "Published checkpoint the root was included in. Publish roots and checkpoints only — never the observations." }
+      }
+    },
+
+    "exceptions": {
+      "type": "array",
+      "description": "Anything the batch could not cleanly account for: gaps, late arrivals, devices unreachable, readings whose stamp could not be resolved. AN EMPTY ARRAY IS AN ASSERTION THAT THERE WERE NONE — it is not the same as the field being absent, and the distinction is the point.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["gap", "late-arrival", "device-unreachable", "stamp-unresolved", "verification-failed", "count-mismatch", "other"],
+            "description": "Closed vocabulary so exceptions can be counted rather than read."
+          },
+          "detail": { "type": "string", "minLength": 1 },
+          "source_id": { "type": ["string", "null"] },
+          "observation_ref": { "type": ["string", "null"] }
+        }
+      }
+    },
+
+    "schema_version": { "type": "string", "minLength": 1, "description": "Constitution version this commitment was emitted under. Recorded, never inferred." },
+
+    "notes": { "type": "string" }
+  }
+}
