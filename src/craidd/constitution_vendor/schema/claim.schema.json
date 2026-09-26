@@ -151,7 +151,7 @@
  "$defs": {
   "qualifiers": {
    "type": "object",
-   "description": "The 23 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Three cross-qualifier rules are enforced below. The 5 projection keys (scenario/horizon/baseline/confidence_interval/uncertainty_basis) were added 0.1.6 (NWC-FEEDBACK-001) so a climate projection can render scenario, horizon, baseline and a statistical (not editorial) uncertainty. 0.1.7 adds `resolved_toid` (open-form OGL OS TOID) + `spatial_status` (CLOSED within/boundary-adjacent/outside) for spatial-membership provenance (confidence/provenance model — confirm-property + rung-1 footprint-snap).",
+   "description": "The 24 v0.1 qualifier keys (awen-weave qualifiers.py QUALIFIER_KEYS). Unknown keys are rejected (closed key set). Closed-domain values must be in their set; open-domain values (dialect, floor_scope) are not rejected. Three cross-qualifier rules are enforced below. The 5 projection keys (scenario/horizon/baseline/confidence_interval/uncertainty_basis) were added 0.1.6 (NWC-FEEDBACK-001) so a climate projection can render scenario, horizon, baseline and a statistical (not editorial) uncertainty. 0.1.7 adds `resolved_toid` (open-form OGL OS TOID) + `spatial_status` (CLOSED within/boundary-adjacent/outside) for spatial-membership provenance (confidence/provenance model — confirm-property + rung-1 footprint-snap). 0.1.8 adds `vertical_datum` (CLOSED ordnance-datum-newlyn/chart-datum/local-stage-datum/unstated; required on tide_level + water_level by awen-weave validation), `verification_method` += `sensor-measured`, and `geometry_basis` += `field-placed-witnessed`.",
    "additionalProperties": false,
    "properties": {
     "dialect": {
@@ -192,9 +192,10 @@
       "aerial",
       "local-knowledge",
       "documentary",
-      "desk-derived"
+      "desk-derived",
+      "sensor-measured"
      ],
-     "description": "CLOSED domain (§10 item 7). How a curator reached a verification decision."
+     "description": "CLOSED domain (§10 item 7). How a verification decision was reached. `sensor-measured` (0.1.8, dispatch 381) = the value is a reading taken by a physical sensor, recorded as `binding=measured`; a commissioned device's witnessing reuses the existing field_session_id / co_signed_by / verified_at / evidence_uri. It does NOT cover an inferred output (a classifier result whose supporting evidence was discarded) — that class is an open constitutional question."
     },
     "temporal_status": {
      "type": "string",
@@ -212,9 +213,10 @@
       "os-open-uprn-original",
       "auto-snapped-to-toid",
       "curator-placed",
-      "curator-confirmed-original"
+      "curator-confirmed-original",
+      "field-placed-witnessed"
      ],
-     "description": "CLOSED domain (§10 item 7). Optional; how a geometry value was arrived at."
+     "description": "CLOSED domain (§10 item 7). Optional; how a geometry value was arrived at. `curator-placed` = a curator placed the point at a desk (drag-to-place). `field-placed-witnessed` = a physical device was placed in the field and the placement was witnessed on site; record the witness and time in the claim's field_session_id / co_signed_by / verified_at / evidence_uri. Added 0.1.8 (Llys 26/09/2026, IDR-006-16338A) rather than widening curator-placed, so the witnessed case is findable by name."
     },
     "binding": {
      "type": "string",
@@ -314,6 +316,16 @@
       "outside"
      ],
      "description": "CLOSED domain (0.1.7). The result of a spatial-membership test of a property against an area boundary: `within` (clear of the boundary by a margin), `boundary-adjacent` (straddles / within the margin — membership NOT asserted in or out), `outside`. Written by the rung-1 footprint-snap (OS OpenMap Local, desk-derived). Paired with the editorial `confidence` (within→high, boundary-adjacent→low). Amendment: amendments/2026-08-11-SCH-CLAIM-001-toid-spatial-status.md."
+    },
+    "vertical_datum": {
+     "type": "string",
+     "enum": [
+      "ordnance-datum-newlyn",
+      "chart-datum",
+      "local-stage-datum",
+      "unstated"
+     ],
+     "description": "CLOSED domain (0.1.8). The vertical reference a height/level value is measured from. Declared from the publisher's own unit or statement, never inferred. `ordnance-datum-newlyn` = height above Ordnance Datum Newlyn (EPSG:5701; EA/NRW mAOD). `chart-datum` = height above the local Chart Datum of the nearest port (per port; EA mACD). `local-stage-datum` = height above the gauge's own zero (EA mASD). `unstated` = the publisher gives a level with no datum (EA bare `m`, 'metres with an unspecified datum', or `---`); recorded so, never guessed, and only where the publisher's unit says so. REQUIRED on the `tide_level` and `water_level` predicates — enforced by awen-weave's validation (validate_claim / craidd.validation_gate), not by this schema, which carries no per-predicate requirement (the travel_mode precedent). Amendment: amendments/2026-09-26-SCH-CLAIM-001-vertical-datum-sensor-measured.md."
     }
    },
    "dependentRequired": {

@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Optional
 
 from .federation import now_utc
+from .schema.vertical_datum import datum_counts
 
 # ── coverage regression (rule 4) ────────────────────────────────────────────────────────────────
 # A GSS (E06000001) or census area code (E01000001 LSOA / E00… OA): a nation letter followed by
@@ -202,6 +203,12 @@ class SnapshotBuilder:
             "claims": len(records.claims),
             "stamps": len(records.stamps),
         }
+        # Constitution 0.1.8 (424 pass, N3): a layer carrying level claims reports how many sit
+        # on each vertical datum, `unstated` included, so reliance on it is visible in the
+        # layer's own manifest. Absent for a layer with none — existing manifests are unchanged.
+        datums = datum_counts(records.claims)
+        if datums is not None:
+            counts["vertical_datum"] = datums
         return {
             "snapshot_id": snapshot_id,
             "built_utc": built_utc,

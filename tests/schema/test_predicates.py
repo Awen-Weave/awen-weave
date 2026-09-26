@@ -44,7 +44,8 @@ def test_seed_predicate_count_matches_v01_schema():
     and a declared finest_grain; the total is unchanged.) (Later: hydrology + the
     climate sweep took it to 139; the 2 ratified DESNZ energy predicates —
     off_gas_grid_properties + energy_efficiency_measures_installed, 09/08/2026 — make 141.)"""
-    assert len(SEED_PREDICATES) == 143
+    # (+ tide_level, constitution 0.1.8, 26/09/2026 = 144.)
+    assert len(SEED_PREDICATES) == 144
 
 
 def test_alc_grade_predicate_registered():

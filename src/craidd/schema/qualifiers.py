@@ -51,7 +51,7 @@ from __future__ import annotations
 
 # The qualifier keys that exist at all in v0.1.
 # 4 original + 7 added by §10 item 7 + 3 added by Phase 2.1 + 1 added by
-# constitution 0.1.3 + 1 (travel_mode) 0.1.4 + 5 projection keys 0.1.6 + 2 spatial-membership keys 0.1.7 = 23 total.
+# constitution 0.1.3 + 1 (travel_mode) 0.1.4 + 5 projection keys 0.1.6 + 2 spatial-membership keys 0.1.7 + 1 (vertical_datum) 0.1.8 = 24 total.
 QUALIFIER_KEYS: frozenset[str] = frozenset(
     {
         # Original v0.1 vocabulary.
@@ -88,6 +88,9 @@ QUALIFIER_KEYS: frozenset[str] = frozenset(
         # Constitution 0.1.7 — spatial-membership provenance (confidence/provenance model).
         "resolved_toid",        # open-form: the OGL OS TOID a property resolves to.
         "spatial_status",       # CLOSED domain (SPATIAL_STATUSES).
+        # Constitution 0.1.8 — the vertical reference of a height/level reading. CLOSED
+        # (VERTICAL_DATUMS); required on tide_level + water_level (predicates.py).
+        "vertical_datum",
     }
 )
 
@@ -106,6 +109,21 @@ UNCERTAINTY_BASES: frozenset[str] = frozenset(
 # margin of the boundary — membership is NOT asserted in or out; paired with editorial `confidence`
 # (within→high, boundary-adjacent→low). `resolved_toid` is open-form (an OGL identifier, not a domain).
 SPATIAL_STATUSES: frozenset[str] = frozenset({"within", "boundary-adjacent", "outside"})
+
+# --- vertical_datum: CLOSED domain (constitution 0.1.8, SCH-CLAIM-001) ---
+# The vertical reference a height/level value is measured from, declared from the publisher's own
+# unit or statement, never inferred (Llys 26/09/2026 [sig:c8426dc4], Option C). A river level and a
+# tide level measured against different zeros must not be comparable by accident, so the datum
+# travels with the claim — the travel_mode discipline. REQUIRED on `tide_level` and `water_level`
+# (their `required_qualifiers`); enforced here in awen-weave, not by the constitution schema.
+#   ordnance-datum-newlyn — EPSG:5701, EA/NRW mAOD
+#   chart-datum           — the local port's Chart Datum, EA mACD
+#   local-stage-datum     — the gauge's own zero, EA mASD
+#   unstated              — the publisher states no datum (EA bare `m`, `---`); ONLY from those
+#                           units, via the table in vertical_datum.py — never typed by a seat.
+VERTICAL_DATUMS: frozenset[str] = frozenset(
+    {"ordnance-datum-newlyn", "chart-datum", "local-stage-datum", "unstated"}
+)
 
 # --- travel_mode: CLOSED domain (constitution 0.1.4, SCH-CLAIM-001) ---
 # The travel profile a routing-derived claim was computed under. Required on the reachability
@@ -141,8 +159,12 @@ DATE_PRECISIONS: frozenset[str] = frozenset(
 # --- verification_method: CLOSED domain. v0.1-schema.md §10 item 7.3. -------
 # Records *how* the curator reached a verification decision, on geometry,
 # verified_building_toid, and location_verification_status claims.
+# `sensor-measured` (constitution 0.1.8, dispatch 381): a reading taken by a physical sensor,
+# carried with `binding=measured`; the witnessing reuses field_session_id / co_signed_by /
+# verified_at / evidence_uri. It does NOT cover an inferred output (a classifier result whose
+# evidence was discarded) — that class is an open constitutional question.
 VERIFICATION_METHODS: frozenset[str] = frozenset(
-    {"on-site", "aerial", "local-knowledge", "documentary", "desk-derived"}
+    {"on-site", "aerial", "local-knowledge", "documentary", "desk-derived", "sensor-measured"}
 )
 
 # --- temporal_status: CLOSED domain. v0.1-schema.md §10 item 7.4. -----------
@@ -164,6 +186,8 @@ GEOMETRY_BASES: frozenset[str] = frozenset(
         "auto-snapped-to-toid",         # snapped to unique TOID centroid
         "curator-placed",               # drag-to-place from scratch
         "curator-confirmed-original",   # original confirmed, no change
+        "field-placed-witnessed",       # device placed in the field, placement witnessed
+                                        # on site (constitution 0.1.8, dispatch 417)
     }
 )
 
@@ -196,6 +220,7 @@ CLOSED_QUALIFIER_DOMAINS: dict[str, frozenset[str]] = {
     "travel_mode": TRAVEL_MODES,
     "uncertainty_basis": UNCERTAINTY_BASES,
     "spatial_status": SPATIAL_STATUSES,
+    "vertical_datum": VERTICAL_DATUMS,
 }
 
 # Open domains: the listed values are recognised, but a value outside the
