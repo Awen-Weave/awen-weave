@@ -536,35 +536,57 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
 # a GCOS Essential Climate Variable, and a QUDT unit; the wire form is WaterML 2.0. Claims
 # are `binding=measured` (set at registration in the catalogue module, not here); the spine
 # is the gazetteer GSS via the station's containing authority (gp-locations precedent).
-# description_cy=CY_PENDING — the four Welsh forms are on the vocabulary-harvest worklist,
-# not yet Catrin-attested (identifiers stay English regardless).
+# description_cy=CY_PENDING — not yet Catrin-attested (identifiers stay English regardless).
+# Until 26/09/2026 this comment said the Welsh forms were on the vocabulary-harvest worklist;
+# they were not (424 pass, N5). The five are added to the worklist with constitution 0.1.8.
+#
+# CONSTITUTION 0.1.8 (Llys 26/09/2026 [sig:c8426dc4], dispatch 428):
+#   - `tide_level` joins the block (Climate's 19/09 ask, Option C);
+#   - `vertical_datum` (CLOSED, qualifiers.py) is REQUIRED on `tide_level` and `water_level`,
+#     enforced here via required_qualifiers — not by the constitution schema (424 pass, N1). A
+#     producer derives it from the publisher's unit through schema/vertical_datum.py, never types it;
+#   - ALL FIVE are cardinality `multi` (B4): the 06/08 ratified text said "a site carries a time
+#     series, distinguished by observation time"; the registry had drifted to `single`. Re-checked
+#     26/09 before switching: no claim on any of the five exists in any repo or local store.
 # ---------------------------------------------------------------------------
 _HYDROLOGY: tuple[PredicateDef, ...] = (
-    PredicateDef("water_flow", "real", "single", ("station",),
+    PredicateDef("water_flow", "real", "multi", ("station",),
                  "River discharge (volumetric flow) at a monitoring station. EA op: waterFlow; "
                  "GCOS ECV River Discharge; QUDT unit CubicMeterPerSecond (m3/s); SOSA/O&M "
                  "observation result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
-    PredicateDef("water_level", "real", "single", ("station",),
+    PredicateDef("water_level", "real", "multi", ("station",),
                  "Water / river stage (level) at a monitoring station. EA op: waterLevel; "
-                 "QUDT unit Meter (m, or mAOD where datum-referenced); SOSA/O&M observation "
-                 "result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 "QUDT unit Meter (m), relative to the claim's `vertical_datum`; SOSA/O&M "
+                 "observation result; WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 required_qualifiers=("vertical_datum",),
                  description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
-    PredicateDef("rainfall", "real", "single", ("station",),
+    PredicateDef("rainfall", "real", "multi", ("station",),
                  "Precipitation depth at a monitoring station. EA op: rainfall; GCOS ECV "
                  "Precipitation; QUDT unit Millimetre (mm); SOSA/O&M observation result; "
                  "WaterML 2.0. Adopt-and-cite EA Hydrology, licence OGL v3.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
-    PredicateDef("groundwater_level", "real", "single", ("station",),
+    PredicateDef("groundwater_level", "real", "multi", ("station",),
                  "Groundwater level at a monitoring station. EA op: groundwaterLevel; GCOS ECV "
                  "Groundwater; QUDT unit Meter (mAOD); SOSA/O&M observation result; WaterML 2.0. "
                  "Adopt-and-cite EA Hydrology, licence OGL v3.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("tide_level", "real", "multi", ("station",),
+                 "Sea surface height at a tide gauge, relative to the datum named by the claim's "
+                 "`vertical_datum` qualifier. Adopt-and-cite: EA flood-monitoring measure "
+                 "parameter `level`, qualifier `Tidal Level`; GCOS ECV Sea Level; QUDT unit Meter "
+                 "(m); SOSA/O&M observation result. A separate predicate from water_level so a "
+                 "tide series and a river series at one station are never summed as one. NRW "
+                 "tide gauges as served (mAOD). Constitution 0.1.8, Llys 26/09/2026.",
+                 required_qualifiers=("vertical_datum",),
                  description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
@@ -1410,7 +1432,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # group (`off_gas_grid_properties`, `energy_efficiency_measures_installed`) = 141, + the 2 Welsh
 # heritage predicates ratified 11/08/2026 [Llys R1+R2 ACCEPT, welsh-heritage-predicates-ruling] into
 # the EXISTING _HERITAGE_SEARCHES group (`within_world_heritage_site`,
-# `within_registered_historic_landscape`) = 143.
+# `within_registered_historic_landscape`) = 143, + `tide_level` into the EXISTING _HYDROLOGY group
+# (constitution 0.1.8, Llys 26/09/2026 [sig:c8426dc4]) = 144 — added inside a group, so named here.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

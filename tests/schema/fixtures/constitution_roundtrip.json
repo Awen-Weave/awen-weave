@@ -124,6 +124,46 @@
       "expect": "fail",
       "note": "entity_type outside the nine",
       "document": {"entity_id": "X", "entity_type": "spaceship"}
+    },
+    {
+      "id": "claim-tide-level-odn",
+      "kind": "claim",
+      "subject_entity_type": "station",
+      "expect": "pass",
+      "note": "0.1.8: tide_level with a ruled vertical_datum",
+      "document": {"subject_id": "STN-E70039", "source_id": "SRC-EA", "recorded_by": "r@x.com", "confidence": "high", "value_real": 3.4, "predicate": "tide_level", "qualifiers": {"binding": "measured", "vertical_datum": "ordnance-datum-newlyn"}}
+    },
+    {
+      "id": "claim-water-level-unstated",
+      "kind": "claim",
+      "subject_entity_type": "station",
+      "expect": "pass",
+      "note": "0.1.8: unstated is a ruled value (the publisher states no datum)",
+      "document": {"subject_id": "STN-E70039", "source_id": "SRC-EA", "recorded_by": "r@x.com", "confidence": "high", "value_real": 3.4, "predicate": "water_level", "qualifiers": {"binding": "measured", "vertical_datum": "unstated"}}
+    },
+    {
+      "id": "claim-water-level-unknown-datum",
+      "kind": "claim",
+      "subject_entity_type": "station",
+      "expect": "fail",
+      "note": "0.1.8: vertical_datum is CLOSED",
+      "document": {"subject_id": "STN-E70039", "source_id": "SRC-EA", "recorded_by": "r@x.com", "confidence": "high", "value_real": 3.4, "predicate": "water_level", "qualifiers": {"binding": "measured", "vertical_datum": "mean-sea-level"}}
+    },
+    {
+      "id": "claim-sensor-measured",
+      "kind": "claim",
+      "subject_entity_type": "station",
+      "expect": "pass",
+      "note": "0.1.8: verification_method += sensor-measured (dispatch 381)",
+      "document": {"subject_id": "STN-E70039", "source_id": "SRC-EA", "recorded_by": "r@x.com", "confidence": "high", "value_real": 3.4, "predicate": "water_level", "qualifiers": {"binding": "measured", "vertical_datum": "local-stage-datum", "verification_method": "sensor-measured"}}
+    },
+    {
+      "id": "claim-geometry-field-placed-witnessed",
+      "kind": "claim",
+      "subject_entity_type": "building",
+      "expect": "pass",
+      "note": "0.1.8: geometry_basis += field-placed-witnessed (dispatch 417)",
+      "document": {"subject_id": "B1", "predicate": "address", "value_cy": "T", "source_id": "S", "recorded_by": "r@x.com", "confidence": "high", "qualifiers": {"geometry_basis": "field-placed-witnessed", "field_session_id": "FS-1", "co_signed_by": "w@x.com"}}
     }
   ]
 }
