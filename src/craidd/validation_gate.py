@@ -10,8 +10,8 @@ SCH-CLAIM-001, SCH-FEDERATION-001, SCH-ENTITY-001).
 Two backends, one `Validator` protocol:
 
   - `PorthValidator` — the canonical live gate. Calls the `constitution.validate`
-    / `constitution.version` MCP tools on awen-porth (craidd :8081). This is the
-    gate the real build runs on craidd, where porth is a sibling service.
+    / `constitution.version` MCP tools on awen-porth (the box porth,
+    DEFAULT_PORTH_URL). This is the gate the real build runs.
   - `SchemaValidator` — the offline gate. Validates against the constitution
     schemas vendored at their pinned machine-layer tag (constitution_vendor/,
     see PINNED.json). CI and off-tailnet runs use this so the check never needs
@@ -270,16 +270,19 @@ class SchemaValidator:
 
 # --- live gate (awen-porth MCP) ---------------------------------------------
 
-# The awen-porth streamable-HTTP MCP endpoint on craidd's tailnet. Overridable
-# for a different node / port.
-DEFAULT_PORTH_URL = "http://100.68.238.84:8081/mcp"
+# The awen-porth streamable-HTTP MCP endpoint on the Mythic Beasts box: the
+# `porth.awenweave.com` vhost (awen-porth deploy/mythic/Caddyfile:22) at /mcp
+# (deploy/mythic/smoke-porth.sh:20). Overridable for a different node / port.
+# It was the craidd Pi's tailnet address until dispatch 502 (01/10/2026); the
+# Pi is decommissioned, and tests/craidd/test_no_pi_default.py keeps it out.
+DEFAULT_PORTH_URL = "https://porth.awenweave.com/mcp"
 
 
 class PorthValidator:
     """Live gate: the `constitution.validate` MCP tool on awen-porth.
 
-    The canonical build-time gate the real snapshot build runs on craidd, where
-    porth is a sibling on :8081. Speaks the streamable-HTTP MCP transport
+    The canonical build-time gate the real snapshot build runs against the box
+    porth (DEFAULT_PORTH_URL). Speaks the streamable-HTTP MCP transport
     (initialize -> session id -> tools/call); responses arrive as SSE frames.
     """
 
@@ -424,8 +427,8 @@ class PorthValidator:
 def default_gate(porth_url: str = DEFAULT_PORTH_URL, prefer_porth: bool = True,
                  subject_entity_type: Optional[str] = None):
     """Return the gate the build should use: the live porth gate when it is
-    reachable, else the offline vendored gate. The real craidd build gets porth;
-    a dev Mac / CI run off-tailnet gets the vendored schemas. Both validate the
+    reachable, else the offline vendored gate. A run that can reach the box
+    porth gets it; a run with no network gets the vendored schemas. Both validate the
     same records against the same pinned constitution machine layer."""
     if prefer_porth:
         candidate = PorthValidator(porth_url, subject_entity_type=subject_entity_type)
