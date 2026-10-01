@@ -273,8 +273,9 @@ class SchemaValidator:
 # The awen-porth streamable-HTTP MCP endpoint on the Mythic Beasts box: the
 # `porth.awenweave.com` vhost (awen-porth deploy/mythic/Caddyfile:22) at /mcp
 # (deploy/mythic/smoke-porth.sh:20). Overridable for a different node / port.
-# It was the craidd Pi's tailnet address until dispatch 502 (01/10/2026); the
-# Pi is decommissioned, and tests/craidd/test_no_pi_default.py keeps it out.
+# It was the craidd Pi's tailnet address until dispatch 502 (01/10/2026). The
+# Pi stays on, but nothing defaults to it; tests/craidd/test_no_pi_default.py
+# keeps it out.
 DEFAULT_PORTH_URL = "https://porth.awenweave.com/mcp"
 
 

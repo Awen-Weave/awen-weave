@@ -1,7 +1,9 @@
-"""No default may point at the decommissioned craidd Raspberry Pi.
+"""No default may point at the craidd Raspberry Pi.
 
-Dispatch 502 (01/10/2026, ruled by Huw as Llys): the Pi is powered off only
-once nothing calls it. Dispatch 498 found three defaults still dialling its
+Dispatch 502 (01/10/2026, ruled by Huw as Llys): estate code stops defaulting
+to the Pi. The Pi itself stays on (Huw, as Llys, ~12:20Z 01/10/2026): it holds
+the original Dolgellau Town Dataset. A run that wants it passes --porth-url;
+nothing reaches it by default. Dispatch 498 found three defaults still dialling its
 tailnet porth `100.68.238.84:8081`; all three read one constant,
 `craidd.validation_gate.DEFAULT_PORTH_URL`. These tests fail if a Pi address
 comes back as a default, by any of the three routes it could return:
