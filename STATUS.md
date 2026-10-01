@@ -4,7 +4,7 @@
 
 ## awen-weave 0.2.25 — the porth default leaves the craidd Pi (2026-10-01, dispatch 502)
 
-- **RULED BY HUW AS LLYS 01/10/2026:** the craidd Raspberry Pi is decommissioned, but only after nothing calls it. Dispatch 498 found three defaults still dialling its tailnet porth.
+- **RULED BY HUW AS LLYS 01/10/2026:** estate code stops defaulting to the craidd Raspberry Pi; dispatch 498 found three defaults still dialling its tailnet porth. **Corrected ~12:20Z the same day: the Pi stays on** — it holds the original Dolgellau Town Dataset — so there is no power-off step.
 - **ONE CONSTANT, THREE CALLERS.** `craidd.validation_gate.DEFAULT_PORTH_URL` was `http://100.68.238.84:8081/mcp`; it is now `https://porth.awenweave.com/mcp`, read from awen-porth `deploy/mythic/Caddyfile:22` (the vhost) and `deploy/mythic/smoke-porth.sh:20` (`/mcp`). `PorthValidator`, `default_gate()`, and the `--porth-url` defaults of `cli/craidd_snapshot.py` and `cli/craidd_return.py` all read it. Measured before the change: the box porth answers this `PorthValidator` and serves constitution 0.1.8 at `2199bbd`, the same pin vendored here.
 - **INDIRECT CALLERS:** eight `default_gate()` calls in awen-source-catalogue (`scripts/build_layer_snapshot.py` and the alc, epc, flood, gazetteer, gp, planning and uprn snapshot modules) take the same default, so they move with this release and need no code change.
 - **GUARD:** `tests/craidd/test_no_pi_default.py` (8) checks the constant, both signature defaults, both CLI `--porth-url` defaults as parsed, and every `.py` under `src/` and `client/` for a Pi marker. Mutation-checked: restoring the Pi constant reds 7 of 8; hard-coding the Pi in one CLI reds 2.
