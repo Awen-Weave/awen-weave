@@ -86,6 +86,12 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Predicates whose value validate_claim checks against their constraint_json enum (task 4.1,
+# decision 7: source_kind only, from constitution 0.1.9).
+VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind"})
+_CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
+
+
 def _is_empty(value: Any) -> bool:
     """True if a value is absent — None, or an empty/whitespace string."""
     if value is None:
@@ -579,6 +585,20 @@ def validate_claim(
                 f"predicate '{predicate_name}' expects a {pred.value_type} "
                 f"value in {columns[0] if columns else '(unknown column)'}, "
                 f"but it is empty"
+            )
+
+    # --- closed value domain (constitution 0.1.9, task 4.1) ----------------
+    # For the predicates in VALUE_CHECKED_PREDICATES only (decision 7: `source_kind`). Every other
+    # constraint_json stays as unenforced as before; that general gap is measured separately. The
+    # domain is the PredicateDef's own constraint_json (built from the vendored $defs), never a
+    # second list kept here.
+    if has_value and predicate_name in VALUE_CHECKED_PREDICATES and pred.constraint_json:
+        allowed = json.loads(pred.constraint_json).get("enum")
+        value = claim.get("value_text")
+        if allowed is not None and value not in allowed:
+            errors.append(
+                f"predicate '{predicate_name}' value '{value}' is not one of {allowed} "
+                f"(closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK})"
             )
 
     # --- qualifiers ------------------------------------------------------
