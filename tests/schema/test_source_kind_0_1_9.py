@@ -92,7 +92,10 @@ def test_the_check_reads_the_predicates_own_constraint_so_a_registry_override_is
 
 
 def test_the_registry_count_moves_by_exactly_one():
-    assert len(PREDICATE_REGISTRY) == 145          # 144 at 0.2.24/0.2.25, + source_kind (0.1.9)
+    # 144 at 0.2.24/0.2.25, + source_kind (0.1.9) = 145; + the 3 Welsh Government allowance predicates
+    # (0.2.27, [sig:dc82671f], none of them on `source`) = 148. The `source` list below is what pins
+    # that source_kind moved the `source` set by exactly one.
+    assert len(PREDICATE_REGISTRY) == 148
     assert sorted(n for n, p in PREDICATE_REGISTRY.items() if p.applies_to_types == ("source",)) == sorted(
         ["title_cy", "title_en", "citation", "url", "organisation", "licence", "accessed_at", "file_hash",
          "source_kind"])
