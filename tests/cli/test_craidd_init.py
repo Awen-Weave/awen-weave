@@ -50,7 +50,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # Same count the schema-layer test pins. The CLI must agree with the registry.
     # (+ tide_level, constitution 0.1.8, 26/09/2026 = 144.)
     # (+ source_kind, constitution 0.1.9, 02/10/2026 = 145.)
-    assert count == 145
+    # (+ 3 Welsh Government allowance predicates, Llys 02/10/2026 [sig:dc82671f] = 148.)
+    assert count == 148
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

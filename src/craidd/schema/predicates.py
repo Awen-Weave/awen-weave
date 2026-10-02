@@ -1394,6 +1394,77 @@ _AREA: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Welsh Government planning ALLOWANCES — a grammar-addition payload through the one gate
+# (PROPOSAL-climate-allowances-grammar-2026-10-02-r2.md; Climate's [sig:7ed42030]; Huw as Llys
+# accepted every recommendation 02/10/2026 [sig:dc82671f]). Awen-weave 0.2.27, the minor after
+# constitution v0.1.9's pair (0.2.26). No constitution change: predicates are registry-tier.
+#
+# WHY A SEPARATE FAMILY. A Welsh Government allowance is a planning figure the source sets at a
+# stated level for decisions; it is NOT a modelled projection for a coastal cell, a river reach or
+# a gauge. Widening `sea_level_rise_m` to `area` would pass the grain rule (coarser is legal) but
+# give one name two meanings that nothing the grammar REQUIRES separates (the
+# `air_temperature_mean_c` route — one predicate plus a discriminating qualifier — needs a closed
+# value meaning "planning allowance", which is Tier-1). So: one name, one meaning, and a FALSE_FRIENDS
+# pair below.
+#
+# WHAT THE SOURCE STATES, AND THEREFORE WHAT IS REQUIRED (Climate's reading of the March 2026 PDF,
+# [sig:9fdf7354]). Sea level (Table 3) states a scenario (RCP8.5, document-wide p.1), horizons and
+# a baseline (UKCP18 1981-2000) — the full projection triple is required. The flow and rainfall
+# tables (Tables 1 and 2) state NO scenario and NO baseline, so ONLY `horizon` is required: a
+# required key the source does not state would make the figure unemittable or force the instance
+# to supply it, and carrying p.1's scenario would pull in a baseline via SCH-CLAIM-001's
+# dependentRequired. The document-wide scenario, the absent baseline and the allowance level
+# ("Central", "Upper", "70th percentile", "H++") travel VERBATIM in `semantics_caveat` until
+# constitution v0.1.10 gives the level its own key (design/climate-allowances-v0.1.10-and-blocked.md).
+#
+# SUBJECTS. `area` entities keyed by a gazetteer GSS code: councils (W06…) for sea level. River
+# basin districts and Wales (W92000004) are NOT returnable yet — see the design note.
+#
+# WELSH. All three are CY_PENDING, so under the 31/08 ruling above they are UNEMITTABLE for an
+# instance gated on bilingual parity (NWC-WLM-001) until a tutor attests each description_cy. No
+# Welsh is written here.
+# ---------------------------------------------------------------------------
+_CLIMATE_ALLOWANCES: tuple[PredicateDef, ...] = (
+    PredicateDef("sea_level_rise_allowance_m", "real", "multi", ("area",),
+                 "Welsh Government planning allowance for sea-level rise, metres, for a local "
+                 "authority, relative to the baseline the source states. A PLANNING FIGURE at a "
+                 "stated allowance level, NOT a modelled projection for any coastal cell (that is "
+                 "sea_level_rise_m). Adopt-and-cite: Welsh Government, Climate change allowances and "
+                 "flood consequence assessments (March 2026), Table 3; QUDT unit Meter. The "
+                 "allowance level travels verbatim in semantics_caveat until constitution v0.1.10.",
+                 required_qualifiers=("scenario", "horizon", "baseline"),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("peak_river_flow_allowance_pct", "real", "multi", ("area",),
+                 "Welsh Government planning allowance for the change in peak river flow, percent, "
+                 "for the area the source names, for the epoch it states. A PLANNING FIGURE at a "
+                 "stated allowance level ('Central', 'Upper'), NOT a projection or observation of "
+                 "flow (that is water_flow). The source states no scenario or baseline for this "
+                 "table: both are recorded as the source gives them in semantics_caveat, never "
+                 "supplied. Adopt-and-cite: Welsh Government, Climate change allowances and flood "
+                 "consequence assessments (March 2026), Table 1; QUDT unit Percent.",
+                 required_qualifiers=("horizon",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("rainfall_intensity_allowance_pct", "real", "multi", ("area",),
+                 "Welsh Government planning allowance for the change in peak rainfall intensity, "
+                 "percent, for the area the source names, for the epoch it states. A PLANNING "
+                 "FIGURE at a stated allowance level ('Central', 'Upper'), NOT a projection or "
+                 "observation of rainfall (that is rainfall). The source states no scenario or "
+                 "baseline for this table: both are recorded as the source gives them in "
+                 "semantics_caveat, never supplied. Adopt-and-cite: Welsh Government, Climate "
+                 "change allowances and flood consequence assessments (March 2026), Table 2; QUDT "
+                 "unit Percent.",
+                 required_qualifiers=("horizon",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -1420,6 +1491,19 @@ FALSE_FRIENDS: tuple[FalseFriend, ...] = (
         "anything hydrological — a watercourse discharge / flow",
         "water_flow",
     ),
+    # The allowance pair (02/10/2026 [sig:dc82671f]) — the two meanings the separate predicate keeps apart.
+    FalseFriend(
+        "sea_level_rise_m",
+        "a MODELLED sea-level projection for a coastal cell (UKCP18 marine)",
+        "a Welsh Government planning allowance for a council",
+        "sea_level_rise_allowance_m",
+    ),
+    FalseFriend(
+        "sea_level_rise_allowance_m",
+        "a Welsh Government PLANNING ALLOWANCE for a council, at a stated level",
+        "a modelled sea-level projection for a coastal cell",
+        "sea_level_rise_m",
+    ),
 )
 
 
@@ -1431,6 +1515,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
+    + _CLIMATE_ALLOWANCES
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1464,6 +1549,10 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # the EXISTING _HERITAGE_SEARCHES group (`within_world_heritage_site`,
 # `within_registered_historic_landscape`) = 143, + `tide_level` into the EXISTING _HYDROLOGY group
 # (constitution 0.1.8, Llys 26/09/2026 [sig:c8426dc4]) = 144 — added inside a group, so named here.
+# + `source_kind` into the EXISTING _SOURCE group (constitution 0.1.9, awen-weave 0.2.26) = 145 —
+# also inside a group, so named here (0.2.26 did not extend this tally; recorded on its rebase).
+# + the 3 Welsh Government allowance predicates (_CLIMATE_ALLOWANCES, a NEW group, Llys 02/10/2026
+# [sig:dc82671f], awen-weave 0.2.27) = 148.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

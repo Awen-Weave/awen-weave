@@ -46,7 +46,8 @@ def test_seed_predicate_count_matches_v01_schema():
     off_gas_grid_properties + energy_efficiency_measures_installed, 09/08/2026 — make 141.)"""
     # (+ tide_level, constitution 0.1.8, 26/09/2026 = 144.)
     # (+ source_kind, constitution 0.1.9, 02/10/2026 = 145.)
-    assert len(SEED_PREDICATES) == 145
+    # (+ 3 Welsh Government allowance predicates, Llys 02/10/2026 [sig:dc82671f] = 148.)
+    assert len(SEED_PREDICATES) == 148
 
 
 def test_alc_grade_predicate_registered():

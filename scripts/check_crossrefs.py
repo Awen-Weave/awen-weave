@@ -63,6 +63,7 @@ KNOWN_FILES: tuple[str, ...] = (
     "bra-v2-estate-agents-pilot.md",
     "v0-schema.md",
     "migration-2026-05.md",
+    "climate-allowances-v0.1.10-and-blocked.md",
 )
 
 
