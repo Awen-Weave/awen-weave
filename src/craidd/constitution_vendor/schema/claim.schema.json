@@ -4,7 +4,7 @@
  "title": "Claim (honiad)",
  "x-awen-rule-id": "SCH-CLAIM-001",
  "x-awen-status": "reconciled 2026-07-04 against awen-weave 0.2.0 (SCHEMA_VERSION v0.1)",
- "description": "An honiad asserts a value about an entity via a predicate (perthynas), with provenance and a confidence. This schema mirrors the claim-table contract the live awen-weave validator enforces (craidd.schema.validation.validate_claim + storage/ddl.py CHECK constraints, SCHEMA_VERSION v0.1). The canonical Welsh term for the predicate concept is perthynas, locked by Catrin Stephens 2026-05-19 (VOC-PERTHYNAS); the machine field name stays English (`predicate`) per the tutor's schema-identifiers-stay-English attestation. NB tier and source.kind are constitution/policy-layer classification attributes (see POL-TIERAB-001, SOV-003), NOT stored claim columns in v0.1 code — they are applied at classification/policy time, not carried on the claim row; see compatibility.md.",
+ "description": "An honiad asserts a value about an entity via a predicate (perthynas), with provenance and a confidence. This schema mirrors the claim-table contract the live awen-weave validator enforces (craidd.schema.validation.validate_claim + storage/ddl.py CHECK constraints, SCHEMA_VERSION v0.1). The canonical Welsh term for the predicate concept is perthynas, locked by Catrin Stephens 2026-05-19 (VOC-PERTHYNAS); the machine field name stays English (`predicate`) per the tutor's schema-identifiers-stay-English attestation. NB tier and source.kind are constitution/policy-layer classification attributes (see POL-TIERAB-001, SOV-003), NOT stored claim columns in v0.1 code — they are applied at classification/policy time, not carried on the claim row; see compatibility.md. From 0.1.9, `source.kind` in POL-TIERAB-001 is resolved through `source_id` to that source entity's `source_kind` predicate (closed domain SCH-ENTITY-001 $defs.source_kind); it is never a claim column or qualifier.",
  "type": "object",
  "required": [
   "subject_id",
@@ -101,7 +101,7 @@
   "source_id": {
    "type": "string",
    "minLength": 1,
-   "description": "Provenance: FK to a source entity (entity_type=source). Source metadata — licence, organisation, url, citation — lives as predicates on that entity, not inline here."
+   "description": "Provenance: FK to a source entity (entity_type=source). Source metadata — licence, organisation, url, citation — lives as predicates on that entity, not inline here. From 0.1.9, `source.kind` in POL-TIERAB-001 is resolved through `source_id` to that source entity's `source_kind` predicate (closed domain SCH-ENTITY-001 $defs.source_kind); it is never a claim column or qualifier."
   },
   "recorded_by": {
    "type": "string",

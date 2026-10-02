@@ -92,6 +92,20 @@
    "additionalProperties": false
   }
  },
+ "$defs": {
+  "source_kind": {
+   "type": "string",
+   "enum": [
+    "observation",
+    "open-dataset",
+    "cross-reference",
+    "learning",
+    "commercial",
+    "proprietary"
+   ],
+   "description": "The closed domain of the `source` entity's `source_kind` predicate (Llys 01/10/2026, placement A; constitution 0.1.9). Referenced by no property here, so it validates nothing on an entity row: it is the ONE machine-readable copy of the six values, in the only directory every vendored tree carries. awen-weave builds the predicate's constraint_json from it and refuses an off-domain value in validate_claim; Porth's constitution_validate does not (no per-predicate value rule in SCH-CLAIM-001). POL-TIERAB-001's `source_kinds` is a Rego copy tied to this one by tests/test_release_0_1_9.py. No `unknown` value: an absent kind means not known, and fails closed (not tier_a_eligible)."
+  }
+ },
  "allOf": [
   {
    "if": {

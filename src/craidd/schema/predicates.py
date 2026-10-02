@@ -72,6 +72,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import json
+from pathlib import Path
 
 from .grain import DECLARED_GRAINS, Grain
 
@@ -400,6 +402,22 @@ _RESEARCH_QUESTION: tuple[PredicateDef, ...] = (
 # ---------------------------------------------------------------------------
 # Source predicates — applies to entity_type 'source'
 # ---------------------------------------------------------------------------
+# The closed domain of `source_kind` (constitution 0.1.9, Llys 01/10/2026, placement A). READ from the
+# vendored SCH-ENTITY-001 $defs.source_kind, never typed here, so the grammar cannot drift from the
+# constitution (task 4.1 proposal section 2.3). A missing or malformed vendor copy fails at import.
+_VENDORED_ENTITY_SCHEMA = (Path(__file__).resolve().parent.parent / "constitution_vendor" / "schema"
+                           / "entity.schema.json")
+
+
+def _vendored_source_kinds() -> tuple[str, ...]:
+    enum = json.loads(_VENDORED_ENTITY_SCHEMA.read_text(encoding="utf-8"))["$defs"]["source_kind"]["enum"]
+    if not enum or len(set(enum)) != len(enum) or not all(isinstance(v, str) and v for v in enum):
+        raise RuntimeError(f"vendored $defs.source_kind is malformed: {enum!r}")
+    return tuple(enum)
+
+
+SOURCE_KINDS: tuple[str, ...] = _vendored_source_kinds()
+
 _SOURCE: tuple[PredicateDef, ...] = (
     PredicateDef("title_cy", "text", "single", ("source",),
                  "Welsh title, where applicable.", description_cy="teitl Cymraeg, lle bo'n berthnasol",
@@ -431,6 +449,18 @@ _SOURCE: tuple[PredicateDef, ...] = (
     ),
     PredicateDef("file_hash", "text", "single", ("source",),
                  "SHA-256 of the evidence file, where applicable.", description_cy="SHA-256 y ffeil dystiolaeth, lle bo'n berthnasol",
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    # Constitution 0.1.9 (Llys 02/10/2026 [sig:ca783ae5]). POL-TIERAB-001's `source.kind`, resolved
+    # through a claim's source_id to this predicate. Closed domain read from the vendored $defs.
+    # validate_claim refuses an off-domain value (for this predicate only; decision 7). Welsh is
+    # PENDING, never self-attested, so it is unemittable by a bilingual-parity instance until a tutor
+    # attests it (Llys 31/08/2026; task 4.1 Class A pass N3).
+    PredicateDef("source_kind", "text", "single", ("source",),
+                 "The kind of source, one of the six in SCH-ENTITY-001 $defs.source_kind: observation, "
+                 "open-dataset, cross-reference, learning, commercial, proprietary. Drives POL-TIERAB-001's "
+                 "Tier A eligibility; an absent kind is not eligible.",
+                 constraint_json=json.dumps({"enum": list(SOURCE_KINDS)}),
         finest_grain=Grain.NOT_SPATIAL,
     ),
 )

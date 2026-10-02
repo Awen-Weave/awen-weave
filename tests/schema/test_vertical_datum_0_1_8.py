@@ -81,9 +81,11 @@ def test_the_two_bundled_values_ride_the_same_release():
     assert "curator-placed" in GEOMETRY_BASES
 
 
-def test_the_package_pins_constitution_0_1_8():
-    assert CONSTITUTION_VERSION == "0.1.8"
-    assert CONSTITUTION_TAG == "v0.1.8"
+def test_the_package_pins_constitution_0_1_8_or_later():
+    """Was `== 0.1.8`. Version-bound pins RETIRE at the next release (task 4.1 Class A pass, N4):
+    only the current release's test pins the exact version (test_source_kind_0_1_9.py)."""
+    assert tuple(int(x) for x in CONSTITUTION_VERSION.split(".")) >= (0, 1, 8)
+    assert CONSTITUTION_TAG == f"v{CONSTITUTION_VERSION}"
 
 
 # --- the predicates -----------------------------------------------------------------------

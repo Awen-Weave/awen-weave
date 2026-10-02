@@ -171,7 +171,7 @@ def test_EVERY_registered_predicate_now_carries_a_declared_grain():
     undeclared = sorted(n for n, p in PREDICATE_REGISTRY.items()
                         if p.finest_grain is Grain.UNDECLARED)
     assert undeclared == [], undeclared
-    assert len(PREDICATE_REGISTRY) == 144   # 143 at 8.6, + tide_level (0.1.8)
+    assert len(PREDICATE_REGISTRY) == 145   # 143 at 8.6, + tide_level (0.1.8), + source_kind (0.1.9)
     off_set = {n: p.finest_grain for n, p in PREDICATE_REGISTRY.items()
                if p.finest_grain not in DECLARED_GRAINS}
     assert off_set == {}, off_set
