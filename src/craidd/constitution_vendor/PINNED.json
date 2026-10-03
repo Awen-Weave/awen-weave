@@ -5,5 +5,5 @@
  "vendored": "schema/ + VERSION",
  "pin_kind": "machine-layer (moves only when SCH-*/VOC-*/POL-* change)",
  "vendored_from": "git archive v0.1.9 (pinned tag, not working tree)",
- "regenerate": "scripts/vendor_constitution.sh"
+ "regenerate": "No script in this repo (there is no scripts/vendor_constitution.sh). From an awen-constitution clone: `git archive <tag> schema VERSION | tar -x -C src/craidd/constitution_vendor`, keeping the two package markers `__init__.py` and `schema/__init__.py`, which are not from the tag; set `tag`, and `commit` to `git rev-list -n1 <tag>` (the commit, not the annotated tag object); then advance craidd.CONSTITUTION_VERSION / CONSTITUTION_TAG in the same commit. The constitution-drift CI job checks out the tag and diffs the model against it."
 }
