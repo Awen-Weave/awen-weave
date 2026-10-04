@@ -514,4 +514,6 @@ def test_exit7_the_RoFRS_band_predicates_are_NOT_registered_reported_not_fixed()
     delete this test deliberately — and by then the rule makes a grain
     mandatory, which is the whole point of the ordering."""
     flood_ish = sorted(n for n in PREDICATE_REGISTRY if "flood" in n or "rofrs" in n.lower())
-    assert flood_ish == ["flood_coverage", "properties_at_flood_risk_count"], flood_ish
+    # + in_flood_zone (0.2.28, G2, Llys 04/10/2026 [sig:a40a1dcd]): a Flood Map for Planning ZONE
+    # (FZ1/FZ2/FZ3) for a site, NOT a RoFRS risk band. The RoFRS bands are still unregistered.
+    assert flood_ish == ["flood_coverage", "in_flood_zone", "properties_at_flood_risk_count"], flood_ish
