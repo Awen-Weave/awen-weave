@@ -171,7 +171,7 @@ def test_EVERY_registered_predicate_now_carries_a_declared_grain():
     undeclared = sorted(n for n, p in PREDICATE_REGISTRY.items()
                         if p.finest_grain is Grain.UNDECLARED)
     assert undeclared == [], undeclared
-    assert len(PREDICATE_REGISTRY) == 148   # 143 at 8.6, + tide_level (0.1.8), + source_kind (0.1.9), + 3 allowances (02/10)
+    assert len(PREDICATE_REGISTRY) == 156   # 143 at 8.6, + tide_level (0.1.8), + source_kind (0.1.9), + 3 allowances (02/10), + 8 Open Evidence (04/10)
     off_set = {n: p.finest_grain for n, p in PREDICATE_REGISTRY.items()
                if p.finest_grain not in DECLARED_GRAINS}
     assert off_set == {}, off_set
@@ -514,4 +514,6 @@ def test_exit7_the_RoFRS_band_predicates_are_NOT_registered_reported_not_fixed()
     delete this test deliberately — and by then the rule makes a grain
     mandatory, which is the whole point of the ordering."""
     flood_ish = sorted(n for n in PREDICATE_REGISTRY if "flood" in n or "rofrs" in n.lower())
-    assert flood_ish == ["flood_coverage", "properties_at_flood_risk_count"], flood_ish
+    # + in_flood_zone (0.2.28, G2, Llys 04/10/2026 [sig:a40a1dcd]): a Flood Map for Planning ZONE
+    # (FZ1/FZ2/FZ3) for a site, NOT a RoFRS risk band. The RoFRS bands are still unregistered.
+    assert flood_ish == ["flood_coverage", "in_flood_zone", "properties_at_flood_risk_count"], flood_ish

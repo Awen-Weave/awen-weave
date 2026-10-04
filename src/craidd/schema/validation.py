@@ -87,9 +87,16 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 
 
 # Predicates whose value validate_claim checks against their constraint_json enum (task 4.1,
-# decision 7: source_kind only, from constitution 0.1.9).
-VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind"})
+# decision 7: source_kind only, from constitution 0.1.9). + decision_outcome by P-2 (Llys 04/10/2026
+# [sig:a40a1dcd], decision 9), a later ruling on that one predicate, taken after Mac 6's estate search
+# found every held value inside its domain. Every other constraint_json (listed_grade, in_flood_zone)
+# stays unenforced, as decision 7 left it.
+VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
+_VALUE_CHECK_BASIS: dict[str, str] = {
+    "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
+    "decision_outcome": "closed domain, P-2, Llys 04/10/2026 [sig:a40a1dcd]; an appeal outcome is appeal_outcome",
+}
 
 
 def _is_empty(value: Any) -> bool:
@@ -598,7 +605,7 @@ def validate_claim(
         if allowed is not None and value not in allowed:
             errors.append(
                 f"predicate '{predicate_name}' value '{value}' is not one of {allowed} "
-                f"(closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK})"
+                f"({_VALUE_CHECK_BASIS.get(predicate_name, 'closed domain')})"
             )
 
     # --- qualifiers ------------------------------------------------------

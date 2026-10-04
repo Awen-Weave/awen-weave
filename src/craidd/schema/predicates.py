@@ -77,6 +77,25 @@ from pathlib import Path
 
 from .grain import DECLARED_GRAINS, Grain
 
+# decision_outcome's closed domain (P-2, Llys 04/10/2026 [sig:a40a1dcd]) and its export mapping onto
+# MHCLG's binary decision codelist. split and withdrawn have no binary value, so they map to None:
+# an exporter states them in its own words rather than forcing them into grant or refuse.
+DECISION_OUTCOMES: tuple[str, ...] = ("granted", "refused", "split", "withdrawn")
+_DECISION_OUTCOME_TO_MHCLG: dict[str, str | None] = {
+    "granted": "grant", "refused": "refuse", "split": None, "withdrawn": None,
+}
+
+
+def decision_outcome_to_mhclg(value: str) -> str | None:
+    """Map a decision_outcome value to MHCLG's binary `decision` codelist (grant | refuse) at export.
+
+    Returns None for split and withdrawn, which the binary list cannot express. Raises ValueError
+    for anything outside DECISION_OUTCOMES, so an off-domain value cannot leak out as a guess.
+    """
+    if value not in _DECISION_OUTCOME_TO_MHCLG:
+        raise ValueError(f"decision_outcome value {value!r} is not one of {list(DECISION_OUTCOMES)}")
+    return _DECISION_OUTCOME_TO_MHCLG[value]
+
 
 # Placeholder for description_cy until a proper Welsh pass is done. It
 # satisfies the NOT NULL constraint without pretending to be Welsh, and
@@ -176,7 +195,9 @@ _BUILDING: tuple[PredicateDef, ...] = (
                  "Today's primary use.", description_cy="defnydd presennol",
         finest_grain=Grain.PROPERTY,
     ),
-    PredicateDef("listed_grade", "text", "single", ("building",),
+    # P-1 (Llys 04/10/2026 [sig:a40a1dcd], decision 8a): also binds to `site`. listed_id does NOT
+    # (decision 8b): it is returnable, so widening it is a returns ruling first.
+    PredicateDef("listed_grade", "text", "single", ("building", "site"),
                  "Statutory listing grade.",
                  constraint_json='{"enum": ["I", "II*", "II"]}', description_cy="gradd restredig statudol",
         finest_grain=Grain.PROPERTY,
@@ -186,8 +207,9 @@ _BUILDING: tuple[PredicateDef, ...] = (
                  "Multi-cardinality: a building may carry several.", description_cy="cyfeirnod cofrestr Cadw neu adeiladau rhestredig Prydain",
         finest_grain=Grain.PROPERTY,
     ),
-    PredicateDef("conservation_area", "text", "multi", ("building",),
-                 "Conservation area(s) the building sits within.", description_cy="ardal gadwraeth",
+    PredicateDef("conservation_area", "text", "multi", ("building", "site"),   # P-1, decision 8a
+                 "Conservation area(s) the building or development site sits within.",
+                 description_cy="ardal gadwraeth",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("name_cy", "text", "multi", ("building",),
@@ -761,10 +783,17 @@ _PLANNING: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
+    # P-2 (Llys 04/10/2026 [sig:a40a1dcd], decision 9): the enum the description always stated is now
+    # the predicate's closed domain, and validate_claim refuses a value outside it (an appeal outcome
+    # such as 'dismissed' belongs in appeal_outcome). Taken only after Mac 6's estate search (04/10)
+    # found every held value inside it. Kept at four values because MHCLG's binary decision codelist
+    # (grant | refuse) cannot say split or withdrawn; decision_outcome_to_mhclg() maps at export.
     PredicateDef("decision_outcome", "text", "single", ("event",),
                  "Decision outcome mapped to the MHCLG enum "
                  "(granted/refused/split/withdrawn); raw text kept, never "
-                 "re-bucketed away.", description_cy=CY_PENDING,
+                 "re-bucketed away: the authority's own wording travels in "
+                 "semantics_caveat.", description_cy=CY_PENDING,
+                 constraint_json=json.dumps({"enum": list(DECISION_OUTCOMES)}),
         finest_grain=Grain.NOT_SPATIAL,
     ),
     PredicateDef("decided_by", "text", "single", ("event",),
@@ -1465,6 +1494,98 @@ _CLIMATE_ALLOWANCES: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Open Evidence (AWE-005) grammar — a one-gate grammar addition (PROPOSAL-open-evidence-grammar-
+# 2026-10-03.md, on GitHub at Awen-Weave/open-evidence docs/, #4). Huw as Llys accepted all ten
+# recommendations of its section 3 on 04/10/2026 [sig:a40a1dcd], answering question e544a95b.
+# Awen-weave 0.2.28. No constitution change: predicates are registry-tier.
+#
+# MINTED: G1 decision_grant_share, G2 in_flood_zone, G3 within_article_4_direction, G4
+# near_listed_building, G5 policy_cited, G6 cites_decision, G7 appeal_reference, G9
+# median_price_paid_gbp. DEFERRED, NOT MINTED: G8 main_issue (until OE01's licence is settled; its
+# text can carry names) and G10 hmo_share (its only source, OE05, is all rights reserved).
+#
+# PUBLICATION IS NOT THE GRAMMAR'S QUESTION. G2-G4 are estate grammar for property search; Open
+# Evidence itself never publishes them per dwelling (Huw's 02/10 rule). G1 and G9 are area statistics
+# only: a share of PAST decisions (never a prediction, OE-NOPREDICT) built from planning.data.gov.uk or
+# council records and never PlanIt; a median of sales, never a single sale. Decision 10: licence
+# register rows for planning.data.gov.uk planning-application (and any direct EA Flood Map read) come
+# before G1 or G2 is used.
+#
+# G5-G7 are IDENTIFIERS ONLY: the policy or decision reference as cited, never the policy text.
+#
+# WELSH. Every description_cy is CY_PENDING; nothing here is emittable by a bilingual-parity instance
+# (NWC-WLM-001) until a tutor attests it. No Welsh is written here.
+# ---------------------------------------------------------------------------
+_OPEN_EVIDENCE: tuple[PredicateDef, ...] = (
+    PredicateDef("decision_grant_share", "real", "multi", ("area",),
+                 "Share of DECIDED planning applications that were granted, as a fraction 0-1, for "
+                 "the application type named in value_en and the period in the claim id and note "
+                 "(n in the note). A record of PAST decisions, NOT a probability of approval for any "
+                 "application. Sources: planning.data.gov.uk planning-application or council "
+                 "registers; never PlanIt (discovery only).",
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("in_flood_zone", "text", "single", ("building", "site"),
+                 "The flood zone (FZ1 / FZ2 / FZ3, England) the property or development site lies "
+                 "in, per the stated source. A SITE fact, unlike flood_coverage (an area-share of a "
+                 "whole authority, never a site assessment). Welsh zones to be added if a Welsh source "
+                 "is registered.",
+                 required_qualifiers=("source_ran_at",),
+                 constraint_json='{"enum": ["FZ1", "FZ2", "FZ3"]}',
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("within_article_4_direction", "text", "multi", ("building", "site", "area"),
+                 "Article 4 direction whose area contains the subject: the direction reference, "
+                 "verbatim. A different designation from a conservation area (conservation_area is "
+                 "not reused for it).",
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("near_listed_building", "text", "multi", ("building", "site"),
+                 "Listed building(s) within the stated setting radius of the property or site: the "
+                 "verbatim NHLE / Cadw list-entry reference of each (the radius and its basis in the "
+                 "note). A proximity indication for a search, NOT a statement the subject is listed, "
+                 "and NOT an along-network distance (that is network_distance_to_nearest).",
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("policy_cited", "text", "multi", ("event",),
+                 "A development-plan policy the decision cites: the plan and policy identifier as "
+                 "cited (e.g. 'Local Plan 2013-2033 H10'). The IDENTIFIER ONLY, never the policy "
+                 "text. Not a consent or designation reference (that is consent_reference).",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("cites_decision", "text", "multi", ("event",),
+                 "Another decision this decision cites: its reference (an appeal reference, as in "
+                 "appeal_reference, or an LPA application reference). Identifiers only. Not what an "
+                 "event acts on (that is affects_entity).",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("appeal_reference", "text", "single", ("event",),
+                 "The Planning Inspectorate appeal reference, verbatim (APP/...). A different "
+                 "identifier, issued by a different body, from the LPA's application_reference.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("median_price_paid_gbp", "real", "multi", ("area",),
+                 "Median price paid, GBP, in the area for the period and property type named in "
+                 "value_en (HM Land Registry Price Paid). An AREA statistic only, never a single "
+                 "sale. Not UK HPI's mix-adjusted average price, which is an index measure.",
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -1504,6 +1625,13 @@ FALSE_FRIENDS: tuple[FalseFriend, ...] = (
         "a modelled sea-level projection for a coastal cell",
         "sea_level_rise_m",
     ),
+    # G2 (04/10/2026 [sig:a40a1dcd]): a second reading flood_coverage invites, for a site.
+    FalseFriend(
+        "flood_coverage",
+        "the Flood-Zone AREA-SHARE of a place (what fraction of the area is in a flood zone)",
+        "the flood zone a property or development site lies in",
+        "in_flood_zone",
+    ),
 )
 
 
@@ -1515,7 +1643,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
-    + _CLIMATE_ALLOWANCES
+    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1553,6 +1681,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # also inside a group, so named here (0.2.26 did not extend this tally; recorded on its rebase).
 # + the 3 Welsh Government allowance predicates (_CLIMATE_ALLOWANCES, a NEW group, Llys 02/10/2026
 # [sig:dc82671f], awen-weave 0.2.27) = 148.
+# + the 8 Open Evidence predicates (_OPEN_EVIDENCE, a NEW group, Llys 04/10/2026 [sig:a40a1dcd],
+# awen-weave 0.2.28) = 156. P-1 and P-2 widen and close existing predicates; they add no name.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
