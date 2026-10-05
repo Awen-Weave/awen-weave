@@ -52,7 +52,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # (+ source_kind, constitution 0.1.9, 02/10/2026 = 145.)
     # (+ 3 Welsh Government allowance predicates, Llys 02/10/2026 [sig:dc82671f] = 148.)
     # (+ 8 Open Evidence predicates, Llys 04/10/2026 [sig:a40a1dcd] = 156.)
-    assert count == 156
+    # (+ 3 Lludd dialysis predicates, Llys 05/10/2026 [sig:75935d1b] = 159.)
+    assert count == 159
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):

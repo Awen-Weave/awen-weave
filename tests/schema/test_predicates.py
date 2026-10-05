@@ -48,7 +48,8 @@ def test_seed_predicate_count_matches_v01_schema():
     # (+ source_kind, constitution 0.1.9, 02/10/2026 = 145.)
     # (+ 3 Welsh Government allowance predicates, Llys 02/10/2026 [sig:dc82671f] = 148.)
     # (+ 8 Open Evidence predicates, Llys 04/10/2026 [sig:a40a1dcd] = 156.)
-    assert len(SEED_PREDICATES) == 156
+    # (+ 3 Lludd dialysis predicates, Llys 05/10/2026 [sig:75935d1b] = 159.)
+    assert len(SEED_PREDICATES) == 159
 
 
 def test_alc_grade_predicate_registered():

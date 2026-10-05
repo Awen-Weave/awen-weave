@@ -91,11 +91,12 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 # [sig:a40a1dcd], decision 9), a later ruling on that one predicate, taken after Mac 6's estate search
 # found every held value inside its domain. Every other constraint_json (listed_grade, in_flood_zone)
 # stays unenforced, as decision 7 left it.
-VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome"})
+VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
 _VALUE_CHECK_BASIS: dict[str, str] = {
     "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
     "decision_outcome": "closed domain, P-2, Llys 04/10/2026 [sig:a40a1dcd]; an appeal outcome is appeal_outcome",
+    "service_provided": "closed domain, G1, Llys 05/10/2026 [sig:75935d1b]; extendable only by a later decision",
 }
 
 

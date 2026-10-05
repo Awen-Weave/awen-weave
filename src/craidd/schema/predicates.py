@@ -1247,7 +1247,9 @@ _SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
         finest_grain=Grain.AREA,
     ),
     PredicateDef("ods_code", "text", "single", ("building",),
-                 "NHS Organisation Data Service code for a practice. An identifier.",
+                 "NHS Organisation Data Service code for an ODS-coded organisation or site (e.g. a "
+                 "GP practice, a dialysis unit). An identifier. (A-1, Llys 05/10/2026 "
+                 "[sig:75935d1b]: wording only; type, cardinality and applies_to unchanged.)",
                  description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
@@ -1259,7 +1261,8 @@ _SPINE_AND_GP_BACKFILL: tuple[PredicateDef, ...] = (
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("operational_status", "text", "single", ("building",),
-                 "Whether a practice is currently operational, verbatim from the source's own "
+                 "Whether an ODS-coded organisation or site is currently operational, verbatim "
+                 "from the source's own "
                  "status vocabulary. A record status, not a statement about whether the "
                  "premises are open today.",
                  description_cy=CY_PENDING,
@@ -1586,6 +1589,58 @@ _OPEN_EVIDENCE: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Lludd (AWE-009) dialysis access: the grammar decisions of
+# PROPOSAL-lludd-dialysis-grammar-2026-10-05.md sections 3-4 (Awen-Weave/lludd #7, c91aebe),
+# accepted as recommended by Huw as Llys 05/10/2026 [sig:75935d1b]. Awen-weave 0.2.29. No
+# constitution change: predicates are registry-tier. A-1 (wording of ods_code and
+# operational_status) is above, in _SPINE_AND_GP_BACKFILL, where those two predicates live.
+#
+# The subjects are organisations' premises, not people. Patients per centre is held
+# [sig:7ffb48df]; station counts are for a later ruling; neither is minted here.
+#
+# G1 service_provided is a CLOSED enum the gate checks (it joins VALUE_CHECKED_PREDICATES, as
+# decision_outcome did). The list is extendable by a later decision, for the cancer directory.
+# G2 operated_by holds an IDENTIFIER (the operator's ODS organisation code); its name goes in
+# value_en. G3 is a modelled share of residents, never a statement that a patient can reach a unit.
+#
+# WELSH. Every description_cy is CY_PENDING. No Welsh is written here.
+# ---------------------------------------------------------------------------
+_LLUDD_DIALYSIS: tuple[PredicateDef, ...] = (
+    PredicateDef("service_provided", "text", "multi", ("building",),
+                 "A service the premises provide, one claim per service, from a closed list: "
+                 "haemodialysis-main-unit, haemodialysis-satellite-unit, home-therapies-training. "
+                 "Asserted by the operator's or renal network's published unit list. NOT the "
+                 "building's use (that is current_use).",
+                 constraint_json=json.dumps({"enum": ["haemodialysis-main-unit",
+                                                      "haemodialysis-satellite-unit",
+                                                      "home-therapies-training"]}),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("operated_by", "text", "single", ("building",),
+                 "The organisation that runs the premises: its ODS organisation code (an "
+                 "identifier), with its name in value_en. A health board, or an independent-sector "
+                 "provider running a unit under contract. NOT a source's authoring organisation "
+                 "(organisation) and NOT a tenancy's organisation (tenant_organisation).",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("population_share_within_travel_time", "real", "multi", ("area",),
+                 "Share of the area's residents, as a fraction 0-1, within the threshold travel time "
+                 "of the nearest feature of a named destination set, by the qualified travel mode. "
+                 "value_text names the destination set (layer); the threshold goes in the claim id "
+                 "and note, as reachable_area's does; the age band goes in value_en; n goes in the "
+                 "note. Derived from population_estimate and travel_time_to_nearest, so labelled ODbL "
+                 "when Valhalla (OSM) times are used. A MODELLED share of residents, NOT a statement "
+                 "that any patient can reach a unit.",
+                 required_qualifiers=("source_ran_at", "travel_mode"),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -1632,6 +1687,25 @@ FALSE_FRIENDS: tuple[FalseFriend, ...] = (
         "the flood zone a property or development site lies in",
         "in_flood_zone",
     ),
+    # G1 and G2 (05/10/2026 [sig:75935d1b]): the readings the Lludd dialysis predicates keep apart.
+    FalseFriend(
+        "current_use",
+        "a building's primary USE today",
+        "a clinical service the premises provide (e.g. a dialysis service)",
+        "service_provided",
+    ),
+    FalseFriend(
+        "organisation",
+        "a SOURCE's authoring or holding organisation",
+        "the organisation that runs a premises",
+        "operated_by",
+    ),
+    FalseFriend(
+        "tenant_organisation",
+        "a TENANCY's formal organisation name",
+        "the organisation that runs a premises",
+        "operated_by",
+    ),
 )
 
 
@@ -1643,7 +1717,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
-    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE
+    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1683,6 +1757,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # [sig:dc82671f], awen-weave 0.2.27) = 148.
 # + the 8 Open Evidence predicates (_OPEN_EVIDENCE, a NEW group, Llys 04/10/2026 [sig:a40a1dcd],
 # awen-weave 0.2.28) = 156. P-1 and P-2 widen and close existing predicates; they add no name.
+# + the 3 Lludd dialysis predicates (_LLUDD_DIALYSIS, a NEW group, Llys 05/10/2026 [sig:75935d1b],
+# awen-weave 0.2.29) = 159. A-1 rewords ods_code and operational_status; it adds no name.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
