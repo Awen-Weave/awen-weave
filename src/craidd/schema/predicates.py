@@ -571,6 +571,26 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
+    # Census 2021 OA tables (phase 9, card c0628; Llys 09/10/2026 15:23:55Z [sig:8ea7c020] keeps them
+    # in phase 9; register REQ-arloesidolgellau-7d070c). PROPOSED in awen-weave 0.2.31 through the one
+    # gate. The category rides value_en/value_cy, as heating_fuel_share's fuel does; no qualifier.
+    PredicateDef("usual_residents_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents in an area, for the category or five-year "
+                 "age band named in value_en / value_cy (TS001: all usual residents, in households, "
+                 "in communal establishments; TS007A: age bands). A census-day COUNT, not the ONS "
+                 "mid-year estimate: that is population_estimate, and the two are never mixed in one "
+                 "series. An absolute count; vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("households_car_van_availability_count", "int", "multi", ("area",),
+                 "Census 2021 count of households in an area by car or van availability, for the "
+                 "category named in value_en / value_cy (TS045: no cars or vans, one, two, three or "
+                 "more). Counts households, not vehicles or people. An absolute count; vintage in "
+                 "the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("main_fuel", "text", "single", ("building",),
                  "Main heating fuel of the dwelling, verbatim from EPC.",
                  description_cy=CY_PENDING,
@@ -1905,6 +1925,9 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # under Llys 09/10/2026 [sig:91605acd]), awen-weave 0.2.30 = 161 — both inside groups, so named here.
 # + the 13 Lludd step-0 health predicates (_LLUDD_HEALTH, a NEW group, card c0616, PROPOSED in the
 # same 0.2.30 release) = 174.
+# + `usual_residents_count` and `households_car_van_availability_count` into the EXISTING
+# _ENERGY_DEMAND group beside heating_fuel_share (Census 2021, card c0628, PROPOSED in awen-weave
+# 0.2.31) = 176 — inside a group, so named here.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
