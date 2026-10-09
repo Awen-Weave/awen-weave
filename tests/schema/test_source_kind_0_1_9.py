@@ -97,7 +97,7 @@ def test_the_registry_count_moves_by_exactly_one():
     # that source_kind moved the `source` set by exactly one.
     # + the 8 Open Evidence predicates (0.2.28, [sig:a40a1dcd], none on `source`) = 156.
     # + the 3 Lludd dialysis predicates (0.2.29, [sig:75935d1b], none on `source`) = 159.
-    assert len(PREDICATE_REGISTRY) == 159
+    assert len(PREDICATE_REGISTRY) == 161
     assert sorted(n for n, p in PREDICATE_REGISTRY.items() if p.applies_to_types == ("source",)) == sorted(
         ["title_cy", "title_en", "citation", "url", "organisation", "licence", "accessed_at", "file_hash",
          "source_kind"])

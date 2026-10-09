@@ -926,14 +926,24 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "World Heritage Site whose inscribed area contains the property — verbatim "
                  "reference (UNESCO ref / site name; Cadw). The OGL designation fact; descriptive "
                  "text held VERIFY.",
-                 description_cy="CY_PENDING",
+                 description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("within_registered_historic_landscape", "text", "multi", ("building",),
                  "Registered historic landscape containing the property — verbatim Cadw "
                  "reference (landscape-scale; a within-flag, not a proximity flag). The OGL "
                  "designation fact.",
-                 description_cy="CY_PENDING",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    # Ratified with the two above by Huw as Llys 01/09/2026 [sig:57ce9e14] ("Wrecks are NOT held");
+    # 0.2.16 registered only two. Registered in 0.2.30 (phase 9 task 9.6, card c0615). Same
+    # within-only shape; Welsh term to Catrin. Anchors: Cadw; Protection of Wrecks Act 1973; OGL v3.0.
+    PredicateDef("within_protected_wreck", "text", "multi", ("building",),
+                 "Protected wreck site (restricted area designated under the Protection of "
+                 "Wrecks Act 1973) containing the property — verbatim Cadw reference. A "
+                 "within-flag, not a proximity flag. The OGL designation fact.",
+                 description_cy=CY_PENDING,
         finest_grain=Grain.PROPERTY,
     ),
 )
@@ -1181,6 +1191,22 @@ _AREA_BACKFILL: tuple[PredicateDef, ...] = (
                  "per-capita or age-standardised rate — a populous area scores high "
                  "simply by being large, so comparing areas on this alone measures size "
                  "rather than concentration.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    # Phase 9 task 9.5 (card c0615): PROPOSED through the one gate under Huw's 09/10/2026 13:29:51Z
+    # ruling [sig:91605acd], which reverses triage B's intended answer (ii). Reuses the constitution
+    # 0.1.6 projection keys (scenario = the publisher's variant, verbatim; horizon = the projected
+    # year; baseline = the base year), so no constitution change. First source: Welsh Government
+    # 2022-based LA projections (REQ-arloesidolgellau-5532ba, OGL v3).
+    PredicateDef("population_projection", "int", "multi", ("area",),
+                 "Projected population of an area for a future year, for the age band named in "
+                 "value_en / value_cy. A PROJECTION, not a forecast: it extends past trends under "
+                 "the publisher's stated assumptions. `scenario` carries the publisher's variant "
+                 "name verbatim (e.g. 'Principal projection'), `horizon` the projected year and "
+                 "`baseline` the base year. An absolute count like its observed sibling "
+                 "population_estimate; never mix the two in one series.",
+                 required_qualifiers=("scenario", "horizon", "baseline"),
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
@@ -1759,6 +1785,9 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # awen-weave 0.2.28) = 156. P-1 and P-2 widen and close existing predicates; they add no name.
 # + the 3 Lludd dialysis predicates (_LLUDD_DIALYSIS, a NEW group, Llys 05/10/2026 [sig:75935d1b],
 # awen-weave 0.2.29) = 159. A-1 rewords ods_code and operational_status; it adds no name.
+# + `within_protected_wreck` into the EXISTING _HERITAGE_SEARCHES group (Llys 01/09/2026
+# [sig:57ce9e14]) and `population_projection` into the EXISTING _AREA_BACKFILL group (proposed
+# under Llys 09/10/2026 [sig:91605acd]), awen-weave 0.2.30 = 161 — both inside groups, so named here.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
