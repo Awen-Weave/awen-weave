@@ -1665,6 +1665,121 @@ _LLUDD_DIALYSIS: tuple[PredicateDef, ...] = (
     ),
 )
 
+# ---------------------------------------------------------------------------
+# Lludd step-0 HEALTH vocabulary (card c0616), PROPOSED in the phase 9 piece 1 one-gate release
+# (card c0615, awen-weave 0.2.30). The 13 predicates are carried AS THE LLUDD SEAT WROTE THEM in
+# its record (awen_signals.mac5.lludd.jsonl, 2026-10-09T14:01:34Z): names, types, grains, required
+# qualifiers and English descriptions verbatim. Dimensions (register, sex/age band, site, period,
+# programme, practice) ride value_en/value_cy, as population_estimate does: existing qualifier keys
+# only, no constitution change. No Welsh written. Sources: LL02, LL14, LL16, LL17/LL18, LL15 and
+# practice-by-LSOA counts (Lludd's own builds under the 09/10 data split [sig:fd927213]).
+# ---------------------------------------------------------------------------
+_LLUDD_HEALTH: tuple[PredicateDef, ...] = (
+    PredicateDef("disease_register_count", "int", "multi", ('building', 'area'),
+                 "Number of patients on a named GP disease register at the reference date (source_ran_at)."
+                 " The register is named verbatim from the source in value_en/value_cy. A COUNT OF "
+                 "REGISTERED PATIENTS, not of residents; lists overlap. Register definitions change "
+                 "between years (QAIF to core contract, 2023), so segment before trending. Age-restricted "
+                 "registers (e.g. diabetes 17+) count only patients in the age range their name states.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("disease_prevalence_crude_pct", "real", "multi", ('building', 'area'),
+                 "Crude prevalence of a named GP disease register, as a percentage of a stated registered-"
+                 "patient denominator, at the reference date. binding=asserted is the publisher's own rate"
+                 " (its own, possibly age-restricted, denominator); binding=derived is register count / "
+                 "registered_patients_count, with the denominator named in semantics_caveat. CRUDE, never "
+                 "age-standardised; registered, not resident.",
+                 required_qualifiers=('source_ran_at', 'semantics_caveat'),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("registered_patients_count", "int", "multi", ('building', 'area'),
+                 "Patients registered with a GP practice (or summed to cluster/health board) at the "
+                 "extract date, for the sex and five-year age band named in value_en/value_cy ('All "
+                 "persons, all ages' for the total). Patients of indeterminate gender are excluded, as the"
+                 " publisher excludes them. A count of REGISTRATIONS, not residents. Distinct from "
+                 "list_size, which is single-valued and kept as is.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef("cancer_incidence_count", "int", "multi", ('area',),
+                 "Number of new cancer registrations in an area for the cancer site, sex and diagnosis "
+                 "period named in value_en/value_cy. Incidence, not prevalence and not provision.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_incidence_rate_per_100k_esp2013", "real", "multi", ('area',),
+                 "Cancer incidence per 100,000, age-standardised to the 2013 European Standard Population,"
+                 " for the site, sex and period named in value_en. Statistical spread in "
+                 "confidence_interval.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_mortality_count", "int", "multi", ('area',),
+                 "Number of deaths from cancer in an area for the site, sex and period named in "
+                 "value_en/value_cy.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_mortality_rate_per_100k_esp2013", "real", "multi", ('area',),
+                 "Cancer mortality per 100,000, age-standardised to the 2013 European Standard Population,"
+                 " for the site, sex and period named in value_en. Spread in confidence_interval.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_net_survival_pct", "real", "multi", ('area',),
+                 "Net survival, as a percentage, at the interval (e.g. 1-year, 5-year), for the site, sex "
+                 "and diagnosis period named in value_en/value_cy. Spread in confidence_interval.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("screening_uptake_pct", "real", "multi", ('area',),
+                 "Share of the eligible population invited who were screened, for the programme and period"
+                 " named in value_en/value_cy.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("screening_coverage_pct", "real", "multi", ('area',),
+                 "Share of the eligible population adequately screened within the programme's interval, "
+                 "for the programme and date named in value_en/value_cy.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_pathway_within_target_pct", "real", "multi", ('area',),
+                 "Share of patients starting first definitive cancer treatment within the Single Cancer "
+                 "Pathway target (62 days), for the tumour site and month named in value_en/value_cy.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("cancer_pathway_patients_count", "int", "multi", ('area',),
+                 "Number of patients starting first definitive cancer treatment on the Single Cancer "
+                 "Pathway, for the tumour site and month named in value_en/value_cy.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("registered_patients_resident_count", "int", "multi", ('area',),
+                 "Patients resident in an LSOA (the subject, GSS) who are registered with the GP practice "
+                 "whose ODS code is named in value_en, at the extract date. The bridge from registered to "
+                 "resident. Small cells: disclosure control applies before any publication (LLUDD-"
+                 "SUPPRESS).",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 
 # ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
@@ -1743,7 +1858,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
-    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS
+    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1788,6 +1903,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + `within_protected_wreck` into the EXISTING _HERITAGE_SEARCHES group (Llys 01/09/2026
 # [sig:57ce9e14]) and `population_projection` into the EXISTING _AREA_BACKFILL group (proposed
 # under Llys 09/10/2026 [sig:91605acd]), awen-weave 0.2.30 = 161 — both inside groups, so named here.
+# + the 13 Lludd step-0 health predicates (_LLUDD_HEALTH, a NEW group, card c0616, PROPOSED in the
+# same 0.2.30 release) = 174.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
