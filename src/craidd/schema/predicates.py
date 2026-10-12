@@ -962,7 +962,7 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "Scheduled monument whose designated area contains the property "
                  "— verbatim list-entry reference (Historic England NHLE / Cadw). "
                  "The OGL designation fact; descriptive text held VERIFY.",
-                 description_cy="o fewn heneb gofrestredig",
+                 description_cy="O fewn heneb gofrestredig",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("near_scheduled_monument_250m", "text", "multi", ("building",),
@@ -970,7 +970,7 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "with a setting-scale-derived radius; not emitted). Kept for additive "
                  "discipline — a fixed 250 m is a poor proxy for a monument's setting. "
                  "Scheduled monument(s) within 250 m of the property.",
-                 description_cy="o fewn 250 m i heneb gofrestredig",
+                 description_cy="O fewn 250 m i heneb gofrestredig",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("near_scheduled_monument", "text", "multi", ("building",),
@@ -985,13 +985,13 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
     PredicateDef("in_registered_park_garden", "text", "multi", ("building",),
                  "Registered park or garden of special historic interest "
                  "containing the property — verbatim list-entry reference "
-                 "(NHLE / Cadw).", description_cy="o fewn parc a gardd hanesyddol gofrestredig",
+                 "(NHLE / Cadw).", description_cy="O fewn parc a gardd hanesyddol gofrestredig",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("in_registered_battlefield", "text", "single", ("building",),
                  "Registered battlefield containing the property — verbatim "
                  "list-entry reference (NHLE; England only).",
-                 description_cy="o fewn maes brwydr cofrestredig",
+                 description_cy="O fewn maes brwydr cofrestredig",
         finest_grain=Grain.PROPERTY,
     ),
     # Ratified 11/08 [Llys R1+R2 ACCEPT, welsh-heritage-predicates-ruling] — additive, within-only,
@@ -1091,7 +1091,7 @@ _COAL_SEARCH: tuple[PredicateDef, ...] = (
                  "mining': a property may be inside the coal reporting area but not "
                  "high-risk, or outside the coalfield entirely — this layer only "
                  "distinguishes the high-risk area. The detailed Coal Mining Report "
-                 "is a separate (licensed) product.", description_cy="o fewn ardal risg uchel oherwydd datblygiad (glo)",
+                 "is a separate (licensed) product.", description_cy="O fewn ardal risg uchel oherwydd datblygiad (glo)",
         finest_grain=Grain.PROPERTY,
     ),
 )
