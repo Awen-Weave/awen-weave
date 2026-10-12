@@ -591,6 +591,61 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
+    # Census 2021 wave 2 OA tables (card c0840; awen-shared PROPOSAL-census-wave-2-2026-10-11.md, card
+    # c0826). Huw's 10/10/2026 rulings: Q1, one predicate per further table, named after its subject;
+    # Q2, one generated batch after the measured table list. PROPOSED in awen-weave 0.2.32 through the
+    # one gate. Wave 1's form: the category rides value_en/value_cy; no qualifier.
+    PredicateDef("households_central_heating_count", "int", "multi", ("area",),
+                 "Census 2021 count of households in an area by type of central heating, for the "
+                 "category named in value_en / value_cy (TS046: no central heating, mains gas only, "
+                 "electric only, oil only, renewable energy only, two or more types, and the rest, "
+                 "VERBATIM from ONS). An absolute count of households; not heating_fuel_share, the "
+                 "per-cent share of the same table at LSOA. Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("households_tenure_count", "int", "multi", ("area",),
+                 "Census 2021 count of households in an area by tenure, for the leaf category named "
+                 "in value_en / value_cy (TS054: owns outright, owns with a mortgage or loan, shared "
+                 "ownership, social rented from the council or other, private rented, lives rent "
+                 "free; VERBATIM from ONS, subtotals not carried). An area count, not the EPC "
+                 "building-level tenure predicate. Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("households_accommodation_type_count", "int", "multi", ("area",),
+                 "Census 2021 count of households in an area by accommodation type, for the category "
+                 "named in value_en / value_cy (TS044: detached, semi-detached, terraced, flats, "
+                 "converted or shared houses, commercial buildings, caravans; VERBATIM from ONS). "
+                 "Counts households, not dwellings. Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("household_spaces_by_size_count", "int", "multi", ("area",),
+                 "Census 2021 count of household spaces in an area by the number of people in the "
+                 "household, for the category named in value_en / value_cy (TS017: 0 people to 8 or "
+                 "more). Its universe is household spaces, so '0 people in household' counts empty "
+                 "spaces: it is not a count of households. Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("usual_residents_economic_activity_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents aged 16 years and over in an area by economic "
+                 "activity status, for the leaf category named in value_en / value_cy (TS066: in "
+                 "employment, unemployed, full-time students, retired, looking after home or family, "
+                 "long-term sick or disabled, other; VERBATIM from ONS, subtotals not carried). "
+                 "Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("households_count", "int", "single", ("area",),
+                 "Census 2021 number of households in an area (TS041), one figure per area: the base "
+                 "the Census 2021 household tables are checked against. Each table is perturbed "
+                 "separately by ONS, so another table's total may differ by a few. Vintage in the "
+                 "citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
     PredicateDef("main_fuel", "text", "single", ("building",),
                  "Main heating fuel of the dwelling, verbatim from EPC.",
                  description_cy=CY_PENDING,
@@ -1928,6 +1983,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + `usual_residents_count` and `households_car_van_availability_count` into the EXISTING
 # _ENERGY_DEMAND group beside heating_fuel_share (Census 2021, card c0628, PROPOSED in awen-weave
 # 0.2.31) = 176 — inside a group, so named here.
+# + the six Census 2021 wave 2 predicates into _ENERGY_DEMAND beside them (card c0840, PROPOSED in
+# awen-weave 0.2.32) = 182 — also inside the group, so named here.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
