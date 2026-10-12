@@ -86,12 +86,13 @@ def test_each_single_descriptor_gains_a_capital_first_letter_and_nothing_else():
         assert PREDICATE_REGISTRY[name].description_cy == old[0].upper() + old[1:], name
 
 
-def test_the_running_sentences_and_the_identifier_are_untouched():
-    for name, old in LEFT.items():
-        assert PREDICATE_REGISTRY[name].description_cy == old, name
+def test_the_identifier_is_untouched_and_the_sentences_moved_to_c0906():
+    # c0906 [sig:a99523cf]: the four running sentences take a capital (test_cy_running_sentence_capitals);
+    # answered_by_claim, beginning with the code identifier claim_id, stays as it is
+    assert PREDICATE_REGISTRY["answered_by_claim"].description_cy == LEFT["answered_by_claim"]
 
 
 def test_every_written_description_cy_now_begins_with_a_capital_unless_left():
     lower = [p.name for p in SEED_PREDICATES if isinstance(p.description_cy, str)
              and p.description_cy != CY_PENDING and p.description_cy[:1].islower()]
-    assert sorted(lower) == sorted(LEFT)
+    assert sorted(lower) == ["answered_by_claim"]       # c0906 capitalised the other four
