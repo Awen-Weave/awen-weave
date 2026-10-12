@@ -1,14 +1,22 @@
 """The three Welsh heritage within_* predicates carry Catrin's attested Welsh (card c0890).
 
-Catrin attested the description_cy forms [sig:65a2bd1e]; they are set EXACTLY as attested, no Welsh
-composed here. Item 1 keeps its capital 'O' as given, although within_scheduled_monument and items 2
-and 3 are lower case: whether to keep it or lower-case it to match is a question for Huw, so this test
-pins the attested form until he rules. awen-weave 0.2.33 (PROPOSED, HOLD)."""
+Catrin attested the description_cy forms [sig:65a2bd1e]; no Welsh is composed here. Huw ruled the
+capital, 12/10/2026, in chat to the Mac 5 builder: "when starting a sentence or as a single descriptor
+then O should be used". A description_cy is a single descriptor, so all three begin with a capital O:
+item 1 was attested so; items 2 and 3 are Catrin's words with only their first letter capitalised.
+The older heritage siblings on main (within_scheduled_monument and others) are left to a separate
+card. awen-weave 0.2.33 (PROPOSED, HOLD)."""
 from __future__ import annotations
 
 from craidd.schema.predicates import CY_PENDING, PREDICATE_REGISTRY
 
 ATTESTED = {
+    "within_world_heritage_site": "O fewn safle treftadaeth y byd",
+    "within_registered_historic_landscape": "O fewn tirwedd hanesyddol gofrestredig",
+    "within_protected_wreck": "O fewn llongddrylliad gwarchodedig",
+}
+# Catrin's words, before Huw's capital rule: only the first letter may differ
+CATRIN = {
     "within_world_heritage_site": "O fewn safle treftadaeth y byd",
     "within_registered_historic_landscape": "o fewn tirwedd hanesyddol gofrestredig",
     "within_protected_wreck": "o fewn llongddrylliad gwarchodedig",
@@ -38,6 +46,11 @@ def test_only_the_welsh_changed():
         "Protected wreck site (restricted area designated under the Protection of")
 
 
-def test_the_capital_o_is_kept_as_given_and_the_sibling_is_lower_case():
-    assert PREDICATE_REGISTRY["within_world_heritage_site"].description_cy[0] == "O"
+def test_all_three_begin_with_a_capital_and_otherwise_are_catrins_words():
+    for name, words in CATRIN.items():
+        cy = PREDICATE_REGISTRY[name].description_cy
+        assert cy[0] == "O" and cy[1:] == words[1:], name
+
+
+def test_the_older_sibling_is_left_to_a_separate_card():
     assert PREDICATE_REGISTRY["within_scheduled_monument"].description_cy == "o fewn heneb gofrestredig"
