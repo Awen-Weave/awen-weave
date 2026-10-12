@@ -179,7 +179,7 @@ _BUILDING: tuple[PredicateDef, ...] = (
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("build_year", "int", "single", ("building",),
-                 "Year built — use only when the date is exact.", description_cy="blwyddyn adeiladu — defnyddiwch dim ond pan fo'r dyddiad yn fanwl gywir",
+                 "Year built — use only when the date is exact.", description_cy="Blwyddyn adeiladu — defnyddiwch dim ond pan fo'r dyddiad yn fanwl gywir",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("build_period", "text", "single", ("building",),
@@ -339,7 +339,7 @@ _TENANCY: tuple[PredicateDef, ...] = (
     ),
     PredicateDef("period_end", "date", "single", ("tenancy",),
                  "Earliest plausible end of the tenancy; null means current.",
-                 required_qualifiers=("date_precision",), description_cy="diwedd cynharaf credadwy y denantiaeth; gadael yn wag ar gyfer tenantiaeth cyfredol",
+                 required_qualifiers=("date_precision",), description_cy="Diwedd cynharaf credadwy y denantiaeth; gadael yn wag ar gyfer tenantiaeth cyfredol",
         finest_grain=Grain.NOT_SPATIAL,
     ),
 )
@@ -362,7 +362,7 @@ _EVENT: tuple[PredicateDef, ...] = (
     ),
     PredicateDef("event_end", "date", "single", ("event",),
                  "Event end date; null means ongoing.",
-                 required_qualifiers=("date_precision",), description_cy="dyddiad diwedd y digwyddiad; gadael yn wag ar gyfer digwyddiad cyfredol",
+                 required_qualifiers=("date_precision",), description_cy="Dyddiad diwedd y digwyddiad; gadael yn wag ar gyfer digwyddiad cyfredol",
         finest_grain=Grain.NOT_SPATIAL,
     ),
     PredicateDef("affects_entity", "entity_ref", "multi", ("event",),
@@ -1512,7 +1512,7 @@ _AREA: tuple[PredicateDef, ...] = (
         # pending the same tutor-attestation path the v0.1 set used
         # (Awen-Weave/awen-cards) before it is treated as locked vocab.
         description_cy=(
-            "gradd rhagfynegol Dosbarthiad Tir Amaethyddol (ALC Map 2) ar gyfer "
+            "Gradd rhagfynegol Dosbarthiad Tir Amaethyddol (ALC Map 2) ar gyfer "
             "parth ansawdd tir — label y radd yn cael ei gadw'n union (gan gynnwys "
             "y rhaniad 3a/3b); grid rhagfynegol 50m yn ôl meini prawf MAFF 1988, "
             "nid arolwg safle. [Cymraeg i'w gadarnhau gan diwtor]"
