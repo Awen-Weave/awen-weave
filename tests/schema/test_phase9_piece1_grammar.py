@@ -59,8 +59,9 @@ def test_the_three_heritage_within_predicates_share_one_shape():
 
 def test_no_welsh_is_written_and_the_literal_is_gone():
     # The two 0.2.16 entries held the literal "CY_PENDING", which is not the sentinel.
-    for n in HERITAGE_THREE + ("population_projection",):
-        assert PREDICATE_REGISTRY[n].description_cy == CY_PENDING, n
+    # The three heritage within_* now carry Catrin's attested Welsh (0.2.33, card c0890
+    # [sig:65a2bd1e]; tests/schema/test_heritage_welsh_attested.py); population_projection is pending.
+    assert PREDICATE_REGISTRY["population_projection"].description_cy == CY_PENDING
     assert not [p.name for p in SEED_PREDICATES if p.description_cy == "CY_PENDING"]
 
 
