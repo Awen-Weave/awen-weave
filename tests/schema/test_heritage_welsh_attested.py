@@ -52,5 +52,6 @@ def test_all_three_begin_with_a_capital_and_otherwise_are_catrins_words():
         assert cy[0] == "O" and cy[1:] == words[1:], name
 
 
-def test_the_older_sibling_is_left_to_a_separate_card():
-    assert PREDICATE_REGISTRY["within_scheduled_monument"].description_cy == "o fewn heneb gofrestredig"
+def test_the_older_sibling_takes_the_capital_too():
+    # left to a separate card at 0.2.33; that card is c0892 (0.2.34, tests/schema/test_o_fewn_capitals.py)
+    assert PREDICATE_REGISTRY["within_scheduled_monument"].description_cy == "O fewn heneb gofrestredig"
