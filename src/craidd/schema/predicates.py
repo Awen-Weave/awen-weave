@@ -634,7 +634,9 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  "activity status, for the leaf category named in value_en / value_cy (TS066: in "
                  "employment, unemployed, full-time students, retired, looking after home or family, "
                  "long-term sick or disabled, other; VERBATIM from ONS, subtotals not carried). "
-                 "Vintage in the citation.",
+                 "SERVED for general use at LSOA only (Huw 12/10/2026 [sig:691127c0]); the output "
+                 "area grain is built for Lludd (AWE-009) alone and is not served openly. Vintage "
+                 "in the citation.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
