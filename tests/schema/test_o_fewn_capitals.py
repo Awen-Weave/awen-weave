@@ -28,7 +28,8 @@ def test_no_description_cy_still_begins_lower_case_o_fewn():
                 if isinstance(p.description_cy, str) and p.description_cy.startswith("o fewn")]
 
 
-def test_a_description_not_beginning_o_fewn_is_untouched():
-    # outside this card's rule: it begins 'yn agos at', not 'o fewn'
+def test_a_description_not_beginning_o_fewn_takes_the_capital_from_c0900():
+    # outside c0892's rule ('yn agos at', not 'o fewn'); capitalised by c0900 (0.2.35), first letter
+    # only, so its inner 'o fewn' stays lower case
     assert PREDICATE_REGISTRY["near_scheduled_monument"].description_cy == (
-        "yn agos at heneb gofrestredig (o fewn dalgylch ei gosodiad)")
+        "Yn agos at heneb gofrestredig (o fewn dalgylch ei gosodiad)")
