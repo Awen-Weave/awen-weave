@@ -1003,14 +1003,14 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "World Heritage Site whose inscribed area contains the property — verbatim "
                  "reference (UNESCO ref / site name; Cadw). The OGL designation fact; descriptive "
                  "text held VERIFY.",
-                 description_cy=CY_PENDING,
+                 description_cy="O fewn safle treftadaeth y byd",
         finest_grain=Grain.PROPERTY,
     ),
     PredicateDef("within_registered_historic_landscape", "text", "multi", ("building",),
                  "Registered historic landscape containing the property — verbatim Cadw "
                  "reference (landscape-scale; a within-flag, not a proximity flag). The OGL "
                  "designation fact.",
-                 description_cy=CY_PENDING,
+                 description_cy="O fewn tirwedd hanesyddol gofrestredig",
         finest_grain=Grain.PROPERTY,
     ),
     # Ratified with the two above by Huw as Llys 01/09/2026 [sig:57ce9e14] ("Wrecks are NOT held");
@@ -1020,7 +1020,7 @@ _HERITAGE_SEARCHES: tuple[PredicateDef, ...] = (
                  "Protected wreck site (restricted area designated under the Protection of "
                  "Wrecks Act 1973) containing the property — verbatim Cadw reference. A "
                  "within-flag, not a proximity flag. The OGL designation fact.",
-                 description_cy=CY_PENDING,
+                 description_cy="O fewn llongddrylliad gwarchodedig",
         finest_grain=Grain.PROPERTY,
     ),
 )
