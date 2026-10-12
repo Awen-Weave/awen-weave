@@ -96,3 +96,15 @@ def test_the_household_space_universe_and_the_residents_universe_are_said():
 def test_the_heating_count_is_not_the_lsoa_share():
     d = PREDICATE_REGISTRY["households_central_heating_count"].description_en
     assert "heating_fuel_share" in d
+
+
+def test_economic_activity_is_declared_served_at_lsoa_only_with_oa_kept_for_lludd():
+    """Huw 12/10/2026 [sig:691127c0] (card c0846): TS066 is SERVED for general use at LSOA only; the
+    OA grain is built for Lludd (AWE-009) and never served openly. The grain vocabulary holds only
+    property / area / not_spatial (a fourth value is a ruling), so finest_grain stays AREA and the
+    served grain is declared in the description; the layer and the serving rules enforce it."""
+    p = PREDICATE_REGISTRY["usual_residents_economic_activity_count"]
+    assert p.finest_grain is Grain.AREA
+    d = p.description_en
+    assert "LSOA" in d and "691127c0" in d
+    assert "Lludd" in d and "not served openly" in d
