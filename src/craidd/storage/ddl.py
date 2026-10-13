@@ -31,7 +31,7 @@ CREATE TABLE entity (
   entity_type   VARCHAR NOT NULL CHECK (entity_type IN
                 ('building','street','area','town','tenancy','event',
                  'research_question','source','person','site','station',
-                 'coastal_cell')),
+                 'coastal_cell','nhs_org','cluster')),
   uprn          BIGINT,
   toid          VARCHAR,
   visibility    VARCHAR CHECK (visibility IN ('public','restricted','private')

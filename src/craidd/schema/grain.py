@@ -182,6 +182,13 @@ ENTITY_TYPE_GRAIN: dict[str, Grain] = {
     "research_question": Grain.NOT_SPATIAL,
     "source": Grain.NOT_SPATIAL,
     "person": Grain.NOT_SPATIAL,
+    # 0.1.10 (PROPOSED, card c0944): an organisation is not where it is (Llys 10/10/2026,
+    # Q2 as amended [sig:3cc4cb54]). So, under the registration rule in validation.py, every
+    # predicate on these two is `not_spatial` too, and none of them can also apply to a
+    # `building` or an `area`: that is why the practice's location is a new family of
+    # predicates (_NHS_ORG) and not `gp_location` widened.
+    "nhs_org": Grain.NOT_SPATIAL,
+    "cluster": Grain.NOT_SPATIAL,
 }
 
 _missing = VALID_ENTITY_TYPES - set(ENTITY_TYPE_GRAIN)

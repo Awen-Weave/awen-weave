@@ -1859,6 +1859,102 @@ _LLUDD_HEALTH: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# NHS organisations: where their premises are, who runs them, and their cluster. A NEW group,
+# PROPOSED with constitution 0.1.10 (card c0944; step 1 of IDR-006 Awen/PROPOSAL-nhs-organisation-
+# subject-kind-2026-10-10-r2.md, under its rulings of Llys 10/10/2026: Q1 [sig:8f0740b4], Q2 as
+# amended [sig:3cc4cb54], Q3 [sig:dc513d4d], Q4 [sig:02dd6f4c], Q5 [sig:cc120f20]).
+#
+# WHY A NEW FAMILY AND NOT gp_location WIDENED (r2 section 3 step 1 proposed widening five
+# predicates). An `nhs_org` is not a place, so its grain is `not_spatial`, and the registration rule
+# in validation.py refuses any predicate that applies to both a place kind (`building`, `area`) and a
+# `not_spatial` kind. So `gp_location`, `ods_code`, `list_size`, `unitary_authority` and `address`
+# cannot take `nhs_org` as well as their present kinds. They stay exactly as they are, on `building`
+# and `town`, until the served snapshots move off them; nothing served today becomes invalid.
+#
+# THE FIVE LOCATION CLAIMS (Q2 as amended: the physical location of every surgery and site must be
+# known and served). One family serves practices and sites alike, so a site's point and a practice's
+# point are the same predicate (r2's recommendation). The three "contained in" claims are references
+# to `area` subjects, written with their type (`area:W01000123`), so the registry indexes them on the
+# gazetteer spine it already has. Their shape is checked in validation.ENTITY_REF_SHAPES.
+#
+# "CONTAINED IN" IS NOT "RUN BY" (Q3). The board whose area contains a practice's premises is
+# `premises_in_health_board`; the board that runs it is `run_by`. They differ for the 11
+# cross-boundary practices, and neither may stand in for the other: two names, and a FALSE_FRIENDS
+# pair below. Neither says whom a practice serves; no "serves" predicate exists until
+# practice-by-LSOA counts are licensed.
+#
+# WELSH. All CY_PENDING, never self-attested, so under the 31/08 ruling they are unemittable for an
+# instance gated on bilingual parity until a tutor attests each description_cy.
+# ---------------------------------------------------------------------------
+NHS_ORG_ROLES: tuple[str, ...] = ("gp-practice", "site", "health-board")
+
+_NHS_ORG: tuple[PredicateDef, ...] = (
+    PredicateDef("nhs_org_role", "text", "single", ("nhs_org",),
+                 "What kind of NHS organisation this ODS code is, from a closed list: gp-practice, "
+                 "site (a branch surgery or other premises of a practice or board), health-board. "
+                 "The role is a claim, not a separate entity type (Q1). Read from the publisher's "
+                 "own list the code appears on (epraccur, wlhbsite, the board list), never guessed "
+                 "from the shape of the code (Q4).",
+                 constraint_json=json.dumps({"enum": list(NHS_ORG_ROLES)}),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_point", "geom", "single", ("nhs_org",),
+                 "A map point for the organisation's premises, as WKT in EPSG:4326. For a practice "
+                 "or site built from its postcode it is the ONS postcode centroid: it locates the "
+                 "POSTCODE UNIT, not the door, which is adequate for a search and not for a site "
+                 "plan. semantics_caveat must say how the point was derived. The organisation is "
+                 "not a place (Q2); this is a stated fact about where its premises are.",
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_postcode", "text", "single", ("nhs_org",),
+                 "The postcode of the organisation's premises, as the publisher gives it (a "
+                 "practice's epraccur postcode, a site's wlhbsite address postcode).",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_in_lsoa", "entity_ref", "single", ("nhs_org",),
+                 "The 2021 LSOA that contains the organisation's premises point, written "
+                 "`area:<LSOA GSS code>`. CONTAINMENT of the premises only: it does not say whom "
+                 "the organisation serves.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_in_authority", "entity_ref", "single", ("nhs_org",),
+                 "The local authority (district or unitary) that contains the organisation's "
+                 "premises point, written `area:<GSS code>`. CONTAINMENT only.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_in_health_board", "entity_ref", "single", ("nhs_org",),
+                 "The Welsh local health board whose area contains the organisation's premises, "
+                 "written `area:<W11 GSS code>`. A fixed lookup from the containing authority: "
+                 "each board is made of whole authorities. Wales only. CONTAINMENT, NOT GOVERNANCE: "
+                 "the board that runs the organisation is run_by, and the two differ for "
+                 "cross-boundary practices.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("run_by", "entity_ref", "single", ("nhs_org",),
+                 "The NHS organisation this one is run by, written `nhs_org:<ODS code>`: a practice's "
+                 "health board, a site's practice or board, as the publisher states it. GOVERNANCE, "
+                 "NOT CONTAINMENT (that is premises_in_health_board), and not whom it serves (Q3). "
+                 "Not a premises' operator (that is operated_by, on building).",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("in_cluster", "entity_ref", "single", ("nhs_org",),
+                 "The GP cluster a practice belongs to, written `cluster:<publisher code>`, as the "
+                 "publisher's cluster list states it. Membership, not location.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -1924,6 +2020,25 @@ FALSE_FRIENDS: tuple[FalseFriend, ...] = (
         "the organisation that runs a premises",
         "operated_by",
     ),
+    # Q3 (Llys 10/10/2026 [sig:dc513d4d]), card c0944: containment and governance kept apart.
+    FalseFriend(
+        "premises_in_health_board",
+        "the health board whose AREA CONTAINS an organisation's premises",
+        "the health board that runs the organisation",
+        "run_by",
+    ),
+    FalseFriend(
+        "run_by",
+        "the NHS organisation that RUNS this one (governance)",
+        "the health board whose area contains its premises",
+        "premises_in_health_board",
+    ),
+    FalseFriend(
+        "operated_by",
+        "the organisation that runs a PREMISES (a building subject)",
+        "the organisation an NHS organisation is run by",
+        "run_by",
+    ),
 )
 
 
@@ -1935,7 +2050,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
-    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH
+    + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -1987,6 +2102,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # 0.2.31) = 176 — inside a group, so named here.
 # + the six Census 2021 wave 2 predicates into _ENERGY_DEMAND beside them (card c0840, PROPOSED in
 # awen-weave 0.2.32) = 182 — also inside the group, so named here.
+# + the 8 NHS organisation predicates (_NHS_ORG, a NEW group, card c0944, PROPOSED in awen-weave
+# 0.2.37 with constitution 0.1.10) = 190.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

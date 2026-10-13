@@ -1,9 +1,9 @@
 {
  "repo": "Awen-Weave/awen-constitution",
- "tag": "v0.1.9",
- "commit": "6942fd360dcb3539ef1f427517bd32f718b6317a",
+ "tag": "v0.1.10",
+ "commit": "f2343f14a3ebb09272d99f335f915df9ae7af128",
  "vendored": "schema/ + VERSION",
  "pin_kind": "machine-layer (moves only when SCH-*/VOC-*/POL-* change)",
- "vendored_from": "git archive v0.1.9 (pinned tag, not working tree)",
+ "vendored_from": "git show f2343f1 (awen-constitution branch c0944-nhs-org-cluster, PR head; schema/entity.schema.json and VERSION changed, the other five schema files byte-identical to v0.1.9). v0.1.10 is NOT tagged and is held for Huw's ratification: when it is tagged, re-check these files are byte-identical at the tag and set `commit` to the tag's commit (`git rev-list -n1 v0.1.10`), as 0.2.26 did for v0.1.9 (e5d0891)",
  "regenerate": "No script in this repo (there is no scripts/vendor_constitution.sh). From an awen-constitution clone: `git archive <tag> schema VERSION | tar -x -C src/craidd/constitution_vendor`, keeping the two package markers `__init__.py` and `schema/__init__.py`, which are not from the tag; set `tag`, and `commit` to `git rev-list -n1 <tag>` (the commit, not the annotated tag object); then advance craidd.CONSTITUTION_VERSION / CONSTITUTION_TAG in the same commit. The constitution-drift CI job checks out the tag and diffs the model against it."
 }

@@ -91,13 +91,55 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 # [sig:a40a1dcd], decision 9), a later ruling on that one predicate, taken after Mac 6's estate search
 # found every held value inside its domain. Every other constraint_json (listed_grade, in_flood_zone)
 # stays unenforced, as decision 7 left it.
-VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided"})
+VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided",
+                                                     "nhs_org_role"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
 _VALUE_CHECK_BASIS: dict[str, str] = {
     "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
     "decision_outcome": "closed domain, P-2, Llys 04/10/2026 [sig:a40a1dcd]; an appeal outcome is appeal_outcome",
     "service_provided": "closed domain, G1, Llys 05/10/2026 [sig:75935d1b]; extendable only by a later decision",
+    "nhs_org_role": "closed domain, card c0944 (PROPOSED with constitution 0.1.10); the role is a claim, Q1 [sig:8f0740b4]",
 }
+
+
+# --- NHS organisation subjects (PROPOSED, card c0944; Llys 10/10/2026 Q4 [sig:02dd6f4c]) ---------
+# Never guess a kind from the shape of a code. An `nhs_org` or `cluster` subject is written WITH its
+# type, and a bare code is refused: `W00005` is not a subject, `nhs_org:W00005` is. The local part's
+# shape is checked only so that a typo or a second prefix cannot pass; it never decides the kind.
+ORG_SUBJECT_SHAPES: dict[str, "re.Pattern[str]"] = {
+    "nhs_org": re.compile(r"^nhs_org:[A-Z0-9]{3,8}$"),
+    "cluster": re.compile(r"^cluster:[A-Za-z0-9][A-Za-z0-9_-]{0,31}$"),
+}
+
+# The value shapes of the _NHS_ORG references. "Contained in" points at an `area` on the gazetteer
+# spine; "run by" and cluster membership point at the two new kinds. A reference of the wrong kind
+# (a board's ODS code where its W11 GSS code belongs, or the reverse) is refused, so containment and
+# governance cannot be swapped by accident (Q3 [sig:dc513d4d]).
+ENTITY_REF_SHAPES: dict[str, "re.Pattern[str]"] = {
+    "premises_in_lsoa": re.compile(r"^area:[EW]01\d{6}$"),
+    "premises_in_authority": re.compile(r"^area:(E06|E07|E08|E09|W06)\d{6}$"),
+    "premises_in_health_board": re.compile(r"^area:W11\d{6}$"),
+    "run_by": ORG_SUBJECT_SHAPES["nhs_org"],
+    "in_cluster": ORG_SUBJECT_SHAPES["cluster"],
+}
+
+
+def org_subject_errors(subject_id: Any, applies_to: Collection[str]) -> list[str]:
+    """Refuse a subject that is not written `<type>:<code>` for a predicate that applies ONLY to
+    the organisation kinds (Q4). Returns [] for any predicate that applies to another kind, so no
+    existing predicate is touched."""
+    kinds = set(applies_to)
+    if not kinds or not kinds <= set(ORG_SUBJECT_SHAPES):
+        return []
+    s = str(subject_id or "")
+    if any(ORG_SUBJECT_SHAPES[k].match(s) for k in sorted(kinds)):
+        return []
+    if ":" not in s:
+        return [f"subject '{s}' is a bare code: an NHS organisation or cluster subject is written "
+                f"with its type ({' or '.join(f'{k}:<code>' for k in sorted(kinds))}), never "
+                f"typed from the shape of its code (Q4, Llys 10/10/2026 [sig:02dd6f4c])"]
+    return [f"subject '{s}' is not a well-formed {' or '.join(sorted(kinds))} subject "
+            f"({' or '.join(f'{k}:<code>' for k in sorted(kinds))})"]
 
 
 def _is_empty(value: Any) -> bool:
@@ -258,6 +300,12 @@ def validate_entity(
         errors.append(
             f"entity '{entity_id}': entity_type '{entity_type}' is not one "
             f"of {sorted(VALID_ENTITY_TYPES)}"
+        )
+    elif entity_type in ORG_SUBJECT_SHAPES and not ORG_SUBJECT_SHAPES[entity_type].match(str(entity_id or "")):
+        errors.append(
+            f"entity '{entity_id}': an '{entity_type}' entity_id is written "
+            f"'{entity_type}:<code>' (Q4, Llys 10/10/2026 [sig:02dd6f4c]); a bare or "
+            f"mistyped code is refused"
         )
     if visibility is not None:
         if visibility not in VALID_VISIBILITIES:
@@ -575,6 +623,10 @@ def validate_claim(
             f"{', '.join(pred.applies_to_types)})"
         )
 
+    # --- an organisation subject is written with its type (Q4) ----------
+    if not _is_empty(claim.get("subject_id")):
+        errors.extend(org_subject_errors(claim.get("subject_id"), pred.applies_to_types))
+
     # --- grain (phase 8 tasks 8.3 / 8.4) ---------------------------------
     grain_errors, _ = grain_check(pred, subject_entity_type)
     errors.extend(grain_errors)
@@ -607,6 +659,17 @@ def validate_claim(
             errors.append(
                 f"predicate '{predicate_name}' value '{value}' is not one of {allowed} "
                 f"({_VALUE_CHECK_BASIS.get(predicate_name, 'closed domain')})"
+            )
+
+    # --- the shape of an NHS organisation reference (card c0944) ----------
+    shape = ENTITY_REF_SHAPES.get(predicate_name)
+    if has_value and shape is not None:
+        ref = str(claim.get("value_entity_ref") or "")
+        if not shape.match(ref):
+            errors.append(
+                f"predicate '{predicate_name}' value '{ref}' is not of the form "
+                f"{shape.pattern} — containment points at an area, governance and "
+                f"membership at an organisation, and the two are not interchangeable"
             )
 
     # --- qualifiers ------------------------------------------------------
