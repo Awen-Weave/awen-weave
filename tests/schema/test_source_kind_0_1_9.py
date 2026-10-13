@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pytest
 
-from craidd import CONSTITUTION_TAG, CONSTITUTION_VERSION
 from craidd.schema.grain import Grain
 from craidd.schema.predicates import CY_PENDING, PREDICATE_REGISTRY, PredicateDef
 from craidd.schema.validation import validate_claim
@@ -36,9 +35,8 @@ def _claim(value: str, predicate: str = "source_kind") -> dict:
             "predicate": predicate, "value_text": value, "qualifiers": {}}
 
 
-def test_the_package_pins_constitution_0_1_9():          # version-bound: retires at the next release
-    assert CONSTITUTION_VERSION == "0.1.9"
-    assert CONSTITUTION_TAG == "v0.1.9"
+# test_the_package_pins_constitution_0_1_9 was version-bound and RETIRED at 0.2.37 (constitution
+# 0.1.10, card c0944): only the current release's test pins the version.
 
 
 def test_the_vendored_entity_schema_carries_the_six():
@@ -97,7 +95,8 @@ def test_the_registry_count_moves_by_exactly_one():
     # that source_kind moved the `source` set by exactly one.
     # + the 8 Open Evidence predicates (0.2.28, [sig:a40a1dcd], none on `source`) = 156.
     # + the 3 Lludd dialysis predicates (0.2.29, [sig:75935d1b], none on `source`) = 159.
-    assert len(PREDICATE_REGISTRY) == 182
+    # (+ 8 NHS organisation predicates, _NHS_ORG, PROPOSED card c0944 with constitution 0.1.10 = 190.)
+    assert len(PREDICATE_REGISTRY) == 190
     assert sorted(n for n, p in PREDICATE_REGISTRY.items() if p.applies_to_types == ("source",)) == sorted(
         ["title_cy", "title_en", "citation", "url", "organisation", "licence", "accessed_at", "file_hash",
          "source_kind"])
