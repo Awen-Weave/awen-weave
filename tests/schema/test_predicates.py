@@ -50,7 +50,8 @@ def test_seed_predicate_count_matches_v01_schema():
     # (+ 8 Open Evidence predicates, Llys 04/10/2026 [sig:a40a1dcd] = 156.)
     # (+ 3 Lludd dialysis predicates, Llys 05/10/2026 [sig:75935d1b] = 159.)
     # (+ 8 NHS organisation predicates, _NHS_ORG, PROPOSED card c0944 with constitution 0.1.10 = 190.)
-    assert len(SEED_PREDICATES) == 190
+    # (+ 8 WIMD 2025 domain ranks, _WIMD_DOMAINS, card c1012 [sig:0c677900], PROPOSED in 0.2.39 = 198.)
+    assert len(SEED_PREDICATES) == 198
 
 
 def test_alc_grade_predicate_registered():

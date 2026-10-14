@@ -1956,6 +1956,69 @@ _NHS_ORG: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# WIMD 2025 domain ranks (card c1012; PROPOSED in awen-weave 0.2.39). Option A of
+# PROPOSAL-wimd-domains-grammar-2026-10-14.md (awen-shared, card c1007), ruled by Huw [sig:0c677900]:
+# EIGHT predicates, one per domain, not one labelled predicate and not a `domain` qualifier, the
+# one-predicate-per-thing pattern of the 10/10 WIMD-edition ruling Q3 [sig:1451bb92]. It answers the
+# question Q5 [sig:b1dc51f4] deferred. Each is single, so a duplicate rank for one LSOA is refused, and
+# the domain set is closed by the names, so no value check is needed. deprivation_rank stays the
+# OVERALL rank (Q4 [sig:563f0c3c]) and does not move. No qualifier key, no constitution change.
+# Licence: REQ-arloesidolgellau-069104 (wimd-2025, OGL v3), the same release.
+#
+# WELSH: all CY_PENDING, pending for Catrin; never self-attested.
+# ---------------------------------------------------------------------------
+_WIMD_DOMAIN_COMMON = (
+    "WIMD 2025, LSOA 2021 boundaries: 1 = most deprived among Wales's 1,917 LSOAs. It is a RANK, not a "
+    "score: equal gaps in rank are not equal gaps in deprivation. Domain ranks are not to be summed or "
+    "averaged into an overall rank (WIMD weights its domains; the published overall rank is "
+    "deprivation_rank). The edition is in the citation; not comparable with WIMD 2019 or earlier "
+    "(different indicators, and 2011 LSOAs).")
+
+_WIMD_DOMAINS: tuple[PredicateDef, ...] = (
+    PredicateDef("deprivation_domain_rank_income", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Income domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_employment", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Employment domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_health", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Health domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_education", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Education domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_access_to_services", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Access to Services domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_housing", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Housing domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_community_safety", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Community Safety domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("deprivation_domain_rank_physical_environment", "int", "single", ("area",),
+                 "Rank of an area on the WIMD 2025 Physical Environment domain. " + _WIMD_DOMAIN_COMMON,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -2052,6 +2115,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
+    + _WIMD_DOMAINS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2105,6 +2169,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # awen-weave 0.2.32) = 182 — also inside the group, so named here.
 # + the 8 NHS organisation predicates (_NHS_ORG, a NEW group, card c0944, PROPOSED in awen-weave
 # 0.2.37 with constitution 0.1.10) = 190.
+# + the 8 WIMD 2025 domain ranks (_WIMD_DOMAINS, a NEW group, card c1012, ruled [sig:0c677900],
+# PROPOSED in awen-weave 0.2.39) = 198.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
