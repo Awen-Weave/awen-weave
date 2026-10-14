@@ -1887,12 +1887,19 @@ _LLUDD_HEALTH: tuple[PredicateDef, ...] = (
 # WELSH. All CY_PENDING, never self-attested, so under the 31/08 ruling they are unemittable for an
 # instance gated on bilingual parity until a tutor attests each description_cy.
 # ---------------------------------------------------------------------------
-NHS_ORG_ROLES: tuple[str, ...] = ("gp-practice", "site", "health-board")
+# + "service" (awen-weave 0.2.40, PROPOSED): Huw as Llys 14/10/2026 [sig:81e81fa4], option B of
+# PROPOSAL-nhs-org-service-role-2026-10-14.md. His reading of SCH-ENTITY-001: nhs_org means an NHS
+# organisation identified by its ODS code, and practice / site / health board are examples, so the role
+# list widens here alone (it was never constitutional), with no constitution change.
+NHS_ORG_ROLES: tuple[str, ...] = ("gp-practice", "site", "health-board", "service")
 
 _NHS_ORG: tuple[PredicateDef, ...] = (
     PredicateDef("nhs_org_role", "text", "single", ("nhs_org",),
                  "What kind of NHS organisation this ODS code is, from a closed list: gp-practice, "
-                 "site (a branch surgery or other premises of a practice or board), health-board. "
+                 "site (a branch surgery or other premises of a practice or board), health-board, "
+                 "service (an NHS body with its own ODS code that delivers care but holds no registered "
+                 "patient list, for example an urgent primary care centre; never counted as a GP "
+                 "practice). "
                  "The role is a claim, not a separate entity type (Q1). Read from the publisher's "
                  "own list the code appears on (epraccur, wlhbsite, the board list), never guessed "
                  "from the shape of the code (Q4).",
