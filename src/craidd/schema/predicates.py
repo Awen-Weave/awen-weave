@@ -1277,8 +1277,9 @@ _AREA_BACKFILL: tuple[PredicateDef, ...] = (
     # year; baseline = the base year), so no constitution change. First source: Welsh Government
     # 2022-based LA projections (REQ-arloesidolgellau-5532ba, OGL v3).
     PredicateDef("population_projection", "int", "multi", ("area",),
-                 "Projected population of an area for a future year, for the age band named in "
-                 "value_en / value_cy. A PROJECTION, not a forecast: it extends past trends under "
+                 "Projected population of an area for a future year, for the sex and single-year age "
+                 "named in value_en / value_cy ('<Sex>, <Age>', e.g. 'Female, Age 47'; 'All ages' "
+                 "alone is persons, all ages, the total). A PROJECTION, not a forecast: it extends past trends under "
                  "the publisher's stated assumptions. `scenario` carries the publisher's variant "
                  "name verbatim (e.g. 'Principal projection'), `horizon` the projected year and "
                  "`baseline` the base year. An absolute count like its observed sibling "
