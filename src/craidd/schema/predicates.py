@@ -2026,6 +2026,83 @@ _WIMD_DOMAINS: tuple[PredicateDef, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# CIW care homes (card c1055; PROPOSED in awen-weave 0.2.41). Section 2 of
+# PROPOSAL-care-home-predicates-2026-10-14.md (awen-shared, as merged in #809), ruled by Huw
+# [sig:7d9c7466]: the 11 predicates approved, care_home_supports' six terms enforced, the as-of date of a
+# rating is source_ran_at only (the extract has no inspection or rating date column). For the
+# ciw-adult-care-homes layer (Care Home Service, Adults Without / With Nursing), keyed on the service
+# address UPRN, so `building` at property grain. Values are CIW's verbatim. Licence: the CIW directory
+# data extract, REQ-arloesidolgellau-ede820, countersigned [sig:a0ef1cd8]. No constitution change; no new
+# qualifier key (source_ran_at and semantics_caveat already exist). `url` (source only) and
+# `inspection_date` (on building, the EPC assessment date: a false friend) are NOT reused or touched.
+#
+# WELSH: all CY_PENDING, pending for Catrin; never self-attested.
+# ---------------------------------------------------------------------------
+CARE_HOME_SUPPORTS: tuple[str, ...] = ("dementia", "mental health", "learning disability",
+                                       "short breaks/respite", "physical disability",
+                                       "younger adults up to 25")
+
+_CARE_HOMES: tuple[PredicateDef, ...] = (
+    PredicateDef('care_home_urn', 'text', 'multi', ("building",),
+                 "CIW's service reference for the care home, verbatim. An identifier, not a quantity. Multi: one service address UPRN can hold several CIW services (the 14 Denbighshire services on one UPRN); at a shared UPRN only care_home_urn, name_en and the semantics_caveat are served.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_type', 'text', 'single', ("building",),
+                 "CIW's service type, verbatim (e.g. 'Care Home Service').",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_sub_type', 'text', 'single', ("building",),
+                 "CIW's service sub-type, verbatim: 'Adults Without Nursing' or 'Adults With Nursing'.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_supports', 'text', 'multi', ("building",),
+                 'One claim per need CIW lists the home as supporting, verbatim, from a closed list: dementia, mental health, learning disability, short breaks/respite, physical disability, younger adults up to 25. What CIW records, not an assessment of the care given.',
+                 constraint_json=json.dumps({"enum": list(CARE_HOME_SUPPORTS)}),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_max_places', 'int', 'single', ("building",),
+                 "CIW's 'Maximum no. of places', verbatim: the home's registered capacity, never occupancy. It says how many people the home is registered to care for, not how many it holds or has free.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_language', 'text', 'single', ("building",),
+                 'The language of the service as CIW records it, verbatim.',
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_website', 'text', 'single', ("building",),
+                 "The service's website as CIW gives it, verbatim: a public URL, never a contact for a person.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_rating_well_being', 'text', 'single', ("building",),
+                 "CIW's Well-being rating, verbatim, as published in CIW's extract at source_ran_at (the extract's own 'last updated' time, carried as the source_ran_at qualifier); not an inspection date. The extract holds the four ratings in one 'Service ratings' cell and no rating date, so none is claimed.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_rating_care_support', 'text', 'single', ("building",),
+                 "CIW's Care and Support rating, verbatim, as published in CIW's extract at source_ran_at (the extract's own 'last updated' time, carried as the source_ran_at qualifier); not an inspection date. The extract holds the four ratings in one 'Service ratings' cell and no rating date, so none is claimed.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_rating_leadership_management', 'text', 'single', ("building",),
+                 "CIW's Leadership and Management rating, verbatim, as published in CIW's extract at source_ran_at (the extract's own 'last updated' time, carried as the source_ran_at qualifier); not an inspection date. The extract holds the four ratings in one 'Service ratings' cell and no rating date, so none is claimed.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+    PredicateDef('care_home_rating_environment', 'text', 'single', ("building",),
+                 "CIW's Environment rating, verbatim, as published in CIW's extract at source_ran_at (the extract's own 'last updated' time, carried as the source_ran_at qualifier); not an inspection date. The extract holds the four ratings in one 'Service ratings' cell and no rating date, so none is claimed.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.PROPERTY,
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
 # False-friend register (v0.1.6, Decision 1). A false-friend is a predicate that
 # SOUNDS like it means something it does not — so a consumer can silently reuse the
 # wrong one. Landed beside the registry (predicate-gap resolution route) + guarded
@@ -2122,7 +2199,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
-    + _WIMD_DOMAINS
+    + _WIMD_DOMAINS + _CARE_HOMES
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2178,6 +2255,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # 0.2.37 with constitution 0.1.10) = 190.
 # + the 8 WIMD 2025 domain ranks (_WIMD_DOMAINS, a NEW group, card c1012, ruled [sig:0c677900],
 # PROPOSED in awen-weave 0.2.39) = 198.
+# + the 11 CIW care home predicates (_CARE_HOMES, a NEW group, card c1055, ruled [sig:7d9c7466],
+# PROPOSED in awen-weave 0.2.41) = 209.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
