@@ -92,13 +92,14 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 # found every held value inside its domain. Every other constraint_json (listed_grade, in_flood_zone)
 # stays unenforced, as decision 7 left it.
 VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided",
-                                                     "nhs_org_role"})
+                                                     "nhs_org_role", "care_home_supports"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
 _VALUE_CHECK_BASIS: dict[str, str] = {
     "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
     "decision_outcome": "closed domain, P-2, Llys 04/10/2026 [sig:a40a1dcd]; an appeal outcome is appeal_outcome",
     "service_provided": "closed domain, G1, Llys 05/10/2026 [sig:75935d1b]; extendable only by a later decision",
     "nhs_org_role": "closed domain, card c0944 (PROPOSED with constitution 0.1.10); the role is a claim, Q1 [sig:8f0740b4]",
+    "care_home_supports": "closed domain, card c1055 (PROPOSED in 0.2.41); six CIW terms enforced, Huw [sig:7d9c7466]",
 }
 
 
