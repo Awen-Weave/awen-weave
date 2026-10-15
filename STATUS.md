@@ -9,7 +9,7 @@
 - **WHY FOUR DELAYS PREDICATES:** the register row says the provider-board and residence-authority views are never mixed, summed or joined; separate names hold that rule without code.
 - **DESCRIPTIONS** say: reasons nest (never add a category to its sub-reasons); a provider board's figure can include patients living outside its area; adverts, not vacancies; an ONS `[x]` is not a zero and is never filled.
 - **UNCHANGED:** no constitution change (v0.1.10), no new qualifier key. **NO WELSH:** pending, for Catrin. **NO VERSION BUMP:** the release (0.2.42) is 01 October Seat 1's.
-- **TESTS:** `tests/schema/test_care_delays_and_job_adverts.py` (19). Red first on main `448c7b4`. The six count pins move to 214.
+- **TESTS:** `tests/schema/test_care_delays_and_job_adverts.py` (13). Red first on main `448c7b4`. The six count pins move to 214.
 
 ## awen-weave 0.2.41 — the eleven CIW care home predicates (2026-10-14, c1055; NOT merged, tagged or published)
 
