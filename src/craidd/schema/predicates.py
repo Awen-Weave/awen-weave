@@ -2190,6 +2190,69 @@ FALSE_FRIENDS: tuple[FalseFriend, ...] = (
 )
 
 
+# PROPOSED (cards c1125, c1130, c1132; phase 10 task 10.4, exit 4). Two sources, each register
+# first: StatsWales Pathways of Care Delays (REQ-arloesidolgellau-9fdd66) and ONS labour demand by
+# SOC 2020 (REQ-arloesidolgellau-f89d55 [sig:fd1a1adc]). The category and the period ride value_en,
+# the cancer_pathway_patients_count pattern. The delays register row's rule, "provider health board
+# and residence local authority ... never mixed, summed or joined across", is held by the NAMES: a
+# board figure has its own predicates, so it can never sit beside an authority's figure in one.
+_CARE_DELAYS_COMMON = (
+    " on the monthly census day, for the reason for delay and the month named in value_en/value_cy "
+    "(e.g. 'Assessment Issues, April 2023'), as StatsWales publishes it (Pathways of Care Delays, "
+    "from April 2023, the first fully validated month; data provider the NHS Delivery Unit). Reasons "
+    "nest: a reason category and its sub-reasons are both published, so a category is never added to "
+    "its own sub-reasons. The provider-board and residence-authority views are two different counts "
+    "of the same delays, never mixed, summed or joined across. Wales (W92000004) carries the national "
+    "total.")
+_CARE_DELAYS_PROVIDER = (
+    " Attributed to the health board that PROVIDED the care (the subject, a W11 board): a provider "
+    "board's figure can include patients who live outside its area.")
+_CARE_DELAYS_RESIDENCE = (
+    " Attributed to the local authority where the patient LIVES (the subject, a W06 authority).")
+_CARE_DELAYS_AND_ADVERTS: tuple[PredicateDef, ...] = (
+    PredicateDef("care_delays_count_by_provider_board", "int", "multi", ('area',),
+                 "Number of pathway of care delays (patients whose discharge from hospital is delayed)"
+                 + _CARE_DELAYS_COMMON + _CARE_DELAYS_PROVIDER,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("care_delays_days_by_provider_board", "int", "multi", ('area',),
+                 "Number of days delayed, summed over the pathway of care delays"
+                 + _CARE_DELAYS_COMMON + _CARE_DELAYS_PROVIDER,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("care_delays_count_by_residence_authority", "int", "multi", ('area',),
+                 "Number of pathway of care delays (patients whose discharge from hospital is delayed)"
+                 + _CARE_DELAYS_COMMON + _CARE_DELAYS_RESIDENCE,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("care_delays_days_by_residence_authority", "int", "multi", ('area',),
+                 "Number of days delayed, summed over the pathway of care delays"
+                 + _CARE_DELAYS_COMMON + _CARE_DELAYS_RESIDENCE,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("online_job_adverts_count", "int", "multi", ('area',),
+                 "Number of NEW online job adverts in the area (the subject, a local authority "
+                 "district) for the SOC 2020 occupation group and the period (a month or a quarter) "
+                 "named in value_en/value_cy (e.g. 'SOC 2020 6135 Care workers and home carers, 2026 "
+                 "Q1'), as ONS publishes it from Textkernel online job adverts (labour demand volumes "
+                 "by SOC 2020, official statistics in development). It counts adverts, not vacancies "
+                 "or posts: one advert can cover several posts and one post can be advertised many "
+                 "times. A cell ONS suppresses ([x]) is not a zero and is never filled. Each monthly "
+                 "edition revises the whole history, so the edition is in the citation.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2199,7 +2262,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _HERITAGE_ENRICHMENT + _COAL_SEARCH + _ROAD_PROXIMITY + _REACHABILITY
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
-    + _WIMD_DOMAINS + _CARE_HOMES
+    + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2257,6 +2320,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # PROPOSED in awen-weave 0.2.39) = 198.
 # + the 11 CIW care home predicates (_CARE_HOMES, a NEW group, card c1055, ruled [sig:7d9c7466],
 # PROPOSED in awen-weave 0.2.41) = 209.
+# + the 4 care delays and 1 online job adverts predicates (_CARE_DELAYS_AND_ADVERTS, a NEW group,
+# PROPOSED for the next release, cards c1125/c1130/c1132; not yet ruled) = 214.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
