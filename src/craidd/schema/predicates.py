@@ -2309,6 +2309,111 @@ _PHASE11_ROUND2: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED (card c1181; phase 11 scope 11.1, F1 and P2). F1: Priority Places for Food Index v2.1
+# (REQ-arloesidolgellau-e2c2c8), one predicate per thing (the WIMD-domains pattern, [sig:0c677900]).
+# P2: Data Map Wales Primary Care Clusters (REQ-arloesidolgellau-5ba9fe): the LSOA's cluster.
+_PPFI_COMMON = (
+    " of the LSOA (LSOA 2021) within Wales, as published in PPFI v2.1 (Healthy & Sustainable Places Data "
+    "Service, originally CDRC; DOI 10.82147/003). PPFI ranks each country separately, so a rank or decile "
+    "is not comparable across countries. It describes the area's food environment and need, never any "
+    "person or household in it.")
+_PPFI_RANK = (
+    " Ranks run 1 to 1,917; 1 = the highest priority for food (measured: rank 1 aligns with WIMD's most "
+    "deprived LSOAs and combined decile 1 is ranks 1-192; the publisher's guide does not state the "
+    "direction in words). Domain ranks can tie as published.")
+_PPFI_DECILE = " Deciles run 1 to 10; decile 1 = the highest-priority tenth."
+_PPFI_AND_CLUSTER: tuple[PredicateDef, ...] = (
+    PredicateDef("ppfi_rank_combined", "int", "single", ('area',),
+                 "Rank of the combined Priority Places for Food Index" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_supermarket_proximity", "int", "single", ('area',),
+                 "Rank of the Proximity to supermarket retail facilities domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_supermarket_accessibility", "int", "single", ('area',),
+                 "Rank of the Accessibility to supermarket retail facilities domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_ecommerce_access", "int", "single", ('area',),
+                 "Rank of the Access to online deliveries domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_socio_demographic", "int", "single", ('area',),
+                 "Rank of the Socio-demographic barriers domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_nonsupermarket_proximity", "int", "single", ('area',),
+                 "Rank of the Proximity to non-supermarket food provision domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_food_for_families", "int", "single", ('area',),
+                 "Rank of the Need for family food support domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_rank_fuel_poverty", "int", "single", ('area',),
+                 "Rank of the Fuel poverty domain" + _PPFI_COMMON + _PPFI_RANK,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_combined", "int", "single", ('area',),
+                 "Decile of the combined Priority Places for Food Index" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_supermarket_proximity", "int", "single", ('area',),
+                 "Decile of the Proximity to supermarket retail facilities domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_supermarket_accessibility", "int", "single", ('area',),
+                 "Decile of the Accessibility to supermarket retail facilities domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_ecommerce_access", "int", "single", ('area',),
+                 "Decile of the Access to online deliveries domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_socio_demographic", "int", "single", ('area',),
+                 "Decile of the Socio-demographic barriers domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_nonsupermarket_proximity", "int", "single", ('area',),
+                 "Decile of the Proximity to non-supermarket food provision domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_food_for_families", "int", "single", ('area',),
+                 "Decile of the Need for family food support domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("ppfi_decile_fuel_poverty", "int", "single", ('area',),
+                 "Decile of the Fuel poverty domain" + _PPFI_COMMON + _PPFI_DECILE,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("area_in_cluster", "entity_ref", "single", ('area',),
+                 "The GP primary care cluster whose footprint holds this LSOA (the subject, an LSOA 2021 "
+                 "area), written `cluster:<publisher code>`, from Data Map Wales' Primary Care Clusters "
+                 "(63 clusters as at October 2024). The footprint maps each LSOA to the cluster where "
+                 "most of its residents are registered with a GP practice: a best fit by registration, "
+                 "not an exact boundary, and never a statement of where any person is registered.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2319,7 +2424,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
-    + _PHASE11_ROUND2
+    + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2381,6 +2486,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # PROPOSED for the next release, cards c1125/c1130/c1132; not yet ruled) = 214.
 # + 4 GP practice deprivation and 1 food outlets predicates (_PHASE11_ROUND2, a NEW group, PROPOSED,
 # card c1181) = 219.
+# + the 16 PPFI v2.1 rank and decile predicates and area_in_cluster (_PPFI_AND_CLUSTER, a NEW group,
+# PROPOSED, card c1181) = 236.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
