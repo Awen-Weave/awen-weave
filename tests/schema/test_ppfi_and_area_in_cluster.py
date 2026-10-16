@@ -55,3 +55,33 @@ def test_area_in_cluster_is_a_single_entity_ref_on_area():
 
 def test_the_registry_holds_236():
     assert len(PREDICATE_REGISTRY) == 236
+
+
+# HASP's own domain names, from the dataset page's Method of Collection
+# (https://data.hasp.ac.uk/browser/dataset/5276/0, read 16/10/2026). Ruled by Huw as Llys 16/10/2026
+# [sig:a00b8fe2]: the rank and decile descriptions name each domain as HASP does. Compared without
+# regard to case: HASP writes "Fuel Poverty", the ratified description "Fuel poverty".
+HASP_DOMAIN_NAMES = {
+    "supermarket_proximity": "Proximity to supermarket retail facilities",
+    "supermarket_accessibility": "Accessibility to supermarket retail facilities",
+    "ecommerce_access": "Access to online deliveries",
+    "nonsupermarket_proximity": "Proximity to non-supermarket food provision",
+    "socio_demographic": "Socio-demographic barriers",
+    "food_for_families": "Need for family food support",
+    "fuel_poverty": "Fuel Poverty",
+}
+
+
+@pytest.mark.parametrize("domain", sorted(HASP_DOMAIN_NAMES))
+@pytest.mark.parametrize("kind", ["rank", "decile"])
+def test_each_domain_is_named_as_hasp_names_it(domain, kind):
+    d = PREDICATE_REGISTRY[f"ppfi_{kind}_{domain}"].description_en
+    assert f"the {HASP_DOMAIN_NAMES[domain]} domain".lower() in d.lower()
+
+
+@pytest.mark.parametrize("kind", ["rank", "decile"])
+def test_the_names_hasp_does_not_use_are_gone(kind):
+    for old in ("Socio-economic barriers", "Family food support domain"):
+        d = PREDICATE_REGISTRY[f"ppfi_{kind}_socio_demographic"].description_en + \
+            PREDICATE_REGISTRY[f"ppfi_{kind}_food_for_families"].description_en
+        assert f"the {old}" not in d
