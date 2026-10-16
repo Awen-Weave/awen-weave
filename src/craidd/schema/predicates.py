@@ -2253,6 +2253,62 @@ _CARE_DELAYS_AND_ADVERTS: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED (card c1181; phase 11 scope 11.1, exit 1). P1: StatsWales "Deprivation at GP practice
+# level" (REQ-arloesidolgellau-4e09d9, countersigned [sig:f8f167fa]), on the practice's nhs_org subject.
+# F3: FSA Food Hygiene Rating Scheme open data (REQ-arloesidolgellau-7f5412, countersigned
+# [sig:6c817dd7]), a count per Welsh authority by the FSA's business type. Date, method and type ride
+# value_en; source_ran_at required.
+_PRACTICE_DEPRIVATION_COMMON = (
+    " for the GP practice (the subject, nhs_org:<ODS code>) at the extraction date named in "
+    "value_en/value_cy, as StatsWales publishes it (Deprivation at GP practice level; data providers "
+    "Welsh Government (WIMD) and NHS Wales Shared Services Partnership). It describes the practice's "
+    "registered list, never any person on it.")
+_PHASE11_ROUND2: tuple[PredicateDef, ...] = (
+    PredicateDef("practice_population_count", "int", "multi", ('nhs_org',),
+                 "Number of patients registered with the practice" + _PRACTICE_DEPRIVATION_COMMON,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("practice_patients_most_deprived_20pct_count", "int", "multi", ('nhs_org',),
+                 "Number of the practice's registered patients whose resident LSOA is in the most "
+                 "deprived 20% of Welsh LSOAs by WIMD (WIMD 2025 from April 2026; WIMD 2019, on 2011 "
+                 "LSOAs, before)" + _PRACTICE_DEPRIVATION_COMMON,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("practice_patients_most_deprived_20pct_pct", "real", "multi", ('nhs_org',),
+                 "Percentage of the practice's registered patients whose resident LSOA is in the most "
+                 "deprived 20% of Welsh LSOAs by WIMD (the WIMD edition as for "
+                 "practice_patients_most_deprived_20pct_count)" + _PRACTICE_DEPRIVATION_COMMON,
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("practice_deprivation_quintile", "int", "multi", ('nhs_org',),
+                 "The practice deprivation quintile, 1 = the most deprived fifth of Welsh practices to "
+                 "5 = the least, under the method named in value_en/value_cy (ranked by the number, or "
+                 "by the percentage, of patients in the most deprived 20% of WIMD LSOAs)"
+                 + _PRACTICE_DEPRIVATION_COMMON + " Quintiles are relative to the practices open at "
+                 "that date, so a quintile is not to be compared across dates.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("food_outlets_count", "int", "multi", ('area',),
+                 "Number of food businesses registered with the local authority (the subject, a W06 "
+                 "authority) under the Food Hygiene Rating Scheme, for the FSA business type and the "
+                 "extract date named in value_en/value_cy (e.g. 'Takeaway/sandwich shop, 2026-10-07'). "
+                 "Counted from the FSA's open data list, so the count is derived; no business name or "
+                 "address is served. It describes the area's food environment and is not a measure "
+                 "of what anyone eats.",
+                 required_qualifiers=('source_ran_at',),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2263,6 +2319,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
+    + _PHASE11_ROUND2
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2322,6 +2379,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # PROPOSED in awen-weave 0.2.41) = 209.
 # + the 4 care delays and 1 online job adverts predicates (_CARE_DELAYS_AND_ADVERTS, a NEW group,
 # PROPOSED for the next release, cards c1125/c1130/c1132; not yet ruled) = 214.
+# + 4 GP practice deprivation and 1 food outlets predicates (_PHASE11_ROUND2, a NEW group, PROPOSED,
+# card c1181) = 219.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
