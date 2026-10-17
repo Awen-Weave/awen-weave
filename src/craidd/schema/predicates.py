@@ -2414,6 +2414,57 @@ _PPFI_AND_CLUSTER: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED, HOLD (card c1209; phase 11 scope 11.5): Census 2021 for Wales, register
+# REQ-arloesidolgellau-7d070c (ONS tables via Nomis; the bulk files [sig:a7374d4e]). One predicate per
+# thing, as the WIMD and PPFI groups: one per table, an area count by its LEAF category in value_en.
+_C21_DAY = " on census day (21/03/2021)"
+_C21_LEAF = (", for the leaf category named in value_en / value_cy, VERBATIM from ONS (subtotals not "
+             "carried). ONS perturbs each Census 2021 table separately, so its total may differ by a "
+             "few from another table's for the same area. Vintage in the citation.")
+_C21_LSOA = (" SERVED at LSOA only, never at output area: the sensitivity Huw ruled for TS066's "
+             "'long-term sick or disabled' [sig:691127c0], as proposed on card c1209.")
+_C21_OA = " Served at output area, as proposed on card c1209."
+_CENSUS_PHASE11: tuple[PredicateDef, ...] = (
+    PredicateDef("usual_residents_general_health_count", "int", "multi", ("area",),
+                 "Census 2021 count of all usual residents in an area by self-assessed general health "
+                 "(TS037: very good, good, fair, bad, very bad)" + _C21_DAY + _C21_LEAF + _C21_LSOA,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("usual_residents_disability_count", "int", "multi", ("area",),
+                 "Census 2021 count of all usual residents in an area by disability under the Equality "
+                 "Act (TS038: day-to-day activities limited a lot or a little; not disabled with or "
+                 "without a long-term condition)" + _C21_DAY + _C21_LEAF + _C21_LSOA,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("usual_residents_unpaid_care_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents aged 5 years and over in an area by unpaid care "
+                 "provided a week (TS039: none, 9 hours or less, 10 to 19, 20 to 34, 35 to 49, 50 or "
+                 "more). The published '19 hours or less' and '20 to 49 hours' are subtotals their "
+                 "labels do not mark; they are proven against their leaves and not carried"
+                 + _C21_DAY + _C21_LEAF + _C21_LSOA,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("usual_residents_welsh_language_skills_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents aged 3 years and over in a Welsh area by Welsh "
+                 "language skills (TS032, the detailed table: each combination of understanding, "
+                 "speaking, reading and writing Welsh, and no skills)" + _C21_DAY + _C21_LEAF + _C21_OA,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("households_composition_count", "int", "multi", ("area",),
+                 "Census 2021 count of HOUSEHOLDS in an area by household composition (TS003). Older "
+                 "people living alone is the leaf 'One person household: Aged 66 years and over' (66, "
+                 "the state pension age at the census, not 65); 'Single family household: All aged 66 "
+                 "years and over' is older couples and families, not people alone" + _C21_DAY
+                 + _C21_LEAF + _C21_OA,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2424,7 +2475,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
-    + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER
+    + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2488,6 +2539,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # card c1181) = 219.
 # + the 16 PPFI v2.1 rank and decile predicates and area_in_cluster (_PPFI_AND_CLUSTER, a NEW group,
 # PROPOSED, card c1181) = 236.
+# + 5 Census 2021 phase 11 predicates (_CENSUS_PHASE11, a NEW group, PROPOSED, HOLD, card c1209) = 241.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
