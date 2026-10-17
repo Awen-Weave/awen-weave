@@ -1,4 +1,4 @@
-"""The output-area-to-community link for Llefelys (AWE-011): PROPOSED, HOLD (card c1232, build step 1).
+"""The output-area-to-community link for Llefelys (AWE-011): RATIFIED [sig:1ffc4503] (cards c1232/c1237, build step 1).
 
   * R1, ONS Output Area (2021) to PARNCP (December 2025) best-fit lookup (REQ-arloesidolgellau-e56561,
     countersigned by Huw 17/10/2026 [sig:607e58a8], OGL v3.0): each 2021 output area goes WHOLLY to the
@@ -38,5 +38,5 @@ def test_anything_else_is_refused(value):
     assert not ENTITY_REF_SHAPES["area_in_community"].match(value)
 
 
-def test_the_registry_holds_237():
-    assert len(PREDICATE_REGISTRY) == 237
+def test_the_registry_holds_242():
+    assert len(PREDICATE_REGISTRY) == 242
