@@ -2414,6 +2414,21 @@ _PPFI_AND_CLUSTER: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED (card c1232; Llefelys AWE-011 build step 1, the community unit). R1: ONS Output Area (2021)
+# to PARNCP (December 2025) best-fit lookup (REQ-arloesidolgellau-e56561, countersigned [sig:607e58a8]).
+_LLEFELYS_COMMUNITY: tuple[PredicateDef, ...] = (
+    PredicateDef("area_in_community", "entity_ref", "single", ('area',),
+                 "The community that holds this output area (the subject, an Output Area 2021), written "
+                 "`area:<GSS code>`: a Welsh community (W04), an English parish (E04) or an English "
+                 "non-civil-parished area (E43), from the ONS Output Area (2021) to PARNCP (December "
+                 "2025) best-fit lookup. Each output area goes wholly to the community holding its "
+                 "population-weighted centre: a best fit, not a statement that the whole output area "
+                 "lies inside the community, so any community figure summed through it is approximate.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2424,7 +2439,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _OPEN_ACCESS + _AREA_BACKFILL + _SPINE_AND_GP_BACKFILL + _CLIMATE_SWEEP + _AREA
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
-    + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER
+    + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _LLEFELYS_COMMUNITY
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2488,6 +2503,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # card c1181) = 219.
 # + the 16 PPFI v2.1 rank and decile predicates and area_in_cluster (_PPFI_AND_CLUSTER, a NEW group,
 # PROPOSED, card c1181) = 236.
+# + area_in_community (_LLEFELYS_COMMUNITY, a NEW group, PROPOSED, card c1232) = 237.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

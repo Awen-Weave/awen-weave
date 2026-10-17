@@ -122,6 +122,8 @@ ENTITY_REF_SHAPES: dict[str, "re.Pattern[str]"] = {
     "premises_in_health_board": re.compile(r"^area:W11\d{6}$"),
     "run_by": ORG_SUBJECT_SHAPES["nhs_org"],
     "in_cluster": ORG_SUBJECT_SHAPES["cluster"],
+    # PROPOSED, card c1232: an Output Area's best-fit community, parish or non-civil-parished area.
+    "area_in_community": re.compile(r"^area:(W04|E04|E43)\d{6}$"),
 }
 
 

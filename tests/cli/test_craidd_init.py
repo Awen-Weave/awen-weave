@@ -56,7 +56,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # (+ 8 NHS organisation predicates, _NHS_ORG, PROPOSED card c0944 with constitution 0.1.10 = 190.)
     # (+ 8 WIMD 2025 domain ranks, _WIMD_DOMAINS, card c1012 [sig:0c677900], PROPOSED in 0.2.39 = 198.)
     # (+ 11 CIW care home predicates, _CARE_HOMES, card c1055 [sig:7d9c7466], PROPOSED in 0.2.41 = 209.)
-    assert count == 236
+    # (+ area_in_community, _LLEFELYS_COMMUNITY, card c1232, PROPOSED = 237.)
+    assert count == 237
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
