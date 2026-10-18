@@ -2618,7 +2618,8 @@ _EXIT6_LIFE = (
     "there (at birth is age band '<1'): the years a person of that age would live if that period's death (and "
     "health) rates held for life, not a prediction for anyone. Per area as published: a Welsh local authority "
     "(W06), health board (W11) or Wales (W92), or Wales by WIMD 2019 deprivation quintile where value_en names "
-    "the quintile (1 = most deprived). The confidence interval is in the citation's source, not here.")
+    "the quintile (1 = most deprived). Where the source publishes a confidence interval beside the figure, it rides "
+    "the confidence_interval qualifier, verbatim as published; otherwise it is in the citation's source.")
 _EXIT6_GAP = (
     " The gap in YEARS between the most and least deprived fifths of Wales, by WIMD 2019 quintile, for the sex, "
     "age band and three-year period in value_en, as ONS publishes it: value_en names the measure, the 'range' "
