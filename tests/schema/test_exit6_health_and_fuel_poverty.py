@@ -56,7 +56,7 @@ def test_fuel_poverty_is_a_modelled_wales_level_estimate():
 
 def test_the_registry_holds_the_new_count():
     from craidd.schema.predicates import SEED_PREDICATES
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7 + 1   # + emergency_care_facility_type (c1352)
 
 
 BASE = 265

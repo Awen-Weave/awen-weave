@@ -2664,6 +2664,35 @@ _EXIT6: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING, finest_grain=Grain.AREA),
 )
 
+
+# ---------------------------------------------------------------------------
+# Emergency care facility type (RATIFIED by Huw [sig:3277a240]; phase 11 scope 11.4 / exit 4, card c1352 after c1334).
+# Huw [sig:e8842016]: A&E sites come from REQ-arloesidolgellau-8fcae2 (StatsWales 3ce1cc28, OGL-3.0),
+# extended by the c1342 use transition; a site is A&E when its Hospital Type is 'Major Emergency
+# Departments' in the latest month, joined to ods-wlhbsite by ODS site code, with the month recorded on
+# every flag. The two values are the publisher's own labels below its 'All Emergency Care Facilities'
+# total, enforced (validation.py VALUE_CHECKED_PREDICATES), so a renamed label stops a build.
+# ---------------------------------------------------------------------------
+EMERGENCY_CARE_FACILITY_TYPES: tuple[str, ...] = (
+    "Major Emergency Departments", "Other Emergency Departments/Minor Injury Units")
+
+_EMERGENCY_CARE: tuple[PredicateDef, ...] = (
+    PredicateDef("emergency_care_facility_type", "text", "single", ("nhs_org",),
+                 "The type of emergency care facility an NHS site reports under, VERBATIM from the "
+                 "'Hospital Type' field of StatsWales' emergency department performance dataset "
+                 "(3ce1cc28): 'Major Emergency Departments' or 'Other Emergency Departments/Minor Injury "
+                 "Units'. The site is an A&E when the value is 'Major Emergency Departments'. Read for "
+                 "one month, which semantics_caveat must name: a site's type can change between months "
+                 "(Nevill Hall and Royal Gwent reported as major departments before the Grange opened). "
+                 "The publisher's field, never inferred from a site's name, size or services; absence "
+                 "means the site does not report emergency department performance, nothing more.",
+                 constraint_json=json.dumps({"enum": list(EMERGENCY_CARE_FACILITY_TYPES)}),
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2672,7 +2701,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
