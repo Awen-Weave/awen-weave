@@ -2541,6 +2541,41 @@ _LLEFELYS_JOBS_FIRMS: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED, HOLD (cards c1317/c1298; Llefelys AWE-011 build item 4, wages and work): ONS ASHE
+# (REQ-arloesidolgellau-727844, Tables 5, 7 and 8 on ons.gov.uk) and the Annual Population Survey
+# (REQ-arloesidolgellau-e14238), both countersigned [sig:607e58a8].
+_BORROWED = (" Where an authority's own figure is not published (suppressed, or never broken down that far, as "
+             "pay by industry is not), the page may show the Wales figure beside the authority: such a claim's "
+             "semantics_caveat begins 'Borrowed from <area name> (<GSS code>)', naming the area the figure is for, "
+             "and it is never presented as the authority's own. Served for a local authority or Wales.")
+_ASHE = (" Annual Survey of Hours and Earnings (ONS), all employee jobs, the median, for the basis and industry "
+         "named in value_en: workplace (Table 7, where people work) or residence (Table 8, where they live) "
+         "for a local authority, and Wales by industry (Table 5, SIC 2007 section) at the workplace. A survey "
+         "estimate: ONS withholds a cell marked 'x' (coefficient of variation above 20%) or '..' (disclosive), "
+         "and no such cell is ever filled in or re-derived. Vintage (e.g. 2025 provisional) in value_en.")
+_LLEFELYS_WAGES_WORK: tuple[PredicateDef, ...] = (
+    PredicateDef("aps_estimate_pct", "real", "multi", ("area",),
+                 "Annual Population Survey (ONS) estimate, a percentage, for the variable and period named in "
+                 "value_en VERBATIM from Nomis (e.g. 'Employment rate - aged 16-64, Apr 2025-Mar 2026'). Its 95% "
+                 "confidence interval rides the confidence_interval qualifier. A cell ONS marks '!' (sample "
+                 "zero or disclosive) is never served; a cell marked '*' (sample 3-9) is served as unreliable, "
+                 "with no interval, and says so. APS lost its accredited status for 2024 onwards; small-area "
+                 "estimates need care." + _BORROWED,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("earnings_median_annual_gross_gbp", "int", "multi", ("area",),
+                 "Median gross annual pay in pounds." + _ASHE + _BORROWED,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("earnings_median_hourly_excl_overtime_gbp", "real", "multi", ("area",),
+                 "Median hourly pay excluding overtime, in pounds." + _ASHE + _BORROWED,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # PROPOSED, HOLD (cards c1318/c1304; Llefelys AWE-011 build item 6, missed local supply): Sell2Wales OCDS
 # (REQ-arloesidolgellau-ed7120, countersigned [sig:607e58a8]; route the OCP Data Registry copy), placed by the
 # ONS Postcode Directory (REQ-arloesidolgellau-c94857, Llefelys processing only [sig:df798785]).
@@ -2727,7 +2762,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_SUPPLY
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2797,7 +2832,8 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + bres_employment_count, enterprises_count, local_units_count (_LLEFELYS_JOBS_FIRMS, a NEW group, PROPOSED, HOLD, cards c1297/c1281) = 246.
 # + 19 AHAH predicates (_AHAH, a NEW group, PROPOSED, HOLD, card c1321; phase 11 scope 11.2, F2) = 265.
 # + 7 exit 6 predicates (_EXIT6, a NEW group, PROPOSED, HOLD, card c1332): life and healthy life expectancy, their gaps, good-health share, fuel poverty = 272.
-# + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 275.
+# + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 276.
+# + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after _LLEFELYS_WAGES_WORK (#58, 276) = 278.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
