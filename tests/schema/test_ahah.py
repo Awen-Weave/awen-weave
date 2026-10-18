@@ -77,4 +77,4 @@ def test_the_registry_holds_the_new_count():
     assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 19 + 1   # + emergency_care_facility_type (c1352)
 
 
-BASE = 246
+BASE = 253   # 246 + the 7 exit 6 predicates (c1332), so 272 with AHAH

@@ -79,4 +79,4 @@ def test_the_registry_holds_the_new_count():
     assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 1
 
 
-BASE = 265
+BASE = 272   # 265 + the 7 exit 6 predicates (c1332, #61)
