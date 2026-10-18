@@ -56,5 +56,5 @@ def test_food_outlets_count_is_a_derived_area_count_with_no_names():
     assert "no business name or address" in d and "not a measure of what anyone eats" in d
 
 
-def test_the_registry_holds_242():
-    assert len(PREDICATE_REGISTRY) == 242
+def test_the_registry_holds_243():
+    assert len(PREDICATE_REGISTRY) == 243
