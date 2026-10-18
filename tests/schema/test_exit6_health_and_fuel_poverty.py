@@ -59,4 +59,4 @@ def test_the_registry_holds_the_new_count():
     assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7
 
 
-BASE = 246
+BASE = 265

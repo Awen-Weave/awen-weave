@@ -6,8 +6,14 @@
 ## PROPOSED, HOLD — life expectancy, healthy life expectancy and fuel poverty, phase 11 exit 6 (2026-10-18, card c1332; NOT ruled, merged, versioned or published)
 
 - **NOT YET RULED.** Registers countersigned [sig:55e8e1e2] (awen-shared#930): `REQ-arloesidolgellau-837c00` (ONS HLE, UK), `c4f429` (ONS LE/HLE by WIMD 2019 quintile, Wales), `513c1d` (WG fuel poverty, Wales level only [sig:aa8f1685]). Huw rules the names and descriptions before merge.
-- **GRAMMAR:** a NEW group `_EXIT6`, 246 -> **253**, each multi, area, `Grain.AREA`, the sex, age band, period and any quintile or breakdown in value_en: `life_expectancy_years`, `healthy_life_expectancy_years`, `good_health_life_share_pct`, `life_expectancy_gap_years`, `healthy_life_expectancy_gap_years` (range and Slope Index of Inequality), `fuel_poverty_households_count`, `fuel_poverty_households_share`.
-- **NO WELSH:** pending, for Catrin. **NO VERSION BUMP.** **TESTS:** `tests/schema/test_exit6_health_and_fuel_poverty.py` (16), red first (16 failed on main 0159692); the count pins move to 253. #60 (AHAH, +19) moves the same pins: whichever merges second takes main in.
+- **GRAMMAR:** a NEW group `_EXIT6`, 265 -> **272**, each multi, area, `Grain.AREA`, the sex, age band, period and any quintile or breakdown in value_en: `life_expectancy_years`, `healthy_life_expectancy_years`, `good_health_life_share_pct`, `life_expectancy_gap_years`, `healthy_life_expectancy_gap_years` (range and Slope Index of Inequality), `fuel_poverty_households_count`, `fuel_poverty_households_share`.
+- **NO WELSH:** pending, for Catrin. **NO VERSION BUMP.** **TESTS:** `tests/schema/test_exit6_health_and_fuel_poverty.py` (16), red first (16 failed on main 0159692); the count pins move to 272 (on main after #60, AHAH).
+
+## PROPOSED, HOLD — AHAH, phase 11 scope 11.2, F2 (2026-10-18, card c1321; NOT ruled, merged, versioned or published)
+
+- **NOT YET RULED.** Register `REQ-arloesidolgellau-9c29cf` (AHAH v4, countersigned [sig:6c817dd7], redistributable [sig:fca1c0cd]). Huw rules the names and descriptions before merge.
+- **GRAMMAR:** a NEW group `_AHAH`, 246 -> **265**, one predicate per thing, each single, area, `Grain.AREA`: ten `ahah_drive_minutes_<asset>` (real, MINUTES by car, the exit 2 drive time), three `ahah_air_<no2|so2|pm10>_ugm3`, `ahah_greenspace_ndvi`, and five `ahah_percentile_<combined|domain>` (int 1-100 within Great Britain, 100 = least healthy). Units from the publisher's code: v4 times are ((length/1000)/speed_kph)*60 (cjber/ukroutes), so minutes.
+- **NO WELSH:** pending, for Catrin. **NO VERSION BUMP.** **TESTS:** `tests/schema/test_ahah.py` (45), red first (45 failed on main 0159692); the count pins move to 265.
 
 ## awen-weave 0.2.48 — Llefelys jobs and firms, BRES open access and UK Business Counts (2026-10-18, card c1315)
 
