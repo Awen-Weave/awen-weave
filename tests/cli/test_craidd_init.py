@@ -59,7 +59,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # (+ area_in_community, _LLEFELYS_COMMUNITY, card c1232, RATIFIED [sig:1ffc4503] = 242.)
     # (+ usual_residents_highest_qualification_count, _LLEFELYS_CENSUS, cards c1272/c1281, PROPOSED = 243.)
     # (+ bres_employment_count, enterprises_count, local_units_count, _LLEFELYS_JOBS_FIRMS, cards c1297/c1281, PROPOSED = 246.)
-    assert count == 246
+    # (+ the 7 exit 6 predicates, _EXIT6, card c1332, PROPOSED = 253.)
+    assert count == 253
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
