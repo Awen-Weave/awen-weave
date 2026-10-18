@@ -52,7 +52,7 @@ def test_seed_predicate_count_matches_v01_schema():
     # (+ 8 NHS organisation predicates, _NHS_ORG, PROPOSED card c0944 with constitution 0.1.10 = 190.)
     # (+ 8 WIMD 2025 domain ranks, _WIMD_DOMAINS, card c1012 [sig:0c677900], PROPOSED in 0.2.39 = 198.)
     # (+ 11 CIW care home predicates, _CARE_HOMES, card c1055 [sig:7d9c7466], PROPOSED in 0.2.41 = 209.)
-    assert len(SEED_PREDICATES) == 248
+    assert len(SEED_PREDICATES) == 274
 
 
 def test_alc_grade_predicate_registered():
