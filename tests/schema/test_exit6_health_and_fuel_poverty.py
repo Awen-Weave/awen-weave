@@ -60,3 +60,12 @@ def test_the_registry_holds_the_new_count():
 
 
 BASE = 265
+
+
+# Card c1375: ONS's life expectancy for local areas publishes a lower and upper confidence interval beside each
+# figure, and the constitution's open-form confidence_interval qualifier carries it. The descriptions say so,
+# rather than "not here"; no predicate is added.
+@pytest.mark.parametrize("name", YEARS)
+def test_a_published_confidence_interval_rides_the_qualifier(name):
+    d = PREDICATE_REGISTRY[name].description_en
+    assert "confidence_interval qualifier" in d and "not here" not in d
