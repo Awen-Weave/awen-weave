@@ -74,7 +74,7 @@ def test_not_compared_across_versions():
 
 def test_the_registry_holds_the_new_count():
     from craidd.schema.predicates import SEED_PREDICATES
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 19
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 19 + 1   # + emergency_care_facility_type (c1352)
 
 
 BASE = 256   # 246 + the 7 exit 6 predicates (c1332) + 3 Llefelys wages and work (#58, c1357), so 275 with AHAH

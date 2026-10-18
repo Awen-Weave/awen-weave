@@ -59,4 +59,4 @@ def test_exactly_eight_domains_and_deprivation_rank_unchanged():
 
 def test_the_registry_holds_275():
     # 198 at 0.2.39 (+ 8 WIMD domains); + 11 CIW care home predicates at 0.2.41 (c1055) = 209.
-    assert len(PREDICATE_REGISTRY) == 275
+    assert len(PREDICATE_REGISTRY) == 276

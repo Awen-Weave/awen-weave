@@ -2653,7 +2653,8 @@ _EXIT6_LIFE = (
     "there (at birth is age band '<1'): the years a person of that age would live if that period's death (and "
     "health) rates held for life, not a prediction for anyone. Per area as published: a Welsh local authority "
     "(W06), health board (W11) or Wales (W92), or Wales by WIMD 2019 deprivation quintile where value_en names "
-    "the quintile (1 = most deprived). The confidence interval is in the citation's source, not here.")
+    "the quintile (1 = most deprived). Where the source publishes a confidence interval beside the figure, it rides "
+    "the confidence_interval qualifier, verbatim as published; otherwise it is in the citation's source.")
 _EXIT6_GAP = (
     " The gap in YEARS between the most and least deprived fifths of Wales, by WIMD 2019 quintile, for the sex, "
     "age band and three-year period in value_en, as ONS publishes it: value_en names the measure, the 'range' "
@@ -2699,6 +2700,35 @@ _EXIT6: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING, finest_grain=Grain.AREA),
 )
 
+
+# ---------------------------------------------------------------------------
+# Emergency care facility type (RATIFIED by Huw [sig:3277a240]; phase 11 scope 11.4 / exit 4, card c1352 after c1334).
+# Huw [sig:e8842016]: A&E sites come from REQ-arloesidolgellau-8fcae2 (StatsWales 3ce1cc28, OGL-3.0),
+# extended by the c1342 use transition; a site is A&E when its Hospital Type is 'Major Emergency
+# Departments' in the latest month, joined to ods-wlhbsite by ODS site code, with the month recorded on
+# every flag. The two values are the publisher's own labels below its 'All Emergency Care Facilities'
+# total, enforced (validation.py VALUE_CHECKED_PREDICATES), so a renamed label stops a build.
+# ---------------------------------------------------------------------------
+EMERGENCY_CARE_FACILITY_TYPES: tuple[str, ...] = (
+    "Major Emergency Departments", "Other Emergency Departments/Minor Injury Units")
+
+_EMERGENCY_CARE: tuple[PredicateDef, ...] = (
+    PredicateDef("emergency_care_facility_type", "text", "single", ("nhs_org",),
+                 "The type of emergency care facility an NHS site reports under, VERBATIM from the "
+                 "'Hospital Type' field of StatsWales' emergency department performance dataset "
+                 "(3ce1cc28): 'Major Emergency Departments' or 'Other Emergency Departments/Minor Injury "
+                 "Units'. The site is an A&E when the value is 'Major Emergency Departments'. Read for "
+                 "one month, which semantics_caveat must name: a site's type can change between months "
+                 "(Nevill Hall and Royal Gwent reported as major departments before the Grange opened). "
+                 "The publisher's field, never inferred from a site's name, size or services; absence "
+                 "means the site does not report emergency department performance, nothing more.",
+                 constraint_json=json.dumps({"enum": list(EMERGENCY_CARE_FACILITY_TYPES)}),
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2707,7 +2737,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _LLEFELYS_WAGES_WORK
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2777,7 +2807,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + bres_employment_count, enterprises_count, local_units_count (_LLEFELYS_JOBS_FIRMS, a NEW group, PROPOSED, HOLD, cards c1297/c1281) = 246.
 # + 19 AHAH predicates (_AHAH, a NEW group, PROPOSED, HOLD, card c1321; phase 11 scope 11.2, F2) = 265.
 # + 7 exit 6 predicates (_EXIT6, a NEW group, PROPOSED, HOLD, card c1332): life and healthy life expectancy, their gaps, good-health share, fuel poverty = 272.
-# + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298) = 275.
+# + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 276.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
