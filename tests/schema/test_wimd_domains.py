@@ -57,6 +57,6 @@ def test_exactly_eight_domains_and_deprivation_rank_unchanged():
     assert p.description_en.startswith("Multiple-deprivation rank of an area (1 = most deprived).")
 
 
-def test_the_registry_holds_246():
+def test_the_registry_holds_249():
     # 198 at 0.2.39 (+ 8 WIMD domains); + 11 CIW care home predicates at 0.2.41 (c1055) = 209.
-    assert len(PREDICATE_REGISTRY) == 246
+    assert len(PREDICATE_REGISTRY) == 249
