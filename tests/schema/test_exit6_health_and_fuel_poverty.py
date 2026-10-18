@@ -56,7 +56,16 @@ def test_fuel_poverty_is_a_modelled_wales_level_estimate():
 
 def test_the_registry_holds_the_new_count():
     from craidd.schema.predicates import SEED_PREDICATES
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7 + 1   # + emergency_care_facility_type (c1352)
 
 
-BASE = 267   # + 2 Llefelys missed supply (#59, c1357)
+BASE = 267   # + 2 Llefelys missed supply (#59, c1357, c1389)
+
+
+# Card c1375: ONS's life expectancy for local areas publishes a lower and upper confidence interval beside each
+# figure, and the constitution's open-form confidence_interval qualifier carries it. The descriptions say so,
+# rather than "not here"; no predicate is added.
+@pytest.mark.parametrize("name", YEARS)
+def test_a_published_confidence_interval_rides_the_qualifier(name):
+    d = PREDICATE_REGISTRY[name].description_en
+    assert "confidence_interval qualifier" in d and "not here" not in d
