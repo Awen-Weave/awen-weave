@@ -77,5 +77,5 @@ def test_older_people_living_alone_is_the_aged_66_category():
     assert "One person household: Aged 66 years and over" in d and "not 65" in d
 
 
-def test_the_registry_holds_272():
-    assert len(PREDICATE_REGISTRY) == 272
+def test_the_registry_holds_273():
+    assert len(PREDICATE_REGISTRY) == 273
