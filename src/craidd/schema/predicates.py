@@ -2504,6 +2504,43 @@ _LLEFELYS_CENSUS: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED, HOLD (cards c1297/c1281; Llefelys AWE-011 build item 3, jobs and firms): ONS BRES open access
+# (REQ-arloesidolgellau-551c2c) and UK Business Counts (REQ-arloesidolgellau-c1fbf7), both countersigned
+# [sig:607e58a8]. Shown at MSOA and local authority only.
+_JF_GRAIN = (" Served for an MSOA (2021) or a local authority only, never split to a community: the published "
+             "figure is for that area as a whole. Vintage in the citation.")
+_UKBC = (" Counted from the Inter Departmental Business Register at its March reference date, by the broad "
+         "industry group and the employment size band named in value_en (e.g. '3 : Manufacturing (C), Total, "
+         "2026'). ONS rounds every figure to avoid disclosure, so values may be rounded down to zero and zeros "
+         "are not necessarily true zeros; totals across tables may differ by small amounts.")
+_LLEFELYS_JOBS_FIRMS: tuple[PredicateDef, ...] = (
+    PredicateDef("bres_employment_count", "int", "multi", ("area",),
+                 "Business Register and Employment Survey (ONS), open access tier only and never the "
+                 "safeguarded tier: jobs counted at the workplace in an area (not where people live), for the employment status, broad "
+                 "industry group and year named in value_en (e.g. 'Employees, 3 : Manufacturing (C), 2024'). "
+                 "Employment status is one of Employees, Full-time employees, Part-time employees or Employment "
+                 "(employees plus working owners); the four are never summed. A count, rounded by ONS as "
+                 "published; no confidential cell is ever served. The agriculture group excludes farm "
+                 "agriculture (SIC 01000), and a figure ONS marks incomplete says so in its caveat." + _JF_GRAIN,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("enterprises_count", "int", "multi", ("area",),
+                 "UK Business Counts (ONS): the number of enterprises (whole businesses, counted where they "
+                 "are registered) in an area." + _UKBC + " Never mixed with local_units_count, which counts "
+                 "each site." + _JF_GRAIN,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("local_units_count", "int", "multi", ("area",),
+                 "UK Business Counts (ONS): the number of local units (each workplace or site of a business) "
+                 "in an area." + _UKBC + " Never mixed with enterprises_count, which counts each business "
+                 "once." + _JF_GRAIN,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2515,7 +2552,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2582,6 +2619,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + 5 Census 2021 phase 11 predicates (_CENSUS_PHASE11, a NEW group, PROPOSED, HOLD, card c1209) = 241.
 # + area_in_community (_LLEFELYS_COMMUNITY, a NEW group, card c1232, RATIFIED [sig:1ffc4503]) = 242.
 # + usual_residents_highest_qualification_count (_LLEFELYS_CENSUS, a NEW group, PROPOSED, HOLD, cards c1272/c1281) = 243.
+# + bres_employment_count, enterprises_count, local_units_count (_LLEFELYS_JOBS_FIRMS, a NEW group, PROPOSED, HOLD, cards c1297/c1281) = 246.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
