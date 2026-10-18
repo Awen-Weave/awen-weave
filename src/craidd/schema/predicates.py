@@ -2558,7 +2558,9 @@ _EXIT6_LIFE = (
 _EXIT6_GAP = (
     " The gap in YEARS between the most and least deprived fifths of Wales, by WIMD 2019 quintile, for the sex, "
     "age band and three-year period in value_en, as ONS publishes it: value_en names the measure, the 'range' "
-    "(quintile 1 minus quintile 5) or the 'Slope Index of Inequality' (the difference across the population-"
+    "(the least deprived quintile 5 minus the most deprived quintile 1, the years more in the least deprived "
+    "fifth; ONS's note calls it the difference between quintile 1 and quintile 5) or the 'Slope Index of "
+    "Inequality' (the difference across the population-"
     "weighted regression line from most to least deprived). A period life table figure, not a prediction for "
     "anyone.")
 _EXIT6_FUEL = (

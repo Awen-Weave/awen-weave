@@ -42,6 +42,8 @@ def test_hle_says_good_health_is_self_reported():
 def test_gaps_name_range_and_slope_index(name):
     d = PREDICATE_REGISTRY[name].description_en
     assert "range" in d and "Slope Index of Inequality" in d and "quintile 1" in d and "quintile 5" in d
+    # measured on ONS's own file (c1332): the published range equals quintile 5 minus quintile 1, all 8 rows
+    assert "least deprived quintile 5 minus the most deprived quintile 1" in d
 
 
 def test_fuel_poverty_is_a_modelled_wales_level_estimate():
