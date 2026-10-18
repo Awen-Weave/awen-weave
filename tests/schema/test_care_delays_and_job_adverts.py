@@ -65,5 +65,5 @@ def test_exactly_these_five_are_new():
     assert [n for n in PREDICATE_REGISTRY if "job_advert" in n] == list(ADVERTS)
 
 
-def test_the_registry_holds_276():
-    assert len(PREDICATE_REGISTRY) == 276
+def test_the_registry_holds_278():
+    assert len(PREDICATE_REGISTRY) == 278

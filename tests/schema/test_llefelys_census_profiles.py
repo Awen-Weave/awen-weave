@@ -45,5 +45,5 @@ def test_economic_activity_keeps_its_lsoa_and_lludd_ruling():
     assert "LSOA" in d and "691127c0" in d and "Lludd" in d and "not served openly" in d
 
 
-def test_the_registry_holds_276():
-    assert len(PREDICATE_REGISTRY) == 276
+def test_the_registry_holds_278():
+    assert len(PREDICATE_REGISTRY) == 278

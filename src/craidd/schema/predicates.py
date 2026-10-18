@@ -2576,6 +2576,31 @@ _LLEFELYS_WAGES_WORK: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED, HOLD (cards c1318/c1304; Llefelys AWE-011 build item 6, missed local supply): Sell2Wales OCDS
+# (REQ-arloesidolgellau-ed7120, countersigned [sig:607e58a8]; route the OCP Data Registry copy), placed by the
+# ONS Postcode Directory (REQ-arloesidolgellau-c94857, Llefelys processing only [sig:df798785]).
+_SUPPLY = (" For the buyers placed in the area (a local authority, or Wales), by where each supplier is relative to "
+           "its buyer, named in value_en with the CPV division of the tender (or 'CPV not stated') and the range: one "
+           "of in the buyer's community, in the buyer's authority, elsewhere in Wales, outside Wales, or location "
+           "unknown (no postcode, or one the ONS Postcode Directory does not hold). Every figure is labelled "
+           "'April 2022 to March 2026, Sell2Wales via the OCP Data Registry'. Supplier names and postcodes are used "
+           "in processing only: no supplier is ever named, and no postcode is ever served [sig:e449210e]. A figure "
+           "built from fewer than 5 awards is never served; the page says 'fewer than 5' [sig:e580fe02].")
+_LLEFELYS_SUPPLY: tuple[PredicateDef, ...] = (
+    PredicateDef("public_contract_supplier_awards_count", "int", "multi", ("area",),
+                 "The number of Sell2Wales contract awards to suppliers, where each supplier named on an award counts "
+                 "once (an award to a framework of three suppliers counts three)." + _SUPPLY,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("public_contract_award_value_gbp", "int", "multi", ("area",),
+                 "The total value in pounds of those supplier awards, counted only where the award states a value in "
+                 "pounds; value_en says how many of the awards carry one, so a total is never read as complete." + _SUPPLY,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2737,7 +2762,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2808,6 +2833,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + 19 AHAH predicates (_AHAH, a NEW group, PROPOSED, HOLD, card c1321; phase 11 scope 11.2, F2) = 265.
 # + 7 exit 6 predicates (_EXIT6, a NEW group, PROPOSED, HOLD, card c1332): life and healthy life expectancy, their gaps, good-health share, fuel poverty = 272.
 # + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 276.
+# + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after _LLEFELYS_WAGES_WORK (#58, 276) = 278.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
