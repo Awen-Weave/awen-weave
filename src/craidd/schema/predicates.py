@@ -2544,6 +2544,70 @@ _LLEFELYS_JOBS_FIRMS: tuple[PredicateDef, ...] = (
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
+# PROPOSED, HOLD (card c1321; phase 11 scope 11.2, F2): Access to Healthy Assets and Hazards (AHAH),
+# REQ-arloesidolgellau-9c29cf (v4 countersigned [sig:6c817dd7], redistributable [sig:fca1c0cd]). One
+# predicate per thing, as the WIMD and PPFI groups. Units from the publisher's code (GeographicDataService/
+# ahah): v4 times are ((length/1000)/speed_kph)*60 per road edge (cjber/ukroutes), so minutes.
+_AHAH_COMMON = (
+    ". Per LSOA (LSOA 2021), as published in Access to Healthy Assets and Hazards (AHAH; Geographic Data "
+    "Service, formerly CDRC; version in the citation); not compared across AHAH versions, whose methods "
+    "and inputs change. It describes the area's environment, never any person or household in it.")
+_AHAH_DRIVE = (
+    "Modelled drive time in MINUTES by car from the LSOA's postcodes to the nearest {what}: the LSOA's "
+    "average over its postcodes (the median in v4, over OS Open Roads speed estimates; the mean from v5, "
+    "over OpenStreetMap with Valhalla), a modelled time, not a journey anyone made{extra}")
+_AHAH_HAZARD = "; for a hazard a shorter time means MORE exposure"
+_AHAH_PCT = (
+    "Percentile 1 to 100 within Great Britain (not Wales alone) of the {what}: "
+    "100 = the least healthy environment, 1 = the most healthy")
+
+
+def _ahah_drive(slug: str, what: str, extra: str = "") -> PredicateDef:
+    return PredicateDef(f"ahah_drive_minutes_{slug}", "real", "single", ("area",),
+                        _AHAH_DRIVE.format(what=what, extra=extra) + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+def _ahah_air(slug: str, what: str) -> PredicateDef:
+    return PredicateDef(f"ahah_air_{slug}_ugm3", "real", "single", ("area",),
+                        f"Modelled annual mean concentration of {what} in µg/m³ (DEFRA Pollution Climate "
+                        "Mapping 1 km grid, averaged over the LSOA)" + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+def _ahah_pct(slug: str, what: str) -> PredicateDef:
+    return PredicateDef(f"ahah_percentile_{slug}", "int", "single", ("area",),
+                        _AHAH_PCT.format(what=what) + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+_AHAH: tuple[PredicateDef, ...] = (
+    _ahah_drive("gp", "GP surgery"),
+    _ahah_drive("dentist", "dentist"),
+    _ahah_drive("pharmacy", "pharmacy"),
+    _ahah_drive("hospital", "hospital",
+                " (v5.1 narrows 'hospital' to a hospital with an A&E; earlier versions count any hospital "
+                "site, so the two are different measures)"),
+    _ahah_drive("leisure_centre", "leisure centre"),
+    _ahah_drive("bluespace", "blue space (water)"),
+    _ahah_drive("fast_food", "fast food outlet", _AHAH_HAZARD),
+    _ahah_drive("gambling", "gambling venue", _AHAH_HAZARD),
+    _ahah_drive("pub_bar", "pub or bar", _AHAH_HAZARD),
+    _ahah_drive("tobacco", "tobacco or vape retailer", _AHAH_HAZARD),
+    _ahah_air("no2", "nitrogen dioxide (NO2)"),
+    _ahah_air("so2", "sulphur dioxide (SO2)"),
+    _ahah_air("pm10", "particulate matter (PM10)"),
+    PredicateDef("ahah_greenspace_ndvi", "real", "single", ("area",),
+                 "Passive greenspace: the median Normalised Difference Vegetation Index (NDVI, about 0 to 1, "
+                 "higher = greener) over the LSOA, from satellite imagery" + _AHAH_COMMON,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    _ahah_pct("combined", "combined AHAH index"),
+    _ahah_pct("health_services", "health services domain (GP, dentist, pharmacy, hospital, leisure centre)"),
+    _ahah_pct("green_blue_space", "green and blue space domain"),
+    _ahah_pct("air_quality", "air quality domain (NO2, SO2, PM10)"),
+    _ahah_pct("retail_hazards", "retail hazards domain (fast food, gambling, pubs and bars, tobacco)"),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2552,7 +2616,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2620,6 +2684,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + area_in_community (_LLEFELYS_COMMUNITY, a NEW group, card c1232, RATIFIED [sig:1ffc4503]) = 242.
 # + usual_residents_highest_qualification_count (_LLEFELYS_CENSUS, a NEW group, PROPOSED, HOLD, cards c1272/c1281) = 243.
 # + bres_employment_count, enterprises_count, local_units_count (_LLEFELYS_JOBS_FIRMS, a NEW group, PROPOSED, HOLD, cards c1297/c1281) = 246.
+# + 19 AHAH predicates (_AHAH, a NEW group, PROPOSED, HOLD, card c1321; phase 11 scope 11.2, F2) = 265.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
