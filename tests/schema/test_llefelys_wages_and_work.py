@@ -45,5 +45,5 @@ def test_ashe_says_median_place_basis_and_suppression():
         assert "industry" in d
 
 
-def test_the_registry_holds_249():
-    assert len(PREDICATE_REGISTRY) == 249
+def test_the_registry_holds_275():
+    assert len(PREDICATE_REGISTRY) == 275

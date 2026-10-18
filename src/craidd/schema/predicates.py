@@ -2579,6 +2579,126 @@ _LLEFELYS_WAGES_WORK: tuple[PredicateDef, ...] = (
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
+# PROPOSED, HOLD (card c1321; phase 11 scope 11.2, F2): Access to Healthy Assets and Hazards (AHAH),
+# REQ-arloesidolgellau-9c29cf (v4 countersigned [sig:6c817dd7], redistributable [sig:fca1c0cd]). One
+# predicate per thing, as the WIMD and PPFI groups. Units from the publisher's code (GeographicDataService/
+# ahah): v4 times are ((length/1000)/speed_kph)*60 per road edge (cjber/ukroutes), so minutes.
+_AHAH_COMMON = (
+    ". Per LSOA (LSOA 2021), as published in Access to Healthy Assets and Hazards (AHAH; Geographic Data "
+    "Service, formerly CDRC; version in the citation); not compared across AHAH versions, whose methods "
+    "and inputs change. It describes the area's environment, never any person or household in it.")
+_AHAH_DRIVE = (
+    "Modelled drive time in MINUTES by car from the LSOA's postcodes to the nearest {what}: the LSOA's "
+    "average over its postcodes (the median in v4, over OS Open Roads speed estimates; the mean from v5, "
+    "over OpenStreetMap with Valhalla), a modelled time, not a journey anyone made{extra}")
+_AHAH_HAZARD = "; for a hazard a shorter time means MORE exposure"
+_AHAH_PCT = (
+    "Percentile 1 to 100 within Great Britain (not Wales alone) of the {what}: "
+    "100 = the least healthy environment, 1 = the most healthy")
+
+
+def _ahah_drive(slug: str, what: str, extra: str = "") -> PredicateDef:
+    return PredicateDef(f"ahah_drive_minutes_{slug}", "real", "single", ("area",),
+                        _AHAH_DRIVE.format(what=what, extra=extra) + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+def _ahah_air(slug: str, what: str) -> PredicateDef:
+    return PredicateDef(f"ahah_air_{slug}_ugm3", "real", "single", ("area",),
+                        f"Modelled annual mean concentration of {what} in µg/m³ (DEFRA Pollution Climate "
+                        "Mapping 1 km grid, averaged over the LSOA)" + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+def _ahah_pct(slug: str, what: str) -> PredicateDef:
+    return PredicateDef(f"ahah_percentile_{slug}", "int", "single", ("area",),
+                        _AHAH_PCT.format(what=what) + _AHAH_COMMON,
+                        description_cy=CY_PENDING, finest_grain=Grain.AREA)
+
+
+_AHAH: tuple[PredicateDef, ...] = (
+    _ahah_drive("gp", "GP surgery"),
+    _ahah_drive("dentist", "dentist"),
+    _ahah_drive("pharmacy", "pharmacy"),
+    _ahah_drive("hospital", "hospital",
+                " (v5.1 narrows 'hospital' to a hospital with an A&E; earlier versions count any hospital "
+                "site, so the two are different measures)"),
+    _ahah_drive("leisure_centre", "leisure centre"),
+    _ahah_drive("bluespace", "blue space (water)"),
+    _ahah_drive("fast_food", "fast food outlet", _AHAH_HAZARD),
+    _ahah_drive("gambling", "gambling venue", _AHAH_HAZARD),
+    _ahah_drive("pub_bar", "pub or bar", _AHAH_HAZARD),
+    _ahah_drive("tobacco", "tobacco or vape retailer", _AHAH_HAZARD),
+    _ahah_air("no2", "nitrogen dioxide (NO2)"),
+    _ahah_air("so2", "sulphur dioxide (SO2)"),
+    _ahah_air("pm10", "particulate matter (PM10)"),
+    PredicateDef("ahah_greenspace_ndvi", "real", "single", ("area",),
+                 "Passive greenspace: the median Normalised Difference Vegetation Index (NDVI, about 0 to 1, "
+                 "higher = greener) over the LSOA, from satellite imagery" + _AHAH_COMMON,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    _ahah_pct("combined", "combined AHAH index"),
+    _ahah_pct("health_services", "health services domain (GP, dentist, pharmacy, hospital, leisure centre)"),
+    _ahah_pct("green_blue_space", "green and blue space domain"),
+    _ahah_pct("air_quality", "air quality domain (NO2, SO2, PM10)"),
+    _ahah_pct("retail_hazards", "retail hazards domain (fast food, gambling, pubs and bars, tobacco)"),
+)
+
+# PROPOSED, HOLD (card c1332; phase 11 exit 6, scope 11.6): life expectancy, healthy life expectancy and fuel
+# poverty. Registers countersigned [sig:55e8e1e2]: REQ-arloesidolgellau-837c00 (ONS HLE, UK), c4f429 (ONS LE/HLE
+# by WIMD 2019 quintile, Wales) and 513c1d (Welsh Government fuel poverty, Wales level only [sig:aa8f1685]). One
+# predicate per thing; the sex, age band, period and any quintile or breakdown ride value_en.
+_EXIT6_PLACE = " Of the area's population, never any person or household in it."
+_EXIT6_LIFE = (
+    " A period life table figure in YEARS for the three-year period in value_en, for the sex and age band named "
+    "there (at birth is age band '<1'): the years a person of that age would live if that period's death (and "
+    "health) rates held for life, not a prediction for anyone. Per area as published: a Welsh local authority "
+    "(W06), health board (W11) or Wales (W92), or Wales by WIMD 2019 deprivation quintile where value_en names "
+    "the quintile (1 = most deprived). The confidence interval is in the citation's source, not here.")
+_EXIT6_GAP = (
+    " The gap in YEARS between the most and least deprived fifths of Wales, by WIMD 2019 quintile, for the sex, "
+    "age band and three-year period in value_en, as ONS publishes it: value_en names the measure, the 'range' "
+    "(the least deprived quintile 5 minus the most deprived quintile 1, the years more in the least deprived "
+    "fifth; ONS's note calls it the difference between quintile 1 and quintile 5) or the 'Slope Index of "
+    "Inequality' (the difference across the population-"
+    "weighted regression line from most to least deprived). A period life table figure, not a prediction for "
+    "anyone.")
+_EXIT6_FUEL = (
+    " A modelled estimate for Wales as at the year in value_en (Welsh Government, BREDEM model on the Welsh "
+    "Housing Conditions Survey 2017-18, full income definition), at Wales level only [sig:aa8f1685]: no local "
+    "authority or LSOA figure is published. A household is fuel poor if it would need to spend more than 10% of "
+    "its income on a satisfactory heating regime (severe: more than 20%; at risk: 8 to 10%); value_en names the "
+    "status and, where published, the household or dwelling group. Definitions changed between 2018 and 2021, "
+    "so years are compared with caution.")
+_EXIT6: tuple[PredicateDef, ...] = (
+    PredicateDef("life_expectancy_years", "real", "multi", ("area",),
+                 "Life expectancy." + _EXIT6_LIFE + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("healthy_life_expectancy_years", "real", "multi", ("area",),
+                 "Healthy life expectancy: the years lived in 'good' or 'very good' general health, as people "
+                 "self-reported it in the survey behind the estimate." + _EXIT6_LIFE + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("good_health_life_share_pct", "real", "multi", ("area",),
+                 "The proportion (per cent, 0 to 100) of remaining life spent in 'good' or 'very good' "
+                 "self-reported health, as published beside healthy life expectancy, for the period, sex, age "
+                 "band and any quintile in value_en." + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("life_expectancy_gap_years", "real", "multi", ("area",),
+                 "Life expectancy inequality gap." + _EXIT6_GAP + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("healthy_life_expectancy_gap_years", "real", "multi", ("area",),
+                 "Healthy life expectancy inequality gap ('good' or 'very good' self-reported health)."
+                 + _EXIT6_GAP + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("fuel_poverty_households_count", "int", "multi", ("area",),
+                 "Number of households, rounded by the publisher to the nearest 1,000, by fuel poverty status "
+                 "(value_en)." + _EXIT6_FUEL + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+    PredicateDef("fuel_poverty_households_share", "real", "multi", ("area",),
+                 "Share of households, as a fraction 0 to 1 calculated by the publisher from unrounded figures, "
+                 "by fuel poverty status (value_en)." + _EXIT6_FUEL + _EXIT6_PLACE,
+                 description_cy=CY_PENDING, finest_grain=Grain.AREA),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2587,7 +2707,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
-    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _LLEFELYS_WAGES_WORK
+    + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _LLEFELYS_WAGES_WORK
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2655,7 +2775,9 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + area_in_community (_LLEFELYS_COMMUNITY, a NEW group, card c1232, RATIFIED [sig:1ffc4503]) = 242.
 # + usual_residents_highest_qualification_count (_LLEFELYS_CENSUS, a NEW group, PROPOSED, HOLD, cards c1272/c1281) = 243.
 # + bres_employment_count, enterprises_count, local_units_count (_LLEFELYS_JOBS_FIRMS, a NEW group, PROPOSED, HOLD, cards c1297/c1281) = 246.
-# + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, PROPOSED, HOLD, cards c1317/c1298) = 249.
+# + 19 AHAH predicates (_AHAH, a NEW group, PROPOSED, HOLD, card c1321; phase 11 scope 11.2, F2) = 265.
+# + 7 exit 6 predicates (_EXIT6, a NEW group, PROPOSED, HOLD, card c1332): life and healthy life expectancy, their gaps, good-health share, fuel poverty = 272.
+# + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298) = 275.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
