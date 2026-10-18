@@ -148,6 +148,15 @@ class PredicateDef:
 # ---------------------------------------------------------------------------
 # Building predicates — applies to entity_type 'building'
 # ---------------------------------------------------------------------------
+# PROPOSED, HOLD (cards c1272/c1281; Llefelys AWE-011 build item 2, Census profiles): the grain Huw
+# countersigned on REQ-arloesidolgellau-7d070c [sig:607e58a8], said once and used by TS066 and TS067.
+_LLEFELYS_GRAIN = (
+    " Also SERVED at Welsh community (W04) grain for Llefelys (AWE-011) under the grain rule Huw "
+    "countersigned on REQ-arloesidolgellau-7d070c [sig:607e58a8]: a community's figure is published only "
+    "where it has at least 1,000 residents and 400 households, and smaller communities are shown merged "
+    "with a neighbour or the wider area and labelled. A community figure is approximate: a best-fit sum "
+    "of whole output areas (area_in_community). The output area values behind it are never served.")
+
 _BUILDING: tuple[PredicateDef, ...] = (
     PredicateDef("address", "bilingual", "single", ("building",),
                  "Postal address.", description_cy="Cyfeiriad post",
@@ -635,8 +644,8 @@ _ENERGY_DEMAND: tuple[PredicateDef, ...] = (
                  "employment, unemployed, full-time students, retired, looking after home or family, "
                  "long-term sick or disabled, other; VERBATIM from ONS, subtotals not carried). "
                  "SERVED for general use at LSOA only (Huw 12/10/2026 [sig:691127c0]); the output "
-                 "area grain is built for Lludd (AWE-009) alone and is not served openly. Vintage "
-                 "in the citation.",
+                 "area grain is built for Lludd (AWE-009) alone and is not served openly." + _LLEFELYS_GRAIN
+                 + " Vintage in the citation.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
@@ -2480,6 +2489,21 @@ _LLEFELYS_COMMUNITY: tuple[PredicateDef, ...] = (
     ),
 )
 
+# PROPOSED, HOLD (cards c1272/c1281; Llefelys AWE-011 build item 2): Census 2021 TS067 under
+# REQ-arloesidolgellau-7d070c, Llefelys consumer addition countersigned [sig:607e58a8].
+_LLEFELYS_CENSUS: tuple[PredicateDef, ...] = (
+    PredicateDef("usual_residents_highest_qualification_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents aged 16 years and over in an area by highest "
+                 "level of qualification, for the leaf category named in value_en / value_cy (TS067: "
+                 "no qualifications, level 1 and entry level, level 2, apprenticeship, level 3, level 4 "
+                 "and above, other; VERBATIM from ONS). Served at LSOA and above; the output area "
+                 "grain is built for Llefelys alone and is never served." + _LLEFELYS_GRAIN
+                 + " Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2491,6 +2515,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _CLIMATE_ALLOWANCES + _OPEN_EVIDENCE + _LLUDD_DIALYSIS + _LLUDD_HEALTH + _NHS_ORG
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
+    + _LLEFELYS_CENSUS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2556,6 +2581,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # PROPOSED, card c1181) = 236.
 # + 5 Census 2021 phase 11 predicates (_CENSUS_PHASE11, a NEW group, PROPOSED, HOLD, card c1209) = 241.
 # + area_in_community (_LLEFELYS_COMMUNITY, a NEW group, card c1232, RATIFIED [sig:1ffc4503]) = 242.
+# + usual_residents_highest_qualification_count (_LLEFELYS_CENSUS, a NEW group, PROPOSED, HOLD, cards c1272/c1281) = 243.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

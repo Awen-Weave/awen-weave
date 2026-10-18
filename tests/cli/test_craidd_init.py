@@ -57,7 +57,8 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # (+ 8 WIMD 2025 domain ranks, _WIMD_DOMAINS, card c1012 [sig:0c677900], PROPOSED in 0.2.39 = 198.)
     # (+ 11 CIW care home predicates, _CARE_HOMES, card c1055 [sig:7d9c7466], PROPOSED in 0.2.41 = 209.)
     # (+ area_in_community, _LLEFELYS_COMMUNITY, card c1232, RATIFIED [sig:1ffc4503] = 242.)
-    assert count == 242
+    # (+ usual_residents_highest_qualification_count, _LLEFELYS_CENSUS, cards c1272/c1281, PROPOSED = 243.)
+    assert count == 243
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
