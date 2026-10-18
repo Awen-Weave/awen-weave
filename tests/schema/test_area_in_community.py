@@ -39,4 +39,4 @@ def test_anything_else_is_refused(value):
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

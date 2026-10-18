@@ -78,4 +78,4 @@ def test_older_people_living_alone_is_the_aged_66_category():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

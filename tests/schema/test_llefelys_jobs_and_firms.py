@@ -49,4 +49,4 @@ def test_business_counts_keep_enterprises_and_local_units_apart():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

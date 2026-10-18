@@ -54,7 +54,7 @@ def test_area_in_cluster_is_a_single_entity_ref_on_area():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266
 
 
 # HASP's own domain names, from the dataset page's Method of Collection

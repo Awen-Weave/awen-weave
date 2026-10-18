@@ -46,4 +46,4 @@ def test_economic_activity_keeps_its_lsoa_and_lludd_ruling():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

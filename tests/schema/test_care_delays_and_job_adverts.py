@@ -66,4 +66,4 @@ def test_exactly_these_five_are_new():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

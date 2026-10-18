@@ -95,4 +95,4 @@ def test_a_misspelt_or_unknown_term_is_refused(bad):
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266

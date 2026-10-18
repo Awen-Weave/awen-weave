@@ -57,4 +57,4 @@ def test_food_outlets_count_is_a_derived_area_count_with_no_names():
 
 
 def test_the_registry_holds_265():
-    assert len(PREDICATE_REGISTRY) == 265
+    assert len(PREDICATE_REGISTRY) == 266
