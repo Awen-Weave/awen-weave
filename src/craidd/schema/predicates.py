@@ -156,6 +156,11 @@ _LLEFELYS_GRAIN = (
     "where it has at least 1,000 residents and 400 households, and smaller communities are shown merged "
     "with a neighbour or the wider area and labelled. A community figure is approximate: a best-fit sum "
     "of whole output areas (area_in_community). The output area values behind it are never served.")
+# RATIFIED [sig:8e70be16] (card c1487; Llefelys AWE-011 phase 13 exit L1): the Welsh language tables reach the
+# community grain only through the Llefelys transition naming them, DRAFT on awen-shared#998.
+_LLEFELYS_WELSH_WAIT = (
+    " For TS032 and TS033 that rule is extended by the Llefelys transition on REQ-arloesidolgellau-7d070c "
+    "(awen-shared#998); until Huw countersigns it, no community figure from either table is served.")
 
 _BUILDING: tuple[PredicateDef, ...] = (
     PredicateDef("address", "bilingual", "single", ("building",),
@@ -2459,7 +2464,8 @@ _CENSUS_PHASE11: tuple[PredicateDef, ...] = (
     PredicateDef("usual_residents_welsh_language_skills_count", "int", "multi", ("area",),
                  "Census 2021 count of usual residents aged 3 years and over in a Welsh area by Welsh "
                  "language skills (TS032, the detailed table: each combination of understanding, "
-                 "speaking, reading and writing Welsh, and no skills)" + _C21_DAY + _C21_LEAF + _C21_OA,
+                 "speaking, reading and writing Welsh, and no skills)" + _C21_DAY + _C21_LEAF + _C21_OA
+                 + _LLEFELYS_GRAIN + _LLEFELYS_WELSH_WAIT,
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
@@ -2596,6 +2602,32 @@ _LLEFELYS_SUPPLY: tuple[PredicateDef, ...] = (
     PredicateDef("public_contract_award_value_gbp", "int", "multi", ("area",),
                  "The total value in pounds of those supplier awards, counted only where the award states a value in "
                  "pounds; value_en says how many of the awards carry one, so a total is never read as complete." + _SUPPLY,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
+# RATIFIED [sig:8e70be16] (card c1487, Llefelys Code seat 2; queued 2026-10-20T14:29:57Z): Llefelys AWE-011
+# phase 13. TS033 under REQ-arloesidolgellau-7d070c for exit L1 (skills held); the BRES open access location
+# quotient under REQ-arloesidolgellau-551c2c, one predicate for exits L2 (jobs nearby) and L6 (room to grow).
+_LLEFELYS_PHASE13: tuple[PredicateDef, ...] = (
+    PredicateDef("usual_residents_welsh_speaking_count", "int", "multi", ("area",),
+                 "Census 2021 count of usual residents aged 3 years and over in a Welsh area by whether they "
+                 "can speak Welsh (TS033, Welsh language skills: speaking)" + _C21_DAY + _C21_LEAF
+                 + " Served at LSOA and above; the output area grain is built for Llefelys alone and is never "
+                 "served." + _LLEFELYS_GRAIN + _LLEFELYS_WELSH_WAIT,
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("bres_employment_location_quotient", "real", "multi", ("area",),
+                 "The location quotient of an area's jobs in a broad industry group against Wales, from the "
+                 "Business Register and Employment Survey (ONS), open access tier only: the area's share of its "
+                 "jobs (employment status Employment: employees plus working owners) in the group over Wales's "
+                 "share, for the group and year named in value_en (e.g. 'Employment, 3 : Manufacturing (C), "
+                 "2024'). A quotient above 1 means the group is more concentrated in the area than in Wales. "
+                 "Wales is the sum of the 22 local authorities' rounded figures, as the published file has no "
+                 "Wales row, so a small area's quotient moves with rounding. Published evidence only: no "
+                 "forecast is made from it." + _JF_GRAIN,
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
     ),
@@ -2763,6 +2795,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
     + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
+    + _LLEFELYS_PHASE13
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2834,6 +2867,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + 7 exit 6 predicates (_EXIT6, a NEW group, PROPOSED, HOLD, card c1332): life and healthy life expectancy, their gaps, good-health share, fuel poverty = 272.
 # + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 276.
 # + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after _LLEFELYS_WAGES_WORK (#58, 276) = 278.
+# + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
