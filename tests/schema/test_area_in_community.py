@@ -38,5 +38,5 @@ def test_anything_else_is_refused(value):
     assert not ENTITY_REF_SHAPES["area_in_community"].match(value)
 
 
-def test_the_registry_holds_280():
-    assert len(PREDICATE_REGISTRY) == 280
+def test_the_registry_holds_282():
+    assert len(PREDICATE_REGISTRY) == 282

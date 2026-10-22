@@ -42,8 +42,8 @@ def test_the_predicate_is_text_single_on_nhs_org_not_spatial():
 
 
 def test_the_two_values_are_the_publishers_labels_verbatim():
-    assert EMERGENCY_CARE_FACILITY_TYPES == (MAJOR, OTHER)
-    assert json.loads(PREDICATE_REGISTRY[NAME].constraint_json) == {"enum": [MAJOR, OTHER]}
+    assert EMERGENCY_CARE_FACILITY_TYPES == (MAJOR, OTHER, "ECDS Type 1 & 2 (England)")   # + the English ECDS value (c1545)
+    assert json.loads(PREDICATE_REGISTRY[NAME].constraint_json) == {"enum": [MAJOR, OTHER, "ECDS Type 1 & 2 (England)"]}
 
 
 def test_the_description_says_which_value_is_an_ae_and_names_the_source_and_month():
@@ -79,4 +79,4 @@ def test_the_registry_holds_the_new_count():
     assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 1
 
 
-BASE = 279   # 265 + the 7 exit 6 predicates (c1332, #61) + 3 Llefelys wages and work (#58, c1389); + 2 Llefelys missed supply (#59, c1394); + usual_residents_welsh_speaking_count and bres_employment_location_quotient (c1487)
+BASE = 281   # 265 + the 7 exit 6 predicates (c1332, #61) + 3 Llefelys wages and work (#58, c1389); + 2 Llefelys missed supply (#59, c1394); + usual_residents_welsh_speaking_count and bres_employment_location_quotient (c1487); + premises_in_cluster and premises_in_country (c1545)
