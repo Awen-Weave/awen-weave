@@ -46,7 +46,7 @@ def test_an_unknown_role_is_still_refused(bad):
 
 
 def test_the_list_is_the_three_ruled_13_10_plus_service_and_nothing_else():
-    assert NHS_ORG_ROLES == ("gp-practice", "site", "health-board", "service")
+    assert NHS_ORG_ROLES == ("gp-practice", "site", "health-board", "service", "community-pharmacy", "dental-practice")
     assert "nhs_org_role" in VALUE_CHECKED_PREDICATES
 
 

@@ -189,7 +189,7 @@ def test_entity_ids(etype, eid, ok):
 
 # ── the role ─────────────────────────────────────────────────────────────────────────────────────
 def test_the_role_is_a_closed_domain_the_gate_checks():
-    assert NHS_ORG_ROLES == ("gp-practice", "site", "health-board", "service")   # + service, 0.2.40 [sig:81e81fa4]
+    assert NHS_ORG_ROLES == ("gp-practice", "site", "health-board", "service", "community-pharmacy", "dental-practice")   # + service, 0.2.40 [sig:81e81fa4]
     assert json.loads(PREDICATE_REGISTRY["nhs_org_role"].constraint_json) == {"enum": list(NHS_ORG_ROLES)}
     assert "nhs_org_role" in VALUE_CHECKED_PREDICATES
     for r in NHS_ORG_ROLES:
