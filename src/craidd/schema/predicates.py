@@ -1905,7 +1905,9 @@ _LLUDD_HEALTH: tuple[PredicateDef, ...] = (
 # PROPOSAL-nhs-org-service-role-2026-10-14.md. His reading of SCH-ENTITY-001: nhs_org means an NHS
 # organisation identified by its ODS code, and practice / site / health board are examples, so the role
 # list widens here alone (it was never constitutional), with no constitution change.
-NHS_ORG_ROLES: tuple[str, ...] = ("gp-practice", "site", "health-board", "service")
+# + community-pharmacy and dental-practice, 0.2.52 (card c1545; queued on c1537, Huw's yes [sig:f1f70215]).
+NHS_ORG_ROLES: tuple[str, ...] = ("gp-practice", "site", "health-board", "service", "community-pharmacy",
+                                  "dental-practice")
 
 _NHS_ORG: tuple[PredicateDef, ...] = (
     PredicateDef("nhs_org_role", "text", "single", ("nhs_org",),
@@ -1913,10 +1915,12 @@ _NHS_ORG: tuple[PredicateDef, ...] = (
                  "site (a branch surgery or other premises of a practice or board), health-board, "
                  "service (an NHS body with its own ODS code that delivers care but holds no registered "
                  "patient list, for example an urgent primary care centre; never counted as a GP "
-                 "practice). "
+                 "practice), community-pharmacy (a community pharmacy on ODS edispensary, role RO182), "
+                 "dental-practice (a general dental practice on ODS egdpprac, which lists NHS and private "
+                 "practices alike, so never 'NHS dentist'). "
                  "The role is a claim, not a separate entity type (Q1). Read from the publisher's "
-                 "own list the code appears on (epraccur, wlhbsite, the board list), never guessed "
-                 "from the shape of the code (Q4).",
+                 "own list the code appears on (epraccur, wlhbsite, the board list, edispensary, egdpprac), "
+                 "never guessed from the shape of the code (Q4).",
                  constraint_json=json.dumps({"enum": list(NHS_ORG_ROLES)}),
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
@@ -2767,7 +2771,8 @@ _EXIT6: tuple[PredicateDef, ...] = (
 # total, enforced (validation.py VALUE_CHECKED_PREDICATES), so a renamed label stops a build.
 # ---------------------------------------------------------------------------
 EMERGENCY_CARE_FACILITY_TYPES: tuple[str, ...] = (
-    "Major Emergency Departments", "Other Emergency Departments/Minor Injury Units")
+    "Major Emergency Departments", "Other Emergency Departments/Minor Injury Units",
+    "ECDS Type 1 & 2 (England)")                     # + the English ECDS value, 0.2.52 (card c1545)
 
 _EMERGENCY_CARE: tuple[PredicateDef, ...] = (
     PredicateDef("emergency_care_facility_type", "text", "single", ("nhs_org",),
@@ -2778,9 +2783,38 @@ _EMERGENCY_CARE: tuple[PredicateDef, ...] = (
                  "one month, which semantics_caveat must name: a site's type can change between months "
                  "(Nevill Hall and Royal Gwent reported as major departments before the Grange opened). "
                  "The publisher's field, never inferred from a site's name, size or services; absence "
-                 "means the site does not report emergency department performance, nothing more.",
+                 "means the site does not report emergency department performance, nothing more. "
+                 "For an English site the value is 'ECDS Type 1 & 2 (England)': the site reports Type 1 & 2 "
+                 "attendances in NHS England's ECDS site-level activity (REQ-arloesidolgellau-90d742), which "
+                 "publishes Type 1 and Type 2 together at site level, and its trust reports Type 1 attendances "
+                 "in the same month's A&E figures; semantics_caveat names the month.",
                  constraint_json=json.dumps({"enum": list(EMERGENCY_CARE_FACILITY_TYPES)}),
                  required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
+# Card c1545 (Lludd Code seat 3; queued 2026-10-22T11:37:06Z on c1537, Huw's yes to all five c1537 questions
+# [sig:f1f70215]): Lludd AWE-009 phase 12. Items 12.1 (pharmacies and dental practices as sites, each with a cluster)
+# and 12.3 (English A&Es flagged as English). nhs_org_role and emergency_care_facility_type gain terms in place.
+_LLUDD_PHASE12: tuple[PredicateDef, ...] = (
+    PredicateDef("premises_in_cluster", "entity_ref", "single", ("nhs_org",),
+                 "The GP primary care cluster whose footprint holds the LSOA of the organisation's premises, "
+                 "written `cluster:<publisher code>`: the premises' premises_in_lsoa joined to that LSOA's "
+                 "area_in_cluster (Data Map Wales' footprints, a best fit by registration). LOCATION, NOT "
+                 "MEMBERSHIP: it does not say the organisation belongs to or serves the cluster (that is "
+                 "in_cluster, for a GP practice, from the publisher's cluster list). semantics_caveat must say so. "
+                 "Absent for premises in an LSOA no footprint holds (England).",
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("premises_in_country", "entity_ref", "single", ("nhs_org",),
+                 "The country that contains the organisation's premises, written `area:<country GSS code>` "
+                 "(W92000004 Wales, E92000001 England), from the ONS Postcode Directory's country of the "
+                 "premises postcode. CONTAINMENT only. It flags an English site carried as a destination "
+                 "for Welsh areas, so a Welsh-only figure never counts it.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
@@ -2795,7 +2829,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
     + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
-    + _LLEFELYS_PHASE13
+    + _LLEFELYS_PHASE13 + _LLUDD_PHASE12
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2868,6 +2902,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + aps_estimate_pct, earnings_median_annual_gross_gbp, earnings_median_hourly_excl_overtime_gbp (_LLEFELYS_WAGES_WORK, a NEW group, RATIFIED [sig:018a430b], cards c1317/c1298), after emergency_care_facility_type (_EMERGENCY_CARE, card c1352, 273) = 276.
 # + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after _LLEFELYS_WAGES_WORK (#58, 276) = 278.
 # + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
+# + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

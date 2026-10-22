@@ -59,7 +59,7 @@ def test_the_registry_holds_the_new_count():
     assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == BASE + 7 + 1   # + emergency_care_facility_type (c1352)
 
 
-BASE = 272   # + 3 Llefelys wages and work (#58, c1357, c1389); + 2 Llefelys missed supply (#59, c1394); + usual_residents_welsh_speaking_count and bres_employment_location_quotient (c1487)
+BASE = 274   # + 3 Llefelys wages and work (#58, c1357, c1389); + 2 Llefelys missed supply (#59, c1394); + usual_residents_welsh_speaking_count and bres_employment_location_quotient (c1487); + premises_in_cluster and premises_in_country (c1545)
 
 
 # Card c1375: ONS's life expectancy for local areas publishes a lower and upper confidence interval beside each
