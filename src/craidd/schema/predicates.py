@@ -2637,6 +2637,28 @@ _LLEFELYS_PHASE13: tuple[PredicateDef, ...] = (
     ),
 )
 
+# RATIFIED (card c1626, Llefelys Code seat 2): Llefelys AWE-011 phase 13 L2, the two predicates in the release queue.
+# community_wider_area queued on Huw's ruling [sig:a884ac2d] (card c1595); residents_by_place_of_work_count ruled
+# [sig:3c709fd0], under the Llefelys ODWP01EW transition on REQ-arloesidolgellau-7d070c countersigned [sig:a5012975].
+_LLEFELYS_L2_FLOWS: tuple[PredicateDef, ...] = (
+    PredicateDef("community_wider_area", "entity_ref", "single", ("area",),
+                 "The MSOA (2021) wholly holding this Welsh community (the subject, a W04 community), written "
+                 "`area:<GSS code>`, from the plan's pairs [sig:f0b1fb85]; the community's figures are never split "
+                 "from it: figures served for the MSOA are 'the wider area', never apportioned to the community.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+    PredicateDef("residents_by_place_of_work_count", "int", "multi", ("area",),
+                 "Census 2021 ODWP01EW (location of usual residence and place of work): the count of usual "
+                 "residents aged 16 years and over in employment, or temporarily away from work, living in the "
+                 "subject MSOA, by the place of work named in value_en as an MSOA or local authority code, on "
+                 "census day (21/03/2021). Small flows suppressed as published, never filled. Served at MSOA "
+                 "grain only, as 'the wider area', and never split to a community. Vintage in the citation.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
+    ),
+)
+
 # The complete seed set, in schema-document order; the Egni demand predicates
 # (post-bootstrap, 2026-07-20) then the ratified EPC / planning / BGS-searches
 # groups (2026-07-22) follow the v0.1 seed groups.
@@ -2829,7 +2851,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
     + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
-    + _LLEFELYS_PHASE13 + _LLUDD_PHASE12
+    + _LLEFELYS_PHASE13 + _LLUDD_PHASE12 + _LLEFELYS_L2_FLOWS
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2903,6 +2925,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + public_contract_supplier_awards_count, public_contract_award_value_gbp (_LLEFELYS_SUPPLY, a NEW group, RATIFIED [sig:018a430b], cards c1318/c1304), after _LLEFELYS_WAGES_WORK (#58, 276) = 278.
 # + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
 # + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
+# + community_wider_area, residents_by_place_of_work_count (_LLEFELYS_L2_FLOWS, a NEW group, RATIFIED [sig:a884ac2d] and [sig:3c709fd0], card c1626) = 284.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
