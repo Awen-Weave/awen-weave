@@ -2650,7 +2650,7 @@ _LLEFELYS_L2_FLOWS: tuple[PredicateDef, ...] = (
     ),
     PredicateDef("residents_by_place_of_work_count", "int", "multi", ("area",),
                  "Census 2021 ODWP01EW (location of usual residence and place of work): the count of usual "
-                 "residents aged 16 years and over in employment, or temporarily away from work, living in the "
+                 "residents aged 16 years and over in employment living in the "
                  "subject MSOA, by the place of work named in value_en as an MSOA or local authority code, on "
                  "census day (21/03/2021). Small flows suppressed as published, never filled. Served at MSOA "
                  "grain only, as 'the wider area', and never split to a community. Vintage in the citation.",
