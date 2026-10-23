@@ -48,5 +48,5 @@ def test_business_counts_keep_enterprises_and_local_units_apart():
         assert "employment size band" in d and "not necessarily true zeros" in d
 
 
-def test_the_registry_holds_282():
-    assert len(PREDICATE_REGISTRY) == 282
+def test_the_registry_holds_284():
+    assert len(PREDICATE_REGISTRY) == 284

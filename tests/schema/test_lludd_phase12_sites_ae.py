@@ -96,5 +96,5 @@ def test_the_description_says_type_1_and_2_are_published_together_in_england():
     assert "3ce1cc28" in d                       # the Welsh reading is unchanged
 
 
-def test_the_registry_holds_282():
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 282
+def test_the_registry_holds_284():
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 284
