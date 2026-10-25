@@ -2849,6 +2849,9 @@ _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
 # `not_spatial` subject (validation._grain_declaration_errors), so they cannot widen. Three NEW predicates carry the
 # same readings on `nhs_org` (a practice) and `cluster`; the place predicates are unchanged and keep the board and
 # Wales rows.
+# DEATHS BY PLACE OF DEATH. REQ-arloesidolgellau-987a0f, countersigned by Huw 25/10/2026 [sig:bb825c01]: ONS deaths by
+# council and health board and place of death, with its carve-out (provisional; series ended; all causes, not
+# 'palliative deaths'; registrations or occurrences named).
 # CANCER TREATMENT ROLES. REQ-arloesidolgellau-72d6b3's use transition (c1642), countersigned as a WORKING LIST
 # [sig:f34720ce], with "the role words go to the release queue": the four words of that list, closed, on sites.
 _GP_LIST_COMMON = (" The subject is a GP practice (nhs_org:<ODS code>) or a GP cluster (cluster:<code>, the "
@@ -2884,6 +2887,17 @@ _LLUDD_GP_LIST_AND_CANCER_ROLES: tuple[PredicateDef, ...] = (
                  required_qualifiers=("source_ran_at",),
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("deaths_by_place_of_death_count", "int", "multi", ("area",),
+                 "Number of deaths in a council or health board (the subject, its GSS code) at one place of death "
+                 "(Home, Hospital, Hospice, Care home, Other communal establishment, Elsewhere: the publisher's own "
+                 "labels), for the cause, period and count type named in value_en/value_cy, as ONS publishes it. "
+                 "semantics_caveat must say whether the figures are registrations or occurrences, which are different "
+                 "counts, and that they are provisional. All causes (or COVID-19) only, not 'palliative deaths': never "
+                 "read as deaths from palliative care or any one cause. Of the area, never a person or a place within it.",
+                 required_qualifiers=("source_ran_at", "semantics_caveat"),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.AREA,
     ),
     PredicateDef("cancer_treatment_role", "text", "multi", ("nhs_org",),
                  "A cancer treatment role an NHS site holds, from a closed list: cancer-centre, radiotherapy, "
@@ -2983,7 +2997,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
 # + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
 # + community_wider_area, residents_by_place_of_work_count (_LLEFELYS_L2_FLOWS, a NEW group, RATIFIED [sig:a884ac2d] and [sig:3c709fd0], card c1626) = 284.
-# + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, PROPOSED, HOLD, card c1834) = 288.
+# + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, deaths_by_place_of_death_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, PROPOSED, HOLD, card c1834) = 289.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
