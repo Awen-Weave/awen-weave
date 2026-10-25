@@ -34,5 +34,5 @@ def test_the_flow_count_says_what_it_counts_and_where():
     assert "MSOA or local authority code" in d and "suppressed as published" in d and "never split to a community" in d
 
 
-def test_the_registry_holds_288():
-    assert len(PREDICATE_REGISTRY) == 288
+def test_the_registry_holds_289():
+    assert len(PREDICATE_REGISTRY) == 289

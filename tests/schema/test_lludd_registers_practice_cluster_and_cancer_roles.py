@@ -8,6 +8,10 @@ c1834 (Lludd Code seat 2), widening c1833. PROPOSED, HOLD for the release queue 
     readings on `nhs_org` and `cluster`: gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct and
     gp_list_registered_patients_count. The three place predicates stay exactly as they are (the board and Wales
     rows keep them).
+  * NEW deaths_by_place_of_death_count: ONS deaths by place of death (home, hospital, hospice, care home, other
+    communal establishment, elsewhere) for a council or health board, REQ-arloesidolgellau-987a0f, countersigned by
+    Huw 25/10/2026 [sig:bb825c01] with its carve-out: provisional; the weekly series ended (figures stop in 2023);
+    all causes, not 'palliative deaths'; council and board only; registrations or occurrences named.
   * NEW cancer_treatment_role: the role words of REQ-arloesidolgellau-72d6b3's use transition (c1642, countersigned
     as a WORKING LIST [sig:f34720ce]; "the role words go to the release queue"), on `nhs_org` sites, a closed list.
 """
@@ -111,5 +115,23 @@ def test_the_role_description_says_quoted_working_list_and_not_capacity():
     assert "absence" in d.lower() and "capacity" in d
 
 
-def test_the_registry_holds_288():
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 288
+# ── deaths_by_place_of_death_count ────────────────────────────────────────────────────────────────
+def test_deaths_by_place_is_an_area_count_with_its_carve_out_required():
+    p = PREDICATE_REGISTRY["deaths_by_place_of_death_count"]
+    assert (p.value_type, p.cardinality, p.applies_to_types, p.finest_grain) == ("int", "multi", ("area",), Grain.AREA)
+    assert p.required_qualifiers == ("source_ran_at", "semantics_caveat")
+    d = p.description_en
+    for words in ("place of death", "registrations or occurrences", "not 'palliative deaths'", "provisional",
+                  "value_en", "Hospice"):
+        assert words in d, words
+    assert validate_predicate_def(p) == []
+    ok = _claim("W06000002", "deaths_by_place_of_death_count", value_int=41, value_en="Home, all causes, 2023")
+    assert validate_claim(ok, subject_entity_type="area") == []
+    assert validate_claim(_claim("W06000002", "deaths_by_place_of_death_count", caveat=None, value_int=41),
+                          subject_entity_type="area") != []
+    assert validate_claim(_claim("nhs_org:W95024", "deaths_by_place_of_death_count", value_int=1),
+                          subject_entity_type="nhs_org") != []
+
+
+def test_the_registry_holds_289():
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 289
