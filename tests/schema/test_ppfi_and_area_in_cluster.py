@@ -53,8 +53,8 @@ def test_area_in_cluster_is_a_single_entity_ref_on_area():
     assert "not an exact boundary" in d and "October 2024" in d
 
 
-def test_the_registry_holds_284():
-    assert len(PREDICATE_REGISTRY) == 284
+def test_the_registry_holds_288():
+    assert len(PREDICATE_REGISTRY) == 288
 
 
 # HASP's own domain names, from the dataset page's Method of Collection
