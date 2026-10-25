@@ -2842,6 +2842,63 @@ _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
     ),
 )
 
+# Card c1834 (Lludd Code seat 2), widening c1833. PROPOSED, HOLD for the release queue (c1475 rule 3).
+# THE GP DISEASE REGISTERS AT PRACTICE AND CLUSTER. Huw ruled 25/10/2026 [sig:e88c3c11] that lludd-registers is
+# re-indexed onto practice and cluster codes. disease_register_count, disease_prevalence_crude_pct and
+# registered_patients_count apply to `building` and `area`, and a predicate about places may not also accept a
+# `not_spatial` subject (validation._grain_declaration_errors), so they cannot widen. Three NEW predicates carry the
+# same readings on `nhs_org` (a practice) and `cluster`; the place predicates are unchanged and keep the board and
+# Wales rows.
+# CANCER TREATMENT ROLES. REQ-arloesidolgellau-72d6b3's use transition (c1642), countersigned as a WORKING LIST
+# [sig:f34720ce], with "the role words go to the release queue": the four words of that list, closed, on sites.
+_GP_LIST_COMMON = (" The subject is a GP practice (nhs_org:<ODS code>) or a GP cluster (cluster:<code>, the "
+                   "publisher's cluster code, summed by the publisher over its practices). A count of REGISTERED "
+                   "PATIENTS on the practice's list, not residents, and of the list, never a person on it.")
+CANCER_TREATMENT_ROLES: tuple[str, ...] = ("cancer-centre", "radiotherapy", "chemotherapy", "outpatient")
+
+_LLUDD_GP_LIST_AND_CANCER_ROLES: tuple[PredicateDef, ...] = (
+    PredicateDef("gp_list_disease_register_count", "int", "multi", ("nhs_org", "cluster"),
+                 "Number of patients on a named GP disease register at the reference date (source_ran_at), as "
+                 "disease_register_count reads it for a place: the register named verbatim from the source in "
+                 "value_en/value_cy; lists overlap; register definitions change between years (QAIF to core "
+                 "contract, 2023), so segment before trending; an age-restricted register counts only the ages "
+                 "its name states. A register is PREVALENCE ON THE LIST, not treatment or need." + _GP_LIST_COMMON,
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("gp_list_disease_prevalence_crude_pct", "real", "multi", ("nhs_org", "cluster"),
+                 "Crude prevalence of a named GP disease register, as a percentage of a stated registered-patient "
+                 "denominator, at the reference date, as disease_prevalence_crude_pct reads it for a place: "
+                 "binding=asserted is the publisher's own rate; binding=derived is gp_list_disease_register_count / "
+                 "gp_list_registered_patients_count, with the denominator named in semantics_caveat. CRUDE, never "
+                 "age-standardised." + _GP_LIST_COMMON,
+                 required_qualifiers=("source_ran_at", "semantics_caveat"),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("gp_list_registered_patients_count", "int", "multi", ("nhs_org", "cluster"),
+                 "Patients registered with the practice (or summed to the cluster) at the extract date, for the sex "
+                 "and five-year age band named in value_en/value_cy, as registered_patients_count reads it for a "
+                 "place. Distinct from practice_population_count (the deprivation dataset's total)." + _GP_LIST_COMMON,
+                 required_qualifiers=("source_ran_at",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("cancer_treatment_role", "text", "multi", ("nhs_org",),
+                 "A cancer treatment role an NHS site holds, from a closed list: cancer-centre, radiotherapy, "
+                 "chemotherapy, outpatient. One claim per role. Each role rests on a sentence quoted from the "
+                 "responsible body's own page, whose address is the evidence_uri and whose date semantics_caveat "
+                 "names, from REQ-arloesidolgellau-72d6b3's WORKING LIST: it is not a complete directory, absence "
+                 "means no sentence was quoted, never that the site gives no such care, and a role says nothing of "
+                 "capacity, hours or waiting times.",
+                 constraint_json=json.dumps({"enum": list(CANCER_TREATMENT_ROLES)}),
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2851,7 +2908,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _WIMD_DOMAINS + _CARE_HOMES + _CARE_DELAYS_AND_ADVERTS
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
     + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
-    + _LLEFELYS_PHASE13 + _LLUDD_PHASE12 + _LLEFELYS_L2_FLOWS
+    + _LLEFELYS_PHASE13 + _LLUDD_PHASE12 + _LLEFELYS_L2_FLOWS + _LLUDD_GP_LIST_AND_CANCER_ROLES
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2926,6 +2983,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
 # + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
 # + community_wider_area, residents_by_place_of_work_count (_LLEFELYS_L2_FLOWS, a NEW group, RATIFIED [sig:a884ac2d] and [sig:3c709fd0], card c1626) = 284.
+# + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, PROPOSED, HOLD, card c1834) = 288.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in

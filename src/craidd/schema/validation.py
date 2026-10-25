@@ -93,7 +93,7 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 # stays unenforced, as decision 7 left it.
 VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided",
                                                      "nhs_org_role", "care_home_supports",
-                                                     "emergency_care_facility_type"})
+                                                     "emergency_care_facility_type", "cancer_treatment_role"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
 _VALUE_CHECK_BASIS: dict[str, str] = {
     "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
@@ -102,6 +102,7 @@ _VALUE_CHECK_BASIS: dict[str, str] = {
     "nhs_org_role": "closed domain, card c0944 (PROPOSED with constitution 0.1.10); the role is a claim, Q1 [sig:8f0740b4]",
     "care_home_supports": "closed domain, card c1055 (PROPOSED in 0.2.41); six CIW terms enforced, Huw [sig:7d9c7466]",
     "emergency_care_facility_type": "closed domain, card c1352 (PROPOSED); StatsWales 3ce1cc28's own Hospital Type labels, verbatim [sig:e8842016]",
+    "cancer_treatment_role": "closed domain, card c1834 (PROPOSED); 72d6b3's working list of four role words [sig:f34720ce]",
 }
 
 
