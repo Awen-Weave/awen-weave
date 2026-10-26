@@ -57,7 +57,7 @@ def test_the_role_description_names_the_two_ods_lists_and_never_nhs_dentist():
 def test_each_new_one_is_a_single_entity_ref_on_nhs_org(name):
     p = PREDICATE_REGISTRY[name]
     assert (p.value_type, p.cardinality, p.applies_to_types, p.finest_grain) == (
-        "entity_ref", "single", ("nhs_org",), Grain.NOT_SPATIAL)
+        "entity_ref", "single", ("nhs_org", "care_establishment"), Grain.NOT_SPATIAL)   # + 0.1.11 (c1878)
     assert p.description_cy == CY_PENDING
 
 
@@ -96,5 +96,5 @@ def test_the_description_says_type_1_and_2_are_published_together_in_england():
     assert "3ce1cc28" in d                       # the Welsh reading is unchanged
 
 
-def test_the_registry_holds_289():
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 289
+def test_the_registry_holds_297():
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 297

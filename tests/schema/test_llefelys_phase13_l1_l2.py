@@ -52,5 +52,5 @@ def test_the_quotient_says_how_it_is_made():
     assert "never split to a community" in d and "no forecast" in d
 
 
-def test_the_registry_holds_289():
-    assert len(PREDICATE_REGISTRY) == 289
+def test_the_registry_holds_297():
+    assert len(PREDICATE_REGISTRY) == 297

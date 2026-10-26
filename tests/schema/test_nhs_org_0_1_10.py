@@ -22,7 +22,6 @@ import json
 
 import pytest
 
-from craidd import CONSTITUTION_TAG, CONSTITUTION_VERSION
 from craidd.constitution_vendor import __file__ as _vendor_init
 from craidd.schema.entity_types import VALID_ENTITY_TYPES
 from craidd.schema.grain import Grain, grain_of_entity_type
@@ -49,17 +48,12 @@ def _ok(pred, subject="nhs_org:W00005", qualifiers=None, etype="nhs_org", **valu
     return validate_claim(_claim(pred, subject, qualifiers, **value), subject_entity_type=etype)
 
 
-# ── the release pin (version-bound: retires at the next constitution release) ───────────────────
-def test_the_package_pins_constitution_0_1_10():
-    assert CONSTITUTION_VERSION == "0.1.10"
-    assert CONSTITUTION_TAG == "v0.1.10"
-
-
+# ── the release pin moved to test_care_establishment_0_1_11.py at 0.1.11 (card c1878) ──────────
 def test_the_vendored_entity_schema_carries_both_types():
     from pathlib import Path
     schema = json.loads((Path(_vendor_init).parent / "schema" / "entity.schema.json").read_text())
     enum = schema["properties"]["entity_type"]["enum"]
-    assert enum[-2:] == ["nhs_org", "cluster"]
+    assert enum[12:14] == ["nhs_org", "cluster"]                 # 0.1.11 appends care_establishment
     assert set(enum) == VALID_ENTITY_TYPES
 
 
@@ -91,7 +85,9 @@ def test_the_eight_are_registered_once_well_formed_on_nhs_org_and_not_spatial():
         assert names.count(n) == 1, n
         p = PREDICATE_REGISTRY[n]
         assert validate_predicate_def(p) == [], n
-        assert p.applies_to_types == ("nhs_org",), n
+        # the premises family also takes care_establishment since 0.1.11 (card c1878)
+        assert p.applies_to_types == (("nhs_org", "care_establishment") if n.startswith("premises_")
+                                      else ("nhs_org",)), n
         assert p.finest_grain is Grain.NOT_SPATIAL, n
         assert p.cardinality == "single", n
         assert p.description_cy == CY_PENDING, n
