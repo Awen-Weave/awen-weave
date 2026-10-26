@@ -42,5 +42,5 @@ def test_the_value_says_stated_only_and_how_many_carry_one():
     assert "only where the award states a value" in d and "how many" in d and "pounds" in d
 
 
-def test_the_registry_holds_284():
-    assert len(PREDICATE_REGISTRY) == 284
+def test_the_registry_holds_289():
+    assert len(PREDICATE_REGISTRY) == 289
