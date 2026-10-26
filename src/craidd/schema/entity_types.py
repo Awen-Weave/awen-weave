@@ -1,5 +1,5 @@
 """
-Controlled vocabulary for entity.entity_type — the fourteen v0.1 entity types.
+Controlled vocabulary for entity.entity_type — the fifteen v0.1 entity types.
 
 Source of truth: design/v0.1-schema.md §3.4. The DDL CHECK constraint in
 src/craidd/storage/ mirrors VALID_ENTITY_TYPES exactly — keep the two in
@@ -49,6 +49,13 @@ ENTITY_TYPES: dict[str, str] = {
     # `cluster:<publisher code>`; a bare code is refused (validation.org_subject_errors).
     "nhs_org": "An NHS organisation identified by its ODS code — a GP practice, a site, or a health board. Not a place.",
     "cluster": "A GP cluster — a publisher-defined group of practices, keyed by the publisher's code. Not a place.",
+    # 0.1.11 (card c1878; signed by Huw as Llys 26/10/2026 [sig:0ad68cf6], ruled [sig:d458cafe], Class A scrutiny c1852):
+    # a registered care establishment that is not an NHS body. NOT A PLACE (grain.py), as nhs_org. Written
+    # `care_establishment:<register>-<id>` in lower case: hiw-m and four digits (minted, from the catalogue's ledger) or a
+    # CIW URN lower-cased; a bare id is refused (validation.ORG_SUBJECT_SHAPES).
+    "care_establishment": ("A health or social care establishment with premises the public attends, as a Welsh regulator "
+                           "registers it (HIW or CIW). Not an NHS body or unit (that is nhs_org); not a service at a "
+                           "private dwelling (domiciliary support, childminding). Not a place."),
 }
 
 # The set used for fast membership checks and by the validation contract.
@@ -56,5 +63,5 @@ VALID_ENTITY_TYPES: frozenset[str] = frozenset(ENTITY_TYPES)
 
 
 def is_valid_entity_type(entity_type: str) -> bool:
-    """True if entity_type is one of the fourteen v0.1 controlled types (`site` 0.1.4, `station` 0.1.5, `coastal_cell` 0.1.6, `nhs_org` and `cluster` 0.1.10)."""
+    """True if entity_type is one of the fourteen v0.1 controlled types (`site` 0.1.4, `station` 0.1.5, `coastal_cell` 0.1.6, `nhs_org` and `cluster` 0.1.10, `care_establishment` 0.1.11)."""
     return entity_type in VALID_ENTITY_TYPES

@@ -93,7 +93,8 @@ _VALUE_COLUMNS: dict[str, tuple[str, ...]] = {
 # stays unenforced, as decision 7 left it.
 VALUE_CHECKED_PREDICATES: frozenset[str] = frozenset({"source_kind", "decision_outcome", "service_provided",
                                                      "nhs_org_role", "care_home_supports",
-                                                     "emergency_care_facility_type", "cancer_treatment_role"})
+                                                     "emergency_care_facility_type", "cancer_treatment_role",
+                                                     "registration_status", "care_establishment_type"})
 _CONSTITUTION_FOR_VALUE_CHECK = "0.1.9 SCH-ENTITY-001 $defs.source_kind"
 _VALUE_CHECK_BASIS: dict[str, str] = {
     "source_kind": f"closed domain, constitution {_CONSTITUTION_FOR_VALUE_CHECK}",
@@ -103,6 +104,8 @@ _VALUE_CHECK_BASIS: dict[str, str] = {
     "care_home_supports": "closed domain, card c1055 (PROPOSED in 0.2.41); six CIW terms enforced, Huw [sig:7d9c7466]",
     "emergency_care_facility_type": "closed domain, card c1352 (PROPOSED); StatsWales 3ce1cc28's own Hospital Type labels, verbatim [sig:e8842016]",
     "cancer_treatment_role": "closed domain, card c1834, RATIFIED [sig:699b0367]; 72d6b3's working list of four role words [sig:f34720ce]",
+    "registration_status": "closed domain, card c1878, constitution 0.1.11 [sig:0ad68cf6]: registered, de-registered",
+    "care_establishment_type": "closed domain, card c1878 [sig:0ad68cf6]: the register's types ruled so far (C9: each further type needs a ruling)",
 }
 
 
@@ -113,7 +116,12 @@ _VALUE_CHECK_BASIS: dict[str, str] = {
 ORG_SUBJECT_SHAPES: dict[str, "re.Pattern[str]"] = {
     "nhs_org": re.compile(r"^nhs_org:[A-Z0-9]{3,8}$"),
     "cluster": re.compile(r"^cluster:[A-Za-z0-9][A-Za-z0-9_-]{0,31}$"),
+    # 0.1.11 (card c1878, [sig:0ad68cf6]; r2 C1, C2): lower case only; a minted HIW id is exactly m and four digits, a
+    # CIW id its URN lower-cased; the m-and-digits form belongs to minted ids alone.
+    "care_establishment": re.compile(r"^care_establishment:(hiw-m[0-9]{4}|ciw-[a-z]{3}-[0-9]{8}(-[a-z]{4})?)$"),
 }
+_SUBJECT_FORM = {"nhs_org": "nhs_org:<code>", "cluster": "cluster:<code>",
+                 "care_establishment": "care_establishment:<register>-<id>"}
 
 # The value shapes of the _NHS_ORG references. "Contained in" points at an `area` on the gazetteer
 # spine; "run by" and cluster membership point at the two new kinds. A reference of the wrong kind
@@ -125,6 +133,7 @@ ENTITY_REF_SHAPES: dict[str, "re.Pattern[str]"] = {
     "premises_in_health_board": re.compile(r"^area:W11\d{6}$"),
     "run_by": ORG_SUBJECT_SHAPES["nhs_org"],
     "in_cluster": ORG_SUBJECT_SHAPES["cluster"],
+    "also_listed_on_ods": ORG_SUBJECT_SHAPES["nhs_org"],      # 0.1.11 (c1878): a care establishment also on an ODS list
     # PROPOSED, card c1232: an Output Area's best-fit community, parish or non-civil-parished area.
     "area_in_community": re.compile(r"^area:(W04|E04|E43)\d{6}$"),
 }
@@ -141,11 +150,11 @@ def org_subject_errors(subject_id: Any, applies_to: Collection[str]) -> list[str
     if any(ORG_SUBJECT_SHAPES[k].match(s) for k in sorted(kinds)):
         return []
     if ":" not in s:
-        return [f"subject '{s}' is a bare code: an NHS organisation or cluster subject is written "
-                f"with its type ({' or '.join(f'{k}:<code>' for k in sorted(kinds))}), never "
+        return [f"subject '{s}' is a bare code: an NHS organisation, cluster or care establishment subject is "
+                f"written with its type ({' or '.join(_SUBJECT_FORM[k] for k in sorted(kinds))}), never "
                 f"typed from the shape of its code (Q4, Llys 10/10/2026 [sig:02dd6f4c])"]
     return [f"subject '{s}' is not a well-formed {' or '.join(sorted(kinds))} subject "
-            f"({' or '.join(f'{k}:<code>' for k in sorted(kinds))})"]
+            f"({' or '.join(_SUBJECT_FORM[k] for k in sorted(kinds))})"]
 
 
 def _is_empty(value: Any) -> bool:
@@ -310,7 +319,7 @@ def validate_entity(
     elif entity_type in ORG_SUBJECT_SHAPES and not ORG_SUBJECT_SHAPES[entity_type].match(str(entity_id or "")):
         errors.append(
             f"entity '{entity_id}': an '{entity_type}' entity_id is written "
-            f"'{entity_type}:<code>' (Q4, Llys 10/10/2026 [sig:02dd6f4c]); a bare or "
+            f"'{_SUBJECT_FORM[entity_type]}' (Q4, Llys 10/10/2026 [sig:02dd6f4c]); a bare or "
             f"mistyped code is refused"
         )
     if visibility is not None:

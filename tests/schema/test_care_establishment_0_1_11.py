@@ -87,7 +87,7 @@ def test_a_bare_id_is_refused_with_its_reason():
 
 @pytest.mark.parametrize("eid,ok", [(HOSPICE, True), ("hiw-m0010", False), ("care_establishment:HIW-m0010", False)])
 def test_entity_ids(eid, ok):
-    assert (validate_entity({"entity_id": eid, "entity_type": "care_establishment"}) == []) is ok
+    assert (validate_entity(eid, "care_establishment") == []) is ok
 
 
 # ── the premises family widened ──────────────────────────────────────────────────────────────────

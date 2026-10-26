@@ -189,6 +189,9 @@ ENTITY_TYPE_GRAIN: dict[str, Grain] = {
     # predicates (_NHS_ORG) and not `gp_location` widened.
     "nhs_org": Grain.NOT_SPATIAL,
     "cluster": Grain.NOT_SPATIAL,
+    # 0.1.11 (card c1878, [sig:0ad68cf6]): a registered care establishment is not where it is, as nhs_org; its premises
+    # are stated claims (the premises_* family, widened to it).
+    "care_establishment": Grain.NOT_SPATIAL,
 }
 
 _missing = VALID_ENTITY_TYPES - set(ENTITY_TYPE_GRAIN)

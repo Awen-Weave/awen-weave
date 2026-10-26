@@ -1925,7 +1925,7 @@ _NHS_ORG: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_point", "geom", "single", ("nhs_org",),
+    PredicateDef("premises_point", "geom", "single", ("nhs_org", "care_establishment"),
                  "A map point for the organisation's premises, as WKT in EPSG:4326. For a practice "
                  "or site built from its postcode it is the ONS postcode centroid: it locates the "
                  "POSTCODE UNIT, not the door, which is adequate for a search and not for a site "
@@ -1935,26 +1935,26 @@ _NHS_ORG: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_postcode", "text", "single", ("nhs_org",),
+    PredicateDef("premises_postcode", "text", "single", ("nhs_org", "care_establishment"),
                  "The postcode of the organisation's premises, as the publisher gives it (a "
                  "practice's epraccur postcode, a site's wlhbsite address postcode).",
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_in_lsoa", "entity_ref", "single", ("nhs_org",),
+    PredicateDef("premises_in_lsoa", "entity_ref", "single", ("nhs_org", "care_establishment"),
                  "The 2021 LSOA that contains the organisation's premises point, written "
                  "`area:<LSOA GSS code>`. CONTAINMENT of the premises only: it does not say whom "
                  "the organisation serves.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_in_authority", "entity_ref", "single", ("nhs_org",),
+    PredicateDef("premises_in_authority", "entity_ref", "single", ("nhs_org", "care_establishment"),
                  "The local authority (district or unitary) that contains the organisation's "
                  "premises point, written `area:<GSS code>`. CONTAINMENT only.",
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_in_health_board", "entity_ref", "single", ("nhs_org",),
+    PredicateDef("premises_in_health_board", "entity_ref", "single", ("nhs_org", "care_establishment"),
                  "The Welsh local health board whose area contains the organisation's premises, "
                  "written `area:<W11 GSS code>`. A fixed lookup from the containing authority: "
                  "each board is made of whole authorities. Wales only. CONTAINMENT, NOT GOVERNANCE: "
@@ -2821,7 +2821,7 @@ _EMERGENCY_CARE: tuple[PredicateDef, ...] = (
 # [sig:f1f70215]): Lludd AWE-009 phase 12. Items 12.1 (pharmacies and dental practices as sites, each with a cluster)
 # and 12.3 (English A&Es flagged as English). nhs_org_role and emergency_care_facility_type gain terms in place.
 _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
-    PredicateDef("premises_in_cluster", "entity_ref", "single", ("nhs_org",),
+    PredicateDef("premises_in_cluster", "entity_ref", "single", ("nhs_org", "care_establishment"),
                  "The GP primary care cluster whose footprint holds the LSOA of the organisation's premises, "
                  "written `cluster:<publisher code>`: the premises' premises_in_lsoa joined to that LSOA's "
                  "area_in_cluster (Data Map Wales' footprints, a best fit by registration). LOCATION, NOT "
@@ -2832,7 +2832,7 @@ _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
                  description_cy=CY_PENDING,
         finest_grain=Grain.NOT_SPATIAL,
     ),
-    PredicateDef("premises_in_country", "entity_ref", "single", ("nhs_org",),
+    PredicateDef("premises_in_country", "entity_ref", "single", ("nhs_org", "care_establishment"),
                  "The country that contains the organisation's premises, written `area:<country GSS code>` "
                  "(W92000004 Wales, E92000001 England), from the ONS Postcode Directory's country of the "
                  "premises postcode. CONTAINMENT only. It flags an English site carried as a destination "
@@ -2914,6 +2914,72 @@ _LLUDD_GP_LIST_AND_CANCER_ROLES: tuple[PredicateDef, ...] = (
     ),
 )
 
+# Card c1878: awen-weave 0.2.55 with constitution v0.1.11 (care_establishment, 14 -> 15), signed by Huw as Llys
+# 26/10/2026 [sig:0ad68cf6] on revision 2 of the care_establishment proposal (ruled [sig:d458cafe]; Class A scrutiny
+# c1852). The premises_* family above takes care_establishment too (both kinds are not_spatial, so the grain rule allows
+# it). These eight are the establishment's own facts, as its register publishes them. Telephone numbers and named
+# persons are never carried. The first reader is the HIW hospice directory (REQ-arloesidolgellau-3d270f).
+CARE_ESTABLISHMENT_TYPES: tuple[str, ...] = ("Hospices",)       # C9: each further type needs its own ruling
+REGISTRATION_STATUSES: tuple[str, ...] = ("registered", "de-registered")
+
+_CARE_ESTABLISHMENT: tuple[PredicateDef, ...] = (
+    PredicateDef("registered_name", "text", "single", ("care_establishment",),
+                 "The establishment's name as its register publishes it, verbatim (HIW: 'Service name'). A status the "
+                 "register writes into the name, such as HIW's '(de-registered DD/MM/YYYY)', is not part of it: it is "
+                 "registration_status.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("care_establishment_type", "text", "single", ("care_establishment",),
+                 "The register's own type for the establishment, verbatim, from a closed list of the types ruled so "
+                 "far: 'Hospices' (HIW). Another type needs its own ruling before it is admitted.",
+                 constraint_json=json.dumps({"enum": list(CARE_ESTABLISHMENT_TYPES)}),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("care_services_provided", "text", "multi", ("care_establishment",),
+                 "A service the register lists for the establishment, verbatim, one claim per service. What the "
+                 "register lists, never a judgement of the care given.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("care_sector", "text", "single", ("care_establishment",),
+                 "The register's sector for the establishment, verbatim (HIW: 'Private/Independent'). A row whose "
+                 "sector is NHS is not a care_establishment (that is an nhs_org): the reader refuses it and lists it "
+                 "for a seat.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("last_inspection_date", "date", "single", ("care_establishment",),
+                 "The date of the regulator's last inspection as its register publishes it. Absent when the register "
+                 "gives none; never inferred.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("registration_status", "text", "single", ("care_establishment",),
+                 "Whether the establishment is registered with its regulator: 'registered' or 'de-registered', from a "
+                 "closed list. A de-registered establishment keeps its key; the date the register gives, where it "
+                 "gives one, is named in semantics_caveat.",
+                 constraint_json=json.dumps({"enum": list(REGISTRATION_STATUSES)}),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("register_reference", "text", "single", ("care_establishment",),
+                 "An identifier the register publishes for the establishment, verbatim, where it publishes one. It is "
+                 "never the key: a minted key stays when a register later publishes identifiers.",
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+    PredicateDef("also_listed_on_ods", "entity_ref", "multi", ("care_establishment",),
+                 "An NHS ODS list on which the establishment also appears, written nhs_org:<ODS code>, one claim per "
+                 "code. Made only on a postcode-and-name match a seat confirms; the two subjects stay separate. Listing "
+                 "on an ODS file is not a claim that the NHS runs the establishment, and semantics_caveat must say so.",
+                 required_qualifiers=("semantics_caveat",),
+                 description_cy=CY_PENDING,
+        finest_grain=Grain.NOT_SPATIAL,
+    ),
+)
+
 SEED_PREDICATES: tuple[PredicateDef, ...] = (
     _BUILDING + _TENANCY + _EVENT + _RESEARCH_QUESTION + _SOURCE + _TOWN
     + _ENERGY_DEMAND + _HYDROLOGY + _EPC + _PLANNING + _BGS_SEARCHES + _HERITAGE_SEARCHES
@@ -2924,6 +2990,7 @@ SEED_PREDICATES: tuple[PredicateDef, ...] = (
     + _PHASE11_ROUND2 + _PPFI_AND_CLUSTER + _CENSUS_PHASE11 + _LLEFELYS_COMMUNITY
     + _LLEFELYS_CENSUS + _LLEFELYS_JOBS_FIRMS + _AHAH + _EXIT6 + _EMERGENCY_CARE + _LLEFELYS_WAGES_WORK + _LLEFELYS_SUPPLY
     + _LLEFELYS_PHASE13 + _LLUDD_PHASE12 + _LLEFELYS_L2_FLOWS + _LLUDD_GP_LIST_AND_CANCER_ROLES
+    + _CARE_ESTABLISHMENT
 )
 
 # Name -> PredicateDef, for fast lookup by the validation contract.
@@ -2999,6 +3066,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
 # + community_wider_area, residents_by_place_of_work_count (_LLEFELYS_L2_FLOWS, a NEW group, RATIFIED [sig:a884ac2d] and [sig:3c709fd0], card c1626) = 284.
 # + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, deaths_by_place_of_death_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, RATIFIED [sig:699b0367], cards c1834/c1842) = 289.
+# + registered_name, care_establishment_type, care_services_provided, care_sector, last_inspection_date, registration_status, register_reference, also_listed_on_ods (_CARE_ESTABLISHMENT, a NEW group with constitution 0.1.11, signed [sig:0ad68cf6], card c1878); the seven premises_* take care_establishment = 297.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
