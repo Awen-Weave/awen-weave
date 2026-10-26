@@ -1,5 +1,5 @@
 """Lludd (AWE-009): the GP disease registers at practice and cluster, and cancer treatment roles on sites. Card
-c1834 (Lludd Code seat 2), widening c1833. PROPOSED, HOLD for the release queue (c1475 rule 3) until Huw ratifies.
+c1834 (Lludd Code seat 2), widening c1833. RATIFIED by Huw 26/10/2026 [sig:699b0367]; released in 0.2.54 (card c1842).
 
   * Huw ruled 25/10/2026 [sig:e88c3c11] that lludd-registers is re-indexed onto practice (`nhs_org:<ODS code>`) and
     cluster (`cluster:<code>`). disease_register_count, disease_prevalence_crude_pct and registered_patients_count

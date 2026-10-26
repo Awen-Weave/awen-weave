@@ -2842,7 +2842,7 @@ _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
     ),
 )
 
-# Card c1834 (Lludd Code seat 2), widening c1833. PROPOSED, HOLD for the release queue (c1475 rule 3).
+# Card c1834 (Lludd Code seat 2), widening c1833. RATIFIED by Huw 26/10/2026 [sig:699b0367]; released in 0.2.54 (card c1842).
 # THE GP DISEASE REGISTERS AT PRACTICE AND CLUSTER. Huw ruled 25/10/2026 [sig:e88c3c11] that lludd-registers is
 # re-indexed onto practice and cluster codes. disease_register_count, disease_prevalence_crude_pct and
 # registered_patients_count apply to `building` and `area`, and a predicate about places may not also accept a
@@ -2853,7 +2853,8 @@ _LLUDD_PHASE12: tuple[PredicateDef, ...] = (
 # council and health board and place of death, with its carve-out (provisional; series ended; all causes, not
 # 'palliative deaths'; registrations or occurrences named).
 # CANCER TREATMENT ROLES. REQ-arloesidolgellau-72d6b3's use transition (c1642), countersigned as a WORKING LIST
-# [sig:f34720ce], with "the role words go to the release queue": the four words of that list, closed, on sites.
+# [sig:f34720ce], with "the role words go to the release queue": the four words of that list, closed, on sites. Served as
+# the role word and the page URL only, never page text [sig:e57219af].
 _GP_LIST_COMMON = (" The subject is a GP practice (nhs_org:<ODS code>) or a GP cluster (cluster:<code>, the "
                    "publisher's cluster code, summed by the publisher over its practices). A count of REGISTERED "
                    "PATIENTS on the practice's list, not residents, and of the list, never a person on it.")
@@ -2997,7 +2998,7 @@ PREDICATE_REGISTRY: dict[str, PredicateDef] = {
 # + usual_residents_welsh_speaking_count, bres_employment_location_quotient (_LLEFELYS_PHASE13, a NEW group, RATIFIED [sig:8e70be16], card c1487); usual_residents_welsh_language_skills_count description only = 280.
 # + premises_in_cluster, premises_in_country (_LLUDD_PHASE12, a NEW group, card c1545, Huw's yes [sig:f1f70215]); nhs_org_role and emergency_care_facility_type gain terms inside their groups = 282.
 # + community_wider_area, residents_by_place_of_work_count (_LLEFELYS_L2_FLOWS, a NEW group, RATIFIED [sig:a884ac2d] and [sig:3c709fd0], card c1626) = 284.
-# + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, deaths_by_place_of_death_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, PROPOSED, HOLD, card c1834) = 289.
+# + gp_list_disease_register_count, gp_list_disease_prevalence_crude_pct, gp_list_registered_patients_count, deaths_by_place_of_death_count, cancer_treatment_role (_LLUDD_GP_LIST_AND_CANCER_ROLES, a NEW group, RATIFIED [sig:699b0367], cards c1834/c1842) = 289.
 #
 # THOSE LAST FOUR ARE WHY THE TALLY WAS STALE, and the shape is worth naming rather than just
 # correcting: every addition BEFORE them arrived as a NEW group, and adding a group is visible in
