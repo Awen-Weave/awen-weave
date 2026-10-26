@@ -133,5 +133,5 @@ def test_deaths_by_place_is_an_area_count_with_its_carve_out_required():
                           subject_entity_type="nhs_org") != []
 
 
-def test_the_registry_holds_289():
-    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 289
+def test_the_registry_holds_297():
+    assert len(PREDICATE_REGISTRY) == len(SEED_PREDICATES) == 297

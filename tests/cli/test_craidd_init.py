@@ -62,7 +62,7 @@ def test_init_seeds_predicate_registry(tmp_path: Path, craidd_init, capsys):
     # (+ the 19 AHAH predicates, _AHAH, card c1321, PROPOSED = 265.)
     # (+ the 7 exit 6 predicates, _EXIT6, card c1332, PROPOSED = 272.)
     # (+ emergency_care_facility_type, _EMERGENCY_CARE, card c1352, PROPOSED = 273.)
-    assert count == 289
+    assert count == 297
 
 
 def test_init_refuses_non_empty_db(tmp_path: Path, craidd_init, capsys):
