@@ -125,7 +125,8 @@ def test_registration_status_is_closed_and_checked():
 
 
 def test_the_type_is_closed_to_hospices_until_another_is_ruled():
-    assert CARE_ESTABLISHMENT_TYPES == ("Hospices",)
+    """CQC's "Hospice" follows HIW's "Hospices" from Huw's decision <SIG> (card c1910)."""
+    assert CARE_ESTABLISHMENT_TYPES[0] == "Hospices"
     assert "care_establishment_type" in VALUE_CHECKED_PREDICATES
     assert _ok("care_establishment_type", value_text="Hospices") == []
     assert _ok("care_establishment_type", value_text="Hospitals") != []

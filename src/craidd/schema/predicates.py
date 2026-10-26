@@ -2919,7 +2919,9 @@ _LLUDD_GP_LIST_AND_CANCER_ROLES: tuple[PredicateDef, ...] = (
 # c1852). The premises_* family above takes care_establishment too (both kinds are not_spatial, so the grain rule allows
 # it). These eight are the establishment's own facts, as its register publishes them. Telephone numbers and named
 # persons are never carried. The first reader is the HIW hospice directory (REQ-arloesidolgellau-3d270f).
-CARE_ESTABLISHMENT_TYPES: tuple[str, ...] = ("Hospices",)       # C9: each further type needs its own ruling
+CARE_ESTABLISHMENT_TYPES: tuple[str, ...] = ("Hospices", "Hospice")  # C9: each further type needs its own ruling;
+# "Hospices" is HIW's label, "Hospice" CQC's "Service types" value, the same service type in each register's words
+# (Huw's decision <SIG>, card c1910; not [sig:092052fa]). Each reader emits only its own register's label.
 REGISTRATION_STATUSES: tuple[str, ...] = ("registered", "de-registered")
 
 _CARE_ESTABLISHMENT: tuple[PredicateDef, ...] = (
