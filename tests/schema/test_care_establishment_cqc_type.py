@@ -1,4 +1,4 @@
-"""CQC's own label for a hospice in the closed type domain: Huw's decision <SIG> (card c1910), separate from [sig:092052fa].
+"""CQC's own label for a hospice in the closed type domain: Huw's decision [sig:8604b563] (card c1910), separate from [sig:092052fa].
 
 Scrutiny c1905, P1: adding a value to the closed care_establishment_type domain is a C9 ruling of its own. "Hospice" is
 CQC's "Service types" value for the same service type HIW calls "Hospices"; nothing else is admitted.

@@ -1,9 +1,9 @@
 {
  "repo": "Awen-Weave/awen-constitution",
- "tag": "v0.1.11",
- "commit": "f4f07e0487deb1f02f93fb4a83119088a9efcb2f",
+ "tag": "v0.1.12",
+ "commit": "d28dc1f79073176af9a96d9a648375ea7d1958f2",
  "vendored": "schema/ + VERSION",
  "pin_kind": "machine-layer (moves only when SCH-*/VOC-*/POL-* change)",
- "vendored_from": "git archive v0.1.11 schema VERSION (awen-constitution tag v0.1.11, tag object e617e668, commit f4f07e04, tagged by Huw as Llys after his signature 26/10/2026 [sig:0ad68cf6]; read back with ls-remote on card c1878). Every vendored file is byte-identical to the tag (checked file by file by sha256).",
+ "vendored_from": "git archive v0.1.12 schema VERSION (awen-constitution tag v0.1.12, tag object 0f3a7b37, commit d28dc1f7, tagged by Huw as Llys after his signature 27/10/2026 [sig:b02e0b48], tag recorded [sig:00499af4]; read back with ls-remote on card c1950). Every vendored file is byte-identical to the tag (checked file by file by sha256).",
  "regenerate": "No script in this repo (there is no scripts/vendor_constitution.sh). From an awen-constitution clone: `git archive <tag> schema VERSION | tar -x -C src/craidd/constitution_vendor`, keeping the two package markers `__init__.py` and `schema/__init__.py`, which are not from the tag; set `tag`, and `commit` to `git rev-list -n1 <tag>` (the commit, not the annotated tag object); then advance craidd.CONSTITUTION_VERSION / CONSTITUTION_TAG in the same commit. The constitution-drift CI job checks out the tag and diffs the model against it."
 }

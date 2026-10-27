@@ -14,8 +14,13 @@ its test lands only with that decision: tests/schema/test_care_establishment_cqc
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
+from craidd import CONSTITUTION_TAG, CONSTITUTION_VERSION
+from craidd.constitution_vendor import __file__ as _vendor_init
 from craidd.schema.entity_types import ENTITY_TYPES
 from craidd.schema.validation import ORG_SUBJECT_SHAPES, validate_claim, validate_entity
 
@@ -26,6 +31,18 @@ HOPE_HOUSE = "care_establishment:cqc-1-129536667"
 def _ok(pred, subject=HOPE_HOUSE, **value):
     c = {**BASE, "subject_id": subject, "predicate": pred, "qualifiers": {}, **value}
     return validate_claim(c, subject_entity_type="care_establishment")
+
+
+# ── the release pin (version-bound: retires at the next constitution release) ───────────────────
+def test_the_package_pins_constitution_0_1_12():
+    assert (CONSTITUTION_VERSION, CONSTITUTION_TAG) == ("0.1.12", "v0.1.12")
+
+
+def test_the_vendored_copy_is_the_tag():
+    d = Path(_vendor_init).parent
+    pinned = json.loads((d / "PINNED.json").read_text())
+    assert pinned["tag"] == "v0.1.12" and pinned["commit"] == "d28dc1f79073176af9a96d9a648375ea7d1958f2"
+    assert (d / "VERSION").read_text().strip() == "0.1.12"
 
 
 @pytest.mark.parametrize("subject,ok", [
