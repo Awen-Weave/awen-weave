@@ -52,10 +52,11 @@ ENTITY_TYPES: dict[str, str] = {
     # 0.1.11 (card c1878; signed by Huw as Llys 26/10/2026 [sig:0ad68cf6], ruled [sig:d458cafe], Class A scrutiny c1852):
     # a registered care establishment that is not an NHS body. NOT A PLACE (grain.py), as nhs_org. Written
     # `care_establishment:<register>-<id>` in lower case: hiw-m and four digits (minted, from the catalogue's ledger) or a
-    # CIW URN lower-cased; a bare id is refused (validation.ORG_SUBJECT_SHAPES).
-    "care_establishment": ("A health or social care establishment with premises the public attends, as a Welsh regulator "
-                           "registers it (HIW or CIW). Not an NHS body or unit (that is nhs_org); not a service at a "
-                           "private dwelling (domiciliary support, childminding). Not a place."),
+    # CIW URN lower-cased; a bare id is refused (validation.ORG_SUBJECT_SHAPES). 0.1.12 (card c1902, [sig:092052fa]): CQC
+    # in England too, keyed cqc- and CQC's own location id, nothing minted.
+    "care_establishment": ("A health or social care establishment with premises the public attends, as a regulator "
+                           "registers it (HIW or CIW in Wales, CQC in England). Not an NHS body or unit (that is "
+                           "nhs_org); not a service at a private dwelling (domiciliary support, childminding). Not a place."),
 }
 
 # The set used for fast membership checks and by the validation contract.

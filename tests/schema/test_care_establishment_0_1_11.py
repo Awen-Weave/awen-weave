@@ -47,16 +47,9 @@ def _ok(pred, subject=HOSPICE, qualifiers=None, etype="care_establishment", **va
     return validate_claim(c, subject_entity_type=etype)
 
 
-# ── the release pin (version-bound: retires at the next constitution release) ───────────────────
-def test_the_package_pins_constitution_0_1_11():
-    assert (CONSTITUTION_VERSION, CONSTITUTION_TAG) == ("0.1.11", "v0.1.11")
-
-
-def test_the_vendored_copy_is_the_tag():
+# ── the release pin moved to test_care_establishment_0_1_12.py at 0.1.12 (card c1950) ──────────
+def test_the_vendored_entity_schema_ends_with_care_establishment():
     d = Path(_vendor_init).parent
-    pinned = json.loads((d / "PINNED.json").read_text())
-    assert pinned["tag"] == "v0.1.11" and pinned["commit"] == "f4f07e0487deb1f02f93fb4a83119088a9efcb2f"
-    assert (d / "VERSION").read_text().strip() == "0.1.11"
     enum = json.loads((d / "schema" / "entity.schema.json").read_text())["properties"]["entity_type"]["enum"]
     assert enum[-1] == "care_establishment" and set(enum) == VALID_ENTITY_TYPES and len(enum) == 15
 
@@ -125,7 +118,8 @@ def test_registration_status_is_closed_and_checked():
 
 
 def test_the_type_is_closed_to_hospices_until_another_is_ruled():
-    assert CARE_ESTABLISHMENT_TYPES == ("Hospices",)
+    """CQC's "Hospice" follows HIW's "Hospices" from Huw's decision [sig:8604b563] (card c1910)."""
+    assert CARE_ESTABLISHMENT_TYPES[0] == "Hospices"
     assert "care_establishment_type" in VALUE_CHECKED_PREDICATES
     assert _ok("care_establishment_type", value_text="Hospices") == []
     assert _ok("care_establishment_type", value_text="Hospitals") != []

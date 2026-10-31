@@ -117,8 +117,11 @@ ORG_SUBJECT_SHAPES: dict[str, "re.Pattern[str]"] = {
     "nhs_org": re.compile(r"^nhs_org:[A-Z0-9]{3,8}$"),
     "cluster": re.compile(r"^cluster:[A-Za-z0-9][A-Za-z0-9_-]{0,31}$"),
     # 0.1.11 (card c1878, [sig:0ad68cf6]; r2 C1, C2): lower case only; a minted HIW id is exactly m and four digits, a
-    # CIW id its URN lower-cased; the m-and-digits form belongs to minted ids alone.
-    "care_establishment": re.compile(r"^care_establishment:(hiw-m[0-9]{4}|ciw-[a-z]{3}-[0-9]{8}(-[a-z]{4})?)$"),
+    # CIW id its URN lower-cased; the m-and-digits form belongs to minted ids alone. 0.1.12 (card c1902, [sig:092052fa]):
+    # a CQC id is its location id as CQC publishes it, nothing minted: 1-, a digit 1-9, then eight to ten more, as every
+    # one of the 55,334 CQC-form ids on the 22/10/2026 active directory (sha256 ea3f91aa...) is. Observed, not promised:
+    # an id outside it is refused, and a new length is admitted here by a minor release, a new prefix by the constitution.
+    "care_establishment": re.compile(r"^care_establishment:(hiw-m[0-9]{4}|ciw-[a-z]{3}-[0-9]{8}(-[a-z]{4})?|cqc-1-[1-9][0-9]{8,10})$"),
 }
 _SUBJECT_FORM = {"nhs_org": "nhs_org:<code>", "cluster": "cluster:<code>",
                  "care_establishment": "care_establishment:<register>-<id>"}
