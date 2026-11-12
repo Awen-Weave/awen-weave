@@ -2586,19 +2586,24 @@ _LLEFELYS_WAGES_WORK: tuple[PredicateDef, ...] = (
     ),
 )
 
+# Widened to Find a Tender, descriptions only (card c2410; Huw's ruling of 12/11/2026 to build the Find a Tender layer;
+# row REQ-arloesidolgellau-4c289e, countersigned [sig:4bf0aa58], Procurement Act 2023 awards only).
 # PROPOSED, HOLD (cards c1318/c1304; Llefelys AWE-011 build item 6, missed local supply): Sell2Wales OCDS
 # (REQ-arloesidolgellau-ed7120, countersigned [sig:607e58a8]; route the OCP Data Registry copy), placed by the
 # ONS Postcode Directory (REQ-arloesidolgellau-c94857, Llefelys processing only [sig:df798785]).
 _SUPPLY = (" For the buyers placed in the area (a local authority, or Wales), by where each supplier is relative to "
            "its buyer, named in value_en with the CPV division of the tender (or 'CPV not stated') and the range: one "
            "of in the buyer's community, in the buyer's authority, elsewhere in Wales, outside Wales, or location "
-           "unknown (no postcode, or one the ONS Postcode Directory does not hold). Every figure is labelled "
-           "'April 2022 to March 2026, Sell2Wales via the OCP Data Registry'. Supplier names and postcodes are used "
+           "unknown (no postcode, or one the ONS Postcode Directory does not hold). Two sources, each its own figure: "
+           "Sell2Wales, labelled 'April 2022 to March 2026, Sell2Wales via the OCP Data Registry', and Find a Tender, "
+           "Procurement Act 2023 awards only, from 24/02/2025, labelled '<first month> to <last month>, Procurement Act "
+           "2023 awards, Find a Tender via the OCP Data Registry'; value_en names which source and range, and the two "
+           "are never added together or read as comparable (card c2410). Supplier names and postcodes are used "
            "in processing only: no supplier is ever named, and no postcode is ever served [sig:e449210e]. A figure "
            "built from fewer than 5 awards is never served; the page says 'fewer than 5' [sig:e580fe02].")
 _LLEFELYS_SUPPLY: tuple[PredicateDef, ...] = (
     PredicateDef("public_contract_supplier_awards_count", "int", "multi", ("area",),
-                 "The number of Sell2Wales contract awards to suppliers, where each supplier named on an award counts "
+                 "The number of public contract awards to suppliers, where each supplier named on an award counts "
                  "once (an award to a framework of three suppliers counts three)." + _SUPPLY,
                  description_cy=CY_PENDING,
         finest_grain=Grain.AREA,
